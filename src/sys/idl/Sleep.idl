@@ -1,0 +1,16 @@
+package coyotos;
+
+/// @brief Kernel delay mechanism.
+///
+/// The sleep capability allows a process to block for a specified
+/// period of time. Note that the sleep(), if any, happens before the
+/// reply. It is the invoker rather than the invokee who blocks.
+interface Sleep extends Cap {
+  /// @brief Sleep until the specified number of milliseconds has
+  /// passed or the system is rebooted.
+  void sleep(unsigned long long ms);
+
+  /// @brief Sleep until the specified number of milliseconds from
+  /// epoch or until the system is rebooted.
+  void sleepTill(unsigned long long ms);
+};

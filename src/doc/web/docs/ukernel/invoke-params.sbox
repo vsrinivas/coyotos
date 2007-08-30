@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sbox>
+<sbox>
+  <word label="recv_ptr" szlabel="32/64"/>
+  <word label="recv_bound" szlabel="32"/>
+  <word label="recv_cap3" szlabel="capitem_t"/>
+  <word label="..." szlabel="1"/>
+  <word label="recv_cap0" szlabel="capitem_t"/>
+  <word label="send_str_ptr" szlabel="32/64"/>
+  <word label="send_str_len" szlabel="32"/>
+  <word label="send_ipc_w3" szlabel="64"/>
+  <word label="..." szlabel="1"/>
+  <word label="send_ipc_w0" szlabel="64"/>
+  <word label="send_cap3" szlabel="capitem_t"/>
+  <word label="..." szlabel="1"/>
+  <word label="send_cap0" szlabel="capitem_t"/>
+  <word label="inv_cap" szlabel="capitem_t"/>
+  <word label="recv_id" szlabel="64"/>
+  <wbox>
+    <field label="NB" size="1"/>
+    <field label="ST" size="1"/>
+    <field label="RC" size="1"/>
+    <field label="CW" size="1"/>
+    <field label="YX" size="1"/>
+    <field label="SS" size="1"/>
+    <field label="RP" size="1"/>
+    <field label="reserved" size="25"/>
+  </wbox>
+</sbox>

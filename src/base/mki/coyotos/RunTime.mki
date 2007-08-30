@@ -1,0 +1,25 @@
+module coyotos.RunTime {
+  /* Import it so that it will be in the image */
+  import sb = coyotos.SpaceBank;
+
+  export enum REG {
+     NULL = 0,
+     REPLYEPT = 1,
+     SELF = 2,
+     SPACEBANK = 3,
+     TOOLS = 4,
+     INITEPT = 5,
+     RUNTIME = 6,
+     APP = 7,
+     LASTAPP = 23,
+     REPLY0 = 24,
+     REPLY1 = 25,
+     REPLY2 = 26,
+     REPLY3 = 27,
+     RETCAP = 28,
+     ARG1 = 29,
+     ARG2 = 30,
+     ARG3 = 31
+  };
+}
+

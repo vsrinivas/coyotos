@@ -1,0 +1,152 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+   "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <title>Download Coyotos</title>
+  </head>
+  <body>
+    <h1 class="title">Coyotos Download Page</h1>
+    <p>
+      The Coyotos tree is <em>far</em> from ready to build in any
+      meaningful way. For those of you who are curiosity junkies, here
+      is how to duplicate what we are doing:
+    </p>
+    <h1>Fetch the Source Tree</h1>
+    <p>
+      First, fetch the source tree. Then, read below to see how to get
+      the cross tools. To fetch the source tree, the first step is to
+      pick a directory and fetch the top-level makefile:
+      </p>
+      <pre class="literallayout">
+cd <em>someplace convenient</em>
+mkdir -p coyotos/src
+cd coyotos/src
+rsync -avz rsync://www.coyotos.org/src.coyotos/src/Makefile Makefile</pre>
+    <p>
+      Next, decide if you want to track the tutorials tree, the
+      documentation tree and/or the cross-environment tree. Note that
+      if you are running Fedora Core, you do not need to build the
+      cross tools tree. We <em>strongly</em> recommend using the RPM
+      repository instead (see below). You can download it safely, but
+      it's a lot of dead weight if you aren't going to build it.
+    </p>
+    <p>
+      To select optional packages, you'll want to run one or more of:
+    </p>
+    <pre class="literallayout">
+mkdir tutorial  <em># A nascent collection of tutorials</em>
+mkdir doc       <em># The documentation tree</em>
+mkdir ccs-xenv  <em># The cross-tools</em></pre>
+    <p>
+      Finally, fetch over the parts of the source tree you have
+      selected by:
+    </p>
+    <pre class="literallayout">
+cd coyotos/src  <em># if needed</em>
+make -k sync    <em># DO NOT FORGET -k ON FIRST TRY!</em></pre>
+    <p>
+      If all has gone according to plan, you should now be able to
+      build the entire tree by typing <tt>make</tt> in the
+      <tt>coyotos/src</tt> directory.
+    </p>
+    <p>
+      To stay up to date, go back to the <tt>coyotos/src</tt>
+      directory and type one of:
+    </p>
+    <pre class="literallayout">
+cd coyotos/src  <em># if needed</em>
+make -k sync
+make -k destructive-sync</pre>
+    <p>
+      If you can afford to rebuild, the <tt>destructive-sync</tt>
+      option is preferred, because it will deal with deleted
+      directories correctly.
+    </p>
+    <h1>Cross Tools for Fedora Core 5/6</h1>
+    <p>
+      We are still actively updating the tool chain, so tracking us
+      with YUM is definitely the best way to go if you have the
+      option. To add our repository to your YUM configuration, run:
+    </p>
+    <pre class="literallayout">
+rpm -ivh http://www.coyotos.org/YUM/coyotos/6/i386/Coyotos-Repository-3.2-2.fc6.noarch.rpm</pre>
+    <p>
+      You may want to check for a more recent version, or simply run
+      a <tt>yum&nbsp;update</tt> after installing the repository
+      package.
+    </p>
+    <p>
+      Next, install the cross environment by running:
+    </p>
+    <pre class="literallayout">
+      yum install coyotos-i386-xenv</pre>
+    <p>
+      This will get you the cross compilers and a number of build
+      tools that you will need.
+    </p>
+    <h1>Cross Tools for Other Linux Distributions</h1>
+    <p>
+      <em>These instructions have been tested on a Fedora machine with
+      the RPM tool chain removed. The tree builds, but it is likely
+      that there are many dependencies that are not addressed here. As
+      you find them, please let us know what they are and we will try
+      to update these instructions.</em>
+    </p>
+    <p>
+      You will need the <tt>ccs-xenv</tt> tree. If you didn't grab it,
+      go back and add the directory and re-run
+      <tt>make&nbsp;sync</tt>.
+    </p>
+    <p>
+      To build the cross tools, choose a directory for the tools. You
+      can use anything you like. Do <em>not</em> install the cross
+      tools into the main coyotos tree! In the following example, we
+      will install into <tt>/home/shap/coyotos-xenv</tt>. Build the
+      cross tools for your desired target(s) by typing:
+    </p>
+    <pre class="literallayout">
+cd coyotos/src/ccs-xenv <em># if necessary</em>
+make -f Makefile.xenv TARGETS="coyotos-i386" CROSSROOT=/home/shap/coyotos-xenv</pre>
+    <p>
+      If you do not provide a value for CROSSROOT, the default
+      directory is assumed to be <tt>/coyotos</tt>. This is the
+      preferred location if you are able to write it, because it will
+      match the configuration used by the RPM-based cross tools. This
+      is good, mainly because that is the configuration that we test
+      against.
+    </p>
+    <p>
+      Now that you have built the cross environment, you should be
+      able to build everything <em>except</em> the doc tree by:
+    </p>
+    <pre class="literallayout">
+cd coyotos/src <em># if necessary</em>
+make COYOTOS_XENV=/home/shap/coyotos-xenv</pre>
+    <h2>Additional Requirements for the <tt>doc/</tt> Tree</h2>
+    <p>
+      If you are building the doc tree, you will also need to build
+      the OSDoc tools. Fetch the latest osdoc distribution from <a
+      href="http://www.coyotos.org/YUM/coyotos/tarballs">http://www.coyotos.org/YUM/coyotos/tarballs</a>.
+      At the time of this writing, the latest release is
+      <tt>osdoc-0.1.7-1</tt>. You will need to build and install this
+      into the <em>host</em> portion of your cross environment:
+    </p>
+    <pre class="literallayout">
+curl http://www.coyotos.org/YUM/coyotos/tarballs/osdoc-0.1.7-1-src.tgz&gt; osdoc-0.1.7-1-src.tgz
+tar xvf osdoc-0.1.7-1-src.tgz
+cd osdoc-0.1.7 
+./configure --prefix=/home/shap/coyotos-xenv/host
+make install</pre>
+    <p>
+      With this done, the documents will build, but <em>only</em> if
+      you have a live connection to the internet. The culprit is
+      <tt>xsltproc</tt>, which will be using the connection to fetch
+      the OSDoc DTD from its canonical location. The current release
+      of OSDoc does not provide a good solution to work around this
+      problem. The next release of OSDoc will include an XML catalog
+      file that will allow local access to the DTD. We expect to
+      resolve this in OSDoc-0.1.8.
+    </p>
+  </body>
+</html>

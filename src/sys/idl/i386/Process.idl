@@ -1,0 +1,91 @@
+package coyotos.i386;
+
+/// @brief Operations common to all Coyotos processes.
+///
+/// This is the architecture-independent process interface. For many
+/// operations of interest the architecture dependent interface should
+/// be consulted.
+abstract interface Process extends coyotos.Process {
+  /** @brief Architecture-specific fixed-point registers layout */
+  struct fixregs {
+    unsigned long EDI;
+    unsigned long ESI;
+    unsigned long EBP;
+    unsigned long ExceptAddr;
+    unsigned long EBX;
+    unsigned long EDX;
+    unsigned long ECX;
+    unsigned long EAX;
+    unsigned long ExceptNo;
+    unsigned long Error;
+    unsigned long EIP;
+    unsigned long CS;
+    unsigned long EFLAGS;
+    unsigned long ESP;
+    unsigned long SS;
+    unsigned long ES;
+    unsigned long DS;
+    unsigned long FS;
+    unsigned long GS;
+  };
+
+  typedef array<unsigned long,4>  sse_reg;
+
+  /** @brief Architecture-specific floating point and SIMD registers layout.
+   *
+   * There is a policy problem here: Intel changed the format starting
+   * in the Pentium-III (FSAVE -&gt; FXSAVE), and they have reserved
+   * space for future extensions. This raises a tricky question about
+   * what to present at the interface.
+   *
+   * It is possible to reconstruct the FSAVE information from the
+   * FXSAVE information. It is also possible to run on an older
+   * machine by initializing the SSE slots to well-defined values and
+   * pretending that since no SSE instructions were executed the state
+   * must not have changed. That is what we do here.
+   *
+   * This leaves us with the question of what type to present at the
+   * interface. Our sense is that it is better to present a
+   * well-defined, shorter structure than to give a general structure
+   * whose internals will need to be edited later. If necessary we can
+   * add a new fetch operation to deal with future extensions to SSE
+   * state.
+   */ 
+  struct floatregs {
+    unsigned short   fcw;
+    unsigned short   fsw;
+    unsigned short   ftw;
+    unsigned short   fop;
+    unsigned long    eip;
+    unsigned long    cs;
+    unsigned long    dp;
+    unsigned long    ds;
+    unsigned long    mxcsr;
+    unsigned long    mxcsr_mask;
+    array<sse_reg,8> fpr;	// a.k.a. mmx
+    array<sse_reg,8> xmm;
+  };
+
+  /** @brief Fetch the fixed-point register set. */
+  fixregs   getFixRegs();
+
+  /** @brief Set the fixed-point register set.
+   *
+   * The overwrite of the register set area occurs atomically.
+   *
+   * A RequestError exception will be raised if the size of the
+   * provided register structure does not match the size of the
+   * register set being updated. */
+  void      setFixRegs(fixregs regs);
+
+  /** @brief Fetch the floating-point and SIMD register set. */
+  floatregs getFloatRegs();
+  /** @brief Set the floating-point and SIMD register set.
+   *
+   * The overwrite of the register set area occurs atomically.
+   *
+   * A RequestError exception will be raised if the size of the
+   * provided register structure does not match the size of the
+   * register set being updated. */
+  void      setFloatRegs(floatregs regs);
+};

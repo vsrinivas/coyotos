@@ -1,0 +1,1263 @@
+<?xml version="1.0"?>
+<!DOCTYPE article PUBLIC "-//EROS Group//DTD OSDoc XML V0.1//EN"
+               "http://www.coyotos.org/OSDoc/DTD/osdoc-0.1.dtd" [
+
+<!ENTITY DocVersion "0.2">
+]>
+  <article id="mkimage-spec" xmlns:xi="http://www.w3.org/2001/XInclude">
+  <docinfo twocolumn="yes">
+    <title>MkImage Specification</title>
+    <subtitle>Version &DocVersion;</subtitle>
+    <authorgroup>
+      <author>
+	<firstname>Jonathan</firstname>
+	<surname>Shapiro</surname>
+	<degree>Ph.D.</degree>
+      </author>
+      <affiliation>
+	<orgname>The EROS Group, LLC.</orgname>
+      </affiliation>
+    </authorgroup>
+    <pubdate>February 26, 2007</pubdate>
+    <copyright>
+      <year>2007</year> 
+      <holder>Jonathan S. Shapiro</holder>
+    </copyright>
+    <legalnotice>
+      <p indent="no">
+	THIS SPECIFICATION IS PROVIDED ``AS IS'' WITHOUT ANY
+	WARRANTIES, INCLUDING ANY WARRANTY OF MERCHANTABILITY,
+	NON-INFRINGEMENT, FITNESS FOR ANY PARTICULAR PURPOSE, OR ANY
+	WARRANTY OTHERWISE ARISING OF ANY PROPOSAL, SPECIFICATION OR
+	SAMPLE.
+      </p>
+    </legalnotice>
+    <categories>
+      <category>dev/build</category>
+    </categories>
+    <synopsis>
+      <p>Provisional specification for the <command>mkimage</command>
+        language for defining Coyotos installer and boot images.</p>
+    </synopsis>
+  </docinfo>
+  <abstract latex.incolumn="yes" latex.breakafter="yes">
+    <p>
+      MkImage is the tool used to create installable application
+      images, including the initial system bootstrap file image. It
+      may be thought of as a link editor for <em>systems</em>, in much
+      the way that <command>ld</command> is a link editor for object
+      files. A <command>mkimage</command> input file contains a
+      specification for what processes need to exist in the image, how
+      they should be connected together by capabilities, and what (if
+      any) external references need to be resolved in order for the
+      image to be successfully incorporated by the installer.
+    </p>
+    <p>
+      This document defines the <command>mkimage</command> input
+      specification language. It borrows heavily from the original
+      <command>mkimage</command> specification from the <link
+        href="http://www.eros-os.org">EROS</link> system.
+    </p>
+  </abstract>
+  <!--   <toc pagebreak="yes"/> -->
+  <toc/>
+  <sect1>
+    <title>Introduction</title>
+    <p>
+      The <command>mkimage</command> utility creates an image for the
+      Coyotos <cite ref="shapiro2007coyotos"/> installer. Through this
+      tool, a developer can create a single image file that includes
+      running processes, address spaces, and other objects. These
+      various objects may be pre-initialized to refer to each other
+      via capabilities. The input file can also contain unresolved
+      capability references that are to be ``filled in'' at image load
+      time.
+    </p>
+    <p>
+      More precisely, the ``running'' processes in a
+      <command>mkimage</command> output file are processes that are
+      frozen at the instant before the execution of their first
+      instruction. These are added to a ``run list'' that is started
+      by the installer, or in the case of the initial system image, by
+      the <term>IPL process</term>, whose job (in either case) is to
+      actually get these processes into motion. It might therefore be
+      more precise to say that these processes are <em>marked</em> to
+      be run.
+    </p>
+    <sect2>
+      <title>Theory of Operation</title>
+      <p>
+        A <progident>mkimage</progident> script consists of a single
+        module containing a sequence of statements. The first import
+        of a module causes its statements to be executed in sequence,
+        with several consequences:
+      </p>
+      <ol>
+        <li>
+          <p>
+            Symbols defined within the module are assigned values.
+          </p>
+        </li>
+        <li>
+          <p>
+            A subset of these symbols (those designated as
+            ``exported'') are made available for use in other modules.
+          </p>
+        </li>
+        <li>
+          <p>
+            Objects are allocated and initialized that become part of
+            the system image file.
+          </p>
+        </li>
+      </ol>
+      <p>
+        While <progident>mkimage</progident> can be used as a
+        scripting language, it isn't designed for this purpose.  A
+        <progident>mkimage</progident> script is executed for the sake
+        of its side effects on the image file.
+      </p>
+      <p>
+        For example, the <progident>mkimage</progident> script:
+      </p>
+      <literallayout>
+<b>module</b> example {
+  <b>export def</b> a = 1 + 2;
+  <b>def</b> b = <b>make_process()</b>;
+}</literallayout>
+      <p indent="no">
+        has three effects. The symbol <progident>a</progident> is
+        bound to the value 3 and exported. A new, running process is
+        allocated. The symbol <progident>b</progident> is bound this
+        new process. Of these three effects, the important one is the
+        allocation of the new process structure. At the end of the
+        <progident>mkimage</progident> execution, the symbols will be
+        gone, but this process structure and its contents will end up
+        in the Coyotos installable image file. The reason to have a
+        full scripting language is to provide flexibility in
+        initializing the objects that will end up in the coyotos
+        image.
+      </p>
+      <p>
+        A <command>mkimage</command> script can refer to capabilities
+        that are not defined by any imported module. This mechanism is
+        used to refer to capabilities that will later be supplied by
+        the installer at image install time. When constructing an
+        initial system image, there should be no unresolved references
+        of this form.
+      </p>
+    </sect2>
+    <sect2>
+      <title>Command Line</title>
+      <p>
+	The <command>mkimage</command> command line takes the form:
+      </p>
+      <literallayout>
+mkimage
+   [<em>options</em>]
+   -t <em>target</em>
+   specfile specfile</literallayout>
+      <p indent="no">
+	Where <em>target</em> is the target architecture. Other
+        options understood by <command>mkimage</command> include:
+      </p>
+      <deflist>
+	<defli>
+	  <label><b>-I</b> <em>directory</em></label>
+	  <li>
+	    <p>
+	      Add <em>directory</em> to the end of the module
+	      resolution path.
+	    </p>
+	  </li>
+	</defli>
+	<defli>
+	  <label><b>-L</b> <em>directory</em></label>
+	  <li>
+	    <p>
+	      Add <em>directory</em> to the end of the library search
+	      path.
+	    </p>
+	  </li>
+	</defli>
+	<defli>
+	  <label><b>-D</b> <em>headerDir</em></label>
+	  <li>
+	    <p>
+              Emit header files suitable for C and C++ programs into
+	      <em>headerDir</em> for each module named on the command
+	      line. The names of the header files are derived from the
+	      module names. A constant definition will appear in the
+	      header file for every member of every exported
+	      enumeration in the module.
+	    </p>
+            <p>
+              If this option is given, no binary Coyotos image file is
+              emitted.
+            </p>
+	  </li>
+	</defli>
+	<defli>
+	  <label><b>-o</b> <em>output_file</em></label>
+	  <li>
+	    <p>
+	      Place the constructed system image in
+	      <command>output_file</command>. If this option is not
+	      given the default image file name is
+	      <command>mkimage.out</command>.
+	    </p>
+	  </li>
+	</defli>
+	<defli>
+	  <label><b>-v</b></label>
+	  <li>
+	    <p>
+	      Process the input verbosely.
+	    </p>
+	  </li>
+	</defli>
+	<defli>
+	  <label><b>-V</b></label>
+	  <li>
+	    <p>
+              Report the <command>mkimage</command> version and exit.
+	    </p>
+	  </li>
+	</defli>
+	<defli>
+	  <label><b>--showparse</b></label>
+	  <li>
+	    <p>
+              Show the actions of the parser (for debugging).
+	    </p>
+	  </li>
+	</defli>
+	<defli>
+	  <label><b>--showlex</b></label>
+	  <li>
+	    <p>
+              Show the actions of the tokenizer (for debugging).
+	    </p>
+	  </li>
+	</defli>
+	<defli>
+	  <label><b>--showpasses</b></label>
+	  <li>
+	    <p>
+              Emit a list of <command>mkimage</command> compiler passes.
+	    </p>
+	  </li>
+	</defli>
+	<defli>
+	  <label><b>--stopafter</b> <em>pass</em></label>
+	  <li>
+	    <p>
+              Stop processing after <em>pass</em> has been run on the
+              input (for debugging).
+	    </p>
+	  </li>
+	</defli>
+	<defli>
+	  <label><b>--dumpafter</b> <em>pass</em></label>
+	  <li>
+	    <p>
+              Show the state of the AST after <em>pass</em> as an XML
+              dump (for debugging).
+	    </p>
+	  </li>
+	</defli>
+      </deflist>
+      <p>
+	The <command>mkimage</command> utility is not designed for
+	incremental use. Like <command>ld</command>, its job is to
+	create the final image for a system. There is (at the moment)
+	no conceptual equivalent to creating a relocatable, reusable
+	library.
+      </p>
+    </sect2>
+    <sect2>
+      <title>Specification Conventions</title>
+      <p>
+	The primary conventions used in this document concern the
+	presentation of grammar rules. In grammar rule specifications,
+	non-terminals are presented in lowercase italics, categorical
+	terminals are shown in normal face, and literal terminals
+	appear in bold face or within single-quote characters. White
+	space is permitted between tokens. <command>mkimage</command>
+	is case sensitive; all <command>mkimage</command> keywords are
+	lowercase.
+      </p>
+      <p>
+	Except when quoted, the characters <b>{</b> and <b>}</b>
+	indicate meta-syntatic grouping following the customary
+	representation of EBNF grammars. The superscript characters
+	<b>*</b>, <b>+</b>, and <b>?</b> indicate, respectively, zero
+	or more, one or more, or an optional item or group. In Except
+	when quoted, the character ``:'' indicates the separation
+	between a non-terminal and its EBNF definition. For
+	categorical terminals, sets of input characters are
+	abbreviated by enclosing them within square brackets. Within
+	such a set, the character '-' denotes an inclusive lexical
+	sequence according to the usual conventions of regular
+	expressions.
+      </p>
+    </sect2>
+  </sect1>
+  <sect1>
+    <title>Lexical Matters</title>
+    <!--     <p> -->
+    <!--       In anticipation of the longer-term direction of Coyotos, much of -->
+    <!--       the lexical structure of <command>mkimage</command> is derived -->
+    <!--       from the conventions of BitC rather than C. For example, in -->
+    <!--       contrast to the earlier EROS tool, the Coyotos version uses a -->
+    <!--       <smallcaps>lisp</smallcaps> like surface syntax. -->
+    <!--     </p> -->
+    <p>
+      The <command>mkimage</command> input character set is the UTF-8
+      encoded Unicode character set, as defined by the Unicode 4.1.0
+      standard <cite ref="unicode410"/>. 
+    </p>
+    <p>
+      Input units of compilation are defined to be encoded using the
+      Unicode character set as defined in version 4.1.0 of the Unicode
+      standard <cite ref="unicode410"/>, using Normalization C.  All
+      keywords and syntactically significant punctuation fall within
+      the ISO-LATIN-1 subset, and the language provides for
+      ISO-LATIN-1 encodable ``escapes'' that can be used to express
+      the full Unicode character code space in character and string
+      literals.
+    </p>
+    <p>
+      Tokens are terminated by white space if not otherwise
+      terminated. For purposes of input processing, the characters
+      <em>space</em> (U+0020), <em>tab</em> (U+0009), <em>carriage
+        return</em> (U+000D), and <em>linefeed</em> (U+000A) are
+      considered to be white space.
+    </p>
+    <p>
+      Input lines are terminated by a linefeed character (U+000A), a
+      carriage return (U+000D) or by the two character sequence
+      consisting of a carriage return followed by a line feed.  This
+      is primarily significant for comment processing and diagnostic
+      purposes, as the rest of the language treats linefeeds as white
+      space without further significance.
+    </p>
+    <sect2>
+      <title>Comments</title>
+      <p>
+	<command>mkimage</command> supports two comment formats
+	derived from C and C++. Any sequence beginning with
+	<tt><b>//</b></tt> and ending with the next newline is a
+	comment.  Any character sequence beginning with
+	<tt><b>/*</b></tt> and ending with the next <tt><b>*/</b></tt>
+	is a comment. No beginning of comment appearing within a comment
+	is considered lexically significant. For purposes of input
+	tokenization, a comment is considered to be whitespace, and
+	terminates any input token. Comments therefore cannot be used
+	for ``token splicing.''
+      </p>
+    </sect2>
+    <sect2>
+      <title>Reserved Words</title>
+      <p>
+	The following identifiers are syntactic keywords or literal
+	constants, and may not be rebound:
+      </p>
+      <literallayout indent="no">
+def         else        enum        
+export      <em>external</em>    false       
+if          import      <em>lambda</em>      
+module      not         print       
+return      true        <em>using</em>
+      </literallayout>
+      <p indent="no">
+        Reserved words shown in italics are not currently implemented,
+        but are reserved for future use.
+      </p>
+    </sect2>
+    <sect2>
+      <title>Identifiers</title>
+      <p>
+	A <command>mkimage</command> identifier may start with any
+	``identifier character'' (UNICODE 4.1.0 character class
+	XID_Start), followed by any number of optional ``identifier
+	continue characters'' (UNICODE 4.1.0 character class
+	XID_Continue). For this purpose, the underscore character
+	('_', U+005F) is considered to be an identifier character, and
+	the hyphen character ('-', U+) is considered to be an
+	identifier continue character. Any such sequence that is not a
+	reserved word is an identifier.  Identifiers beginning with
+	two leading underscores are reserved.
+      </p>
+      <p>
+        A hyphen, if present, may not be the leading character of an
+	identifier. Hyphens are converted to underscores when data
+	constant bindings are exported for use in C or C++ header
+	files.
+      </p>
+      <p>
+        For the sake of compatibility with existing file systems,
+        identifiers appearing in <command>mkimage</command> module
+        names are restricted to characters that fall within the
+        ISO-LATIN-1 subset of the general identifier specification.
+      </p>
+      <p>
+        The following regular expression describes those identifiers
+	using only characters from the ISO-LATIN-1 subset. This subset
+	is commonly used because such identifiers can be directly
+	exported to languages such as C.
+      </p>
+      <literallayout>
+Ident: [a-zA-Z_][-a-zA-Z0-9_]*</literallayout>
+    </sect2>
+    <sect2>
+      <title>Literals</title>
+      <sect3>
+	<title>Integer Literals</title>
+	<p>
+	  The general form of an integer literal is an octal, decimal,
+	  or hexidecimal constant:
+	</p>
+        <literallayout>
+IntLit: [1-9][0-9]*
+IntLit: 0[0-7]*
+IntLit: 0x[0-9a-zA-Z]+</literallayout>
+        <p indent="no">
+          Integer literals beginning with the digit zero (0) are
+          interpreted in base 8 (octal). Integer literals starting
+          with ``0x'' are interpreted in base 16 (hexadecimal).
+          Hexidecmal digits are interpreted with the customary
+          hexadecimal valuations. The letters may appear in either
+          lowercase or uppercase. It is an error for a digit to be
+          present whose value as a digit is greater than or equal to
+          the specified base.
+	</p>
+        <!-- 	<literallayout> -->
+        <!-- [<b>-</b>][<em>base</em><b>r</b>]<em>digits</em></literallayout> -->
+        <!-- 	<p indent="no"> -->
+        <!-- 	  where <em>base</em> is radix of the subsequent digits -->
+        <!-- 	  expressed in decimal form. Legal bases are 2, 8, 10, and -->
+        <!-- 	  16. In the absence of a base prefix, the digits are -->
+        <!-- 	  interpreted as base ten. The <em>digits</em> are selected -->
+        <!-- 	  from the characters -->
+        <!-- 	</p> -->
+        <!-- 	<literallayout> -->
+        <!-- 0 1 2 3 4 5 6 7 8 9 a b c d e f</literallayout> -->
+        <!-- 	<p indent="no">with the customary hexadecimal valuations. The -->
+        <!-- 	  letters may appear in either lowercase or uppercase. It is -->
+        <!-- 	  an error for a digit to be present whose value as a digit is -->
+        <!-- 	  greater than or equal to the specified base. -->
+        <!-- 	</p> -->
+        <!-- 	<p> -->
+        <!-- 	  Integer literals whose type cannot be inferred from -->
+        <!-- 	  context must be written by using a type qualifier. The -->
+        <!-- 	  expression: -->
+        <!-- 	</p> -->
+        <!-- 	<literallayout> -->
+        <!-- 564 : uint32</literallayout> -->
+        <!-- 	<p indent="no"> -->
+        <!-- 	  specifies an unsigned 32 bit quantity whose value is 564. It -->
+        <!-- 	  is a compile-time error to qualify an integer literal with a -->
+        <!-- 	  type that is incapable of representing the literal's value. -->
+        <!-- 	  In the absence of explicit qualification, the type assigned -->
+        <!-- 	  to an integer literal will be -->
+        <!-- 	  <progident>word</progident>. The known integral types are -->
+        <!-- 	  defined below., each -->
+        <!-- 	  of which is a reserved word, is: -->
+        <!-- 	</p> -->
+        <!-- 	<literallayout> -->
+        <!-- int8  int16  int32  int64 -->
+        <!-- uint8 uint16 uint32 uint64 -->
+        <!-- word</literallayout> -->
+      </sect3>
+      <sect3>
+	<title>String Literals</title>
+	<p>
+	  String literals (<progident>String</progident>) are
+	  written within double quotes, and may contain printable
+	  characters <em>excluding</em> backslash (``\''). They may
+	  also contain spaces (U+0020).  The set of printable
+	  characters consists of any character specified in the
+	  UNICODE 4.1.0 standard <em>except</em> those with general
+	  categories "Cc" (control codes) "Cf" (format controls), "Cs"
+	  (surrogates), "Cn" (unassigned), or "Z" (separators).  That
+	  is, any printable character, excluding spaces.
+	</p>
+        <literallayout>
+StringLit: <em>/* as described above</em>
+</literallayout>
+	<p>
+	  Within a string, the backslash character (``\'') is
+	  interpreted as beginning an encoding of a specially
+	  embedded character. The character following the ``\'' is
+	  either a single-character embedding or a curly brace
+	  character ``{'' identifying the start of a UNICODE
+	  character embedding. The legal forms and their meanings
+	  are:
+	</p>
+	<table>
+          <tbody>
+            <tr>
+              <td><b>\n</b></td>
+              <td>Linefeed</td>
+            </tr>
+            <tr>
+              <td><b>\r</b></td>
+              <td>Carriage Return</td>
+            </tr>
+          </tbody>
+          <tbody>
+            <tr>
+              <td><b>\t</b></td>
+              <td>Horizontal Tab</td>
+            </tr>
+            <tr>
+              <td><b>\b</b></td>
+              <td>Backspace</td>
+            </tr>
+            <tr>
+              <td><b>\s</b></td>
+              <td>Space</td>
+            </tr>
+            <tr>
+              <td><b>\f</b></td>
+              <td>Formfeed</td>
+            </tr>
+            <tr>
+              <td><b>\"</b></td>
+              <td>Double quote</td>
+            </tr>
+            <tr>
+              <td><b>\\</b></td>
+              <td>Backslash</td>
+            </tr>
+            <tr>
+              <td><b>\{U+<em>digits</em>}</b></td>
+              <td>Unicode code point, hexidecimal <em>digits</em>.</td>
+            </tr>
+          </tbody>
+	</table>
+      </sect3>
+    </sect2>
+  </sect1>
+  <!--   <sect1> -->
+  <!--     <title>Types</title> -->
+  <!--     <sect2> -->
+  <!--       <title>Types for Data</title> -->
+  <!--       <p> -->
+  <!-- 	The type <progident>word</progident> is the smallest -->
+  <!-- 	unsigned integral type whose range of values is sufficient -->
+  <!-- 	to represent the bit representation of a pointer on the -->
+  <!-- 	underlying machine. This type is architecture dependent, and -->
+  <!-- 	is <em>not</em> directly assignment compatible with unsigned -->
+  <!-- 	integral types of the same size. -->
+  <!--       </p> -->
+  <!--   </sect1> -->
+  <subpart>
+    <title>Core Language Definition</title>
+    <sect1>
+      <title>Structure of a Compilation Unit</title>
+      <p>
+        A <command>mkimage</command> unit of compilation consists of a
+        single module definition, which in turn consist of a sequence of
+        module-level statements and definitions:
+      </p>
+      <literallayout>
+<em>UOC</em>: <b>module</b> <em>modname</em> '{' <em>modstmt</em><sup>+</sup> '}'
+<em>modname</em>: Ident {'.' Ident}<sup>*</sup>
+<em>modstmt</em>:
+  | <b>export</b> <em>def_stmt</em>
+  | <b>export</b> Ident {',' Ident}<sup>*</sup> ';'
+  | <b>import</b> Ident '=' <em>modname</em> ';'
+  | <em>stmt</em></literallayout>
+      <p indent="no">
+        In contrast to ``inner'' definitions, definitions introduced at
+        module scope may be exported, making them importable from other
+        modules.
+      </p>
+      <sect2>
+        <title>Import and Export</title>
+        <p>
+          <leadin>Export</leadin> The <progident>export</progident>
+          keyword indicates that a symbol bound at top level in a module
+          should be visible to importing modules. When interpretation of
+          the module is completed, and the top-level environment is
+          fully defined, a selective copy of the elements of this
+          environment is made to create a ``public'' environment
+          containing only the exported symbols. This is the environment
+          that is obtained by a subsequent <progident>import</progident>
+          statement.
+        </p>
+        <p>
+          <leadin>Import</leadin> The <b>import</b> statement has two
+          effects. If the imported module has not yet been loaded and
+          intepreted, this is done at the time of the first import. A
+          given module will be imported at most once during an execution
+          of <command>mkimage</command>.
+        </p>
+        <p>
+          The left-hand identifier specified in an
+          <progident>import</progident> gives a local identifier to
+          which the public environment of the imported module is
+          bound. Thus, if <progident>a</progident> is defined to 1 and
+          exported by module <progident>coyotos.spacebank</progident>,
+          then the statements:
+        </p>
+        <literallayout>
+import sb = coyotos.spacebank;
+print sb.a;</literallayout>
+        <p indent="no">
+          displays the value "1".
+        </p>
+      </sect2>
+      <sect2>
+        <title>Defining Statements</title>
+        <p>
+          The defining statments introduce variables, procedures, and
+          enumerations:
+        </p>
+        <literallayout>
+<em>def_stmt</em>: <b>def</b> Ident '=' <em>expr</em> ';'
+  | <b>def</b> Ident ({Ident {',' Ident}<sup>*</sup>}<sup>?</sup>')'
+      <em>block</em> ';'
+  | <b>enum</b> Ident '{' <em>enumDef</em><sup>+</sup> '}'
+<em>enumDef</em> : Ident {'=' Int}<sup>*</sup></literallayout>
+        <p>
+          The first <b>def</b> form associates an initial the value with an
+          identifier and binds that identifier in the current scope.
+        </p>
+        <p>
+          The second <b>def</b> form introduces a procedure. When
+          called, the body of the procedure will be executed in an
+          environment consisting of its lexically preceding definitions
+          within the module and the formal parameters of the
+          procedure. Inner procedures are legal, and can be returned as
+          values.
+        </p>
+        <p>
+          The <b>enum</b> form introduces enumerated constant
+          values. The values of these identifiers cannot be
+          modified. Enumerated constants are supported in the language
+          because there are certain values that
+          <command>mkimage</command> and it's constructed programs must
+          agree on. In particular, enumerations are used to define slot
+          numbers in the ``tools'' capability page of each process.
+        </p>
+        <p>
+          The value of a defining statement is <em>unit</em>.
+        </p>
+      </sect2>
+      <sect2>
+        <title>Control Flow Statements</title>
+        <p>
+          The statement:
+        </p>
+        <literallayout indent="no">
+<em>if_stmt</em>: <b>if</b> '(' <em>expr</em> ')' <em>block</em> { <b>else</b> <em>block</em>
+  | <b>if</b> '(' <em>expr</em> ')' <em>block</em> { <b>else</b> <em>if_stmt</em>
+<em>stmt</em>: <em>if_stmt</em></literallayout>
+        <p indent="no">
+          provides conditional execution with the customary meaning. The
+          value of this statement is the value of the executed block, or
+          <em>unit</em> if the test expression produces <em>false</em>
+          and no <progident>else</progident> clause is given. The
+          expression in the test position should generate either an
+          integer or a boolean result. If the result is an integer, the
+          value zero is interpreted as a false condition result and
+          non-zero is interpreted as a true condition result.
+        </p>
+        <p>
+          The statement:
+        </p>
+        <literallayout indent="no">
+<em>return_stmt</em>: <b>return</b> <em>expr</em> ';'</literallayout>
+        <p indent="no">
+          causes a value to be returned from the nearest enclosing
+          procedure. This statement is not legal at module
+          scope. Any statement following a <progident>return</progident>
+          statement will not be executed.
+        </p>
+      </sect2>
+      <sect2>
+        <title>General Statements</title>
+        <p>
+          The traditional syntax for assignment is accepted, and
+          statements may be executed for side effects:
+        </p>
+        <literallayout indent="no">
+<em>stmt</em>: <em>expr</em> '=' <em>expr</em> ';'
+<em>stmt</em>: <em>expr</em> ';'</literallayout>
+        <p indent="no">
+          The left hand side of an assignment must be an
+          ``lvalue''. That is: an identifier bound in the current
+          environment, a field of an object, or a slot of an array.
+        </p>
+        <p>
+          Sequences of statements may be surrounded by braces to form a
+          statement block:
+        </p>
+        <literallayout indent="no">
+<em>block</em>: '{' <em>block_stmt</em><sup>+</sup> '}'
+<em>block_stmt</em>: <em>stmt</em>
+  | <em>return_stmt</em>
+  | <em>def_stmt</em></literallayout>
+        <p indent="no">
+          A block is not a legal statement.
+          The value of a block is the value of the last executed statement
+          within the block.
+        </p>
+        <p>
+          Diagnostics may be obtained during execution through two
+          <progident>print</progident> statements:
+        </p>
+        <literallayout indent="no">
+<em>stmt</em>: <b>print</b> <em>expr</em>
+  | <b>print</b> '*' <em>expr</em></literallayout>
+        <p indent="no">
+          The first prints the value of the expression
+          <em>expr</em>. If <em>expr</em> is a capability-valued
+          expression denoting an object, the second prints the fields
+          of the object in human-readable form.
+        </p>
+        <p>
+          The print statements <em>may</em> be dropped shortly in
+          favor of comparable built-in procedures.
+        </p>
+      </sect2>
+    </sect1>
+    <sect1>
+      <title>Expressions</title>
+      <p>
+        <command>mkimage</command> provides both the conventional
+        ``basic'' expressions and a number of expressions that are
+        particular to the problem of system image construction.
+      </p>
+      <sect2>
+        <title>Basic Expressions</title>
+        
+        <p>
+          <command>mkimage</command> supports the traditional infix
+          arithmetic, comparison, and boolean negation operators with
+          the usual precedence:
+        </p>
+        <literallayout>
+<em>expr</em>: '-' <em>expr</em>
+<em>expr</em>: <em>expr</em> <em>arithop</em> <em>expr</em>
+<em>expr</em>: <em>expr</em> <em>cmpop</em> <em>expr</em>
+<em>expr</em>: '!' <em>expr</em>
+<em>arithop</em>: '-' | '+' | '/' | '*' | '%'
+<em>cmpop</em>: '&lt;' | '&gt;' | '&lt;=' | '&gt;=' 
+  | '==' | '!='</literallayout>
+        <p>
+          Arbitrary-precision integer literals, double-precision floating
+          point values, and strings are valid expressions:
+        </p>
+        <literallayout>
+<em>expr</em>: Int | Float | String</literallayout>
+        <p>
+          The identifiers <progident>true</progident> and
+          <progident>false</progident> are built-in
+          literals:<footnote><p>True and false are not currently implemented.</p>
+          </footnote>
+        </p>
+        <literallayout>
+<em>expr</em>: <b>true</b> | <b>false</b></literallayout>
+        <p>
+          Procedure calls are expressions written in the usual way:
+        </p>
+        <literallayout>
+<em>expr</em>: <em>expr</em> '(' <em>expr</em><sup>*</sup> ')'</literallayout>
+      </sect2>
+      <sect2>
+        <title>Vector and Environment Expressions</title>
+        <p>
+          If <progident>env</progident> is a environment-valued
+          expression, and <progident>ident</progident> is a field of the
+          corresponding object, then: <progident>env.ident</progident>
+          is an lvalue expression denoting the location of that field.
+          When this appears in a use-occurrence, it is automatically
+          promoted to the <em>value</em> of the field.
+        </p>
+        <literallayout>
+<em>expr</em>: <em>expr</em> '.' Ident</literallayout>
+        <p>
+          For each of the objects defined in the Coyotos
+          specification, if <em>expr</em> is a capability-valued
+          expression naming one of these objects then <em>expr</em> is
+          also an environment-valued expression whose identifiers are
+          the fields of the object. For example:
+        </p>
+        <literallayout>
+<em>;references the fault code slot:</em>
+processCap.faultCode
+<em>;references the GPT capability array:</em>
+gpt.cap</literallayout>
+        <p>
+          If <progident>evec</progident> is an expression denoting an
+          array, and <progident>ndx</progident> is an
+          integer-valued expression, then:
+          <progident>evec[ndx]</progident> is an lvalue expression
+          denoting a slot in that array (or raises an exception if
+          bounds are violated).
+          When this appears in a use-occurrence, it is automatically
+          promoted to the <em>value</em> of the field.
+        </p>
+        <literallayout>
+<em>expr</em>: <em>expr</em> '[' <em>expr</em> ']'</literallayout>
+        <p indent="no">
+          For example:
+        </p>
+        <literallayout>
+<em>;references to a capability register:</em>
+processCap.capReg[ndx]
+<em>;references to a GPT capability slot:</em>
+gpt.cap[2]</literallayout>
+        <p>
+          Environment-valued and vector-valued expressions are obtained
+          by calling various built-in library procedures within the
+          <command>mkimage</command> runtime. A capability page
+          capability is a vector-valued expression. The
+          <progident>cap</progident> field of a GPT is a vector-valued
+          expression.
+        </p>
+      </sect2>
+      <sect2>
+        <title>Block Expressions</title>
+        <p>
+          A statement block is an expression whose value is the value
+          of the last statement. Note that this subsumes the need for
+          a local binding construct:
+        </p>
+        <literallayout>
+def a = { def i = 1; i + 3; };</literallayout>
+      </sect2>
+    </sect1>
+  </subpart>
+  <subpart>
+    <title>Built-In Procedures</title>
+    <sect1>
+      <title>Kernel Object Constructors</title>
+      <p>
+        For each kernel capability defined by the Coyotos kernel,
+        there is a corresponding constructor function in the runtime
+        library that returns this capability. In some cases the
+        capability is a ``miscellaneous'' capability that does not
+        designate an object. In other cases the capability designates
+        an object and a call to the constructor function has the side
+        effect of adding an object of that type to the coyotos image
+        that is under construction:
+      </p>
+      <deflist>
+        <defli>
+          <label>Window(<em>offset</em>)</label>
+          <li>
+            <p>
+              Returns a window capability into the background space
+              with the specified integer-valued offset.
+            </p>
+          </li>
+        </defli>
+        <defli>
+          <label>LocalWindow(<em>offset</em>, <em>slot</em>)</label>
+          <li>
+            <p>
+              Returns a local window capability into the space named
+              by <em>slot</em> with the specified integer-valued
+              offset.
+            </p>
+          </li>
+        </defli>
+        <defli>
+          <label>make_process(<em>bank</em>)</label>
+          <li>
+            <p>
+              Given a capability <em>bank</em> to a space bank,
+              allocates a process object within the image and returns
+              a process capability to it.
+            </p>
+          </li>
+        </defli>
+        <defli>
+          <label>make_gpt(<em>bank</em>)</label>
+          <li>
+            <p>
+              Given a capability <em>bank</em> to a space bank,
+              allocates a GPT object within the image and returns a
+              GPT capability to it.
+            </p>
+          </li>
+        </defli>
+        <defli>
+          <label>make_endpoint(<em>bank</em>)</label>
+          <li>
+            <p>
+              Given a capability <em>bank</em> to a space bank,
+              allocates an endpoint object within the image and returns
+              an endpoint capability to it.
+            </p>
+          </li>
+        </defli>
+        <defli>
+          <label>make_page(<em>bank</em>)</label>
+          <li>
+            <p>
+              Given a capability <em>bank</em> to a space bank,
+              allocates a page object within the image and returns
+              a page capability to it.
+            </p>
+          </li>
+        </defli>
+        <defli>
+          <label>make_cappage(<em>bank</em>)</label>
+          <li>
+            <p>
+              Given a capability <em>bank</em> to a space bank,
+              allocates a page object within the image and returns a
+              page capability to it.
+            </p>
+          </li>
+        </defli>
+        <defli>
+          <label>enter(<em>cap</em>)</label>
+          <li>
+            <p>
+              Fabricates an entry capability to the endpoint named by
+              <em>cap</em>. The protected payload value of the
+              fabricated capability will match the protected payload
+              value stored in the target endpoint or receive queue.
+            </p>
+          </li>
+        </defli>
+        <defli>
+          <label>NullCap()</label>
+          <li>
+            <p>
+              Returns a null capability.
+            </p>
+          </li>
+        </defli>
+        <defli>
+          <label>KeyBits()</label>
+          <li>
+            <p>
+              Returns the KeyBits capability.
+            </p>
+          </li>
+        </defli>
+        <defli>
+          <label>Discrim()</label>
+          <li>
+            <p>
+              Returns the Discrim capability.
+            </p>
+          </li>
+        </defli>
+        <defli>
+          <label>Range()</label>
+          <li>
+            <p>
+              Returns the Range capability.
+            </p>
+          </li>
+        </defli>
+        <defli>
+          <label>Sleep()</label>
+          <li>
+            <p>
+              Returns the Sleep capability.
+            </p>
+          </li>
+        </defli>
+        <defli>
+          <label>Range()</label>
+          <li>
+            <p>
+              Returns the Sleep capability.
+            </p>
+          </li>
+        </defli>
+        <defli>
+          <label>IrqCtl()</label>
+          <li>
+            <p>
+              Returns the IrqCtl capability.
+            </p>
+          </li>
+        </defli>
+        <defli>
+          <label>SchedCtl()</label>
+          <li>
+            <p>
+              Returns the SchedCtl capability.
+            </p>
+          </li>
+        </defli>
+        <defli>
+          <label>Checkpoint()</label>
+          <li>
+            <p>
+              Returns the Checkpoint capability.
+            </p>
+          </li>
+        </defli>
+        <defli>
+          <label>ObStore()</label>
+          <li>
+            <p>
+              Returns the ObStore capability.
+            </p>
+          </li>
+        </defli>
+        <defli>
+          <label>IoPerm()</label>
+          <li>
+            <p>
+              Returns the IoPerm capability.
+            </p>
+          </li>
+        </defli>
+        <defli>
+          <label>PinCtl()</label>
+          <li>
+            <p>
+              Returns the PinCtl capability.
+            </p>
+          </li>
+        </defli>
+      </deflist>
+      <p>
+        There is also a procedure for duplicating an existing object:
+      </p>
+      <deflist>
+        <defli>
+          <label>dup(<em>bank</em>, <em>cap</em>)</label>
+          <li>
+            <p>
+              Given a capability <em>bank</em> to a space bank,
+              duplicates the object named be <em>cap</em> and returns
+              a capability to the duplicate.
+            </p>
+          </li>
+        </defli>
+      </deflist>
+    </sect1>
+    <sect1>
+      <title>Capability Manipulation</title>
+      <p>
+        The following built-in procedures manipulate and/or modify
+        existing capabilities:
+      </p>
+      <deflist>
+        <defli>
+          <label>readonly(<em>cap</em>)</label>
+          <li>
+            <p>
+              Returns a read-only variant of the passed capability
+              <em>cap</em> (sets the RO restriction bit).
+            </p>
+          </li>
+        </defli>
+        <defli>
+          <label>weaken(<em>cap</em>)</label>
+          <li>
+            <p>
+              Returns a read-only and weak variant of the passed
+              capability <em>cap</em> (sets the WK, RO restriction bits).
+            </p>
+          </li>
+        </defli>
+        <defli>
+          <label>noexec(<em>cap</em>)</label>
+          <li>
+            <p>
+              Returns a non-executable variant of the passed
+              capability <em>cap</em> (sets the NX restriction bit).
+            </p>
+          </li>
+        </defli>
+        <defli>
+          <label>opaque(<em>gpt-cap</em>)</label>
+          <li>
+            <p>
+              Given a GPT capability <em>gpt-cap</em>, returns an
+              opaque capability to the same GPT.
+            </p>
+          </li>
+        </defli>
+        <defli>
+          <label>guard(<em>cap</em>, <em>guard</em> [, <em>l2g</em>])</label>
+          <li>
+            <p>
+              Given a memory object capability <em>cap</em>, returns a
+              capability with the same permissions whose guard value
+              is set to (<em>guard</em>&gt;&gt;<em>l2v</em>). If
+              <em>l2g</em> is not specified, the capability's existing
+              <em>l2g</em> value is used.
+            </p>
+          </li>
+        </defli>
+      </deflist>
+    </sect1>
+    <sect1>
+      <title>Space and Object Manipulation</title>
+      <p>
+        There are a variety of functions for manipulating address
+        spaces. It is probably advisable to experiment with these
+        using <em>print_tree</em> and <em>print_space</em> to fully
+        understand what they do.
+      </p>
+      <deflist>
+        <defli>
+          <label>readfile(<em>bank</em>, <em>string</em>)</label>
+          <li>
+            <p>
+              Given a capability <em>bank</em> to a space bank, and a
+              file name <em>string</em>, reads the file whose path is
+              provided in <em>string</em> and returns an appropriate
+              address space capability. This routine will allocate any
+              GPT and page structures necessary to fabricate the
+              address space.
+            </p>
+          </li>
+        </defli>
+        <defli>
+          <label>loadimage(<em>cap</em>, <em>string</em>)</label>
+          <li>
+            <p>
+              Given a capability <em>bank</em> to a space bank, loads
+              an executable file from the file named by
+              <em>string</em> into an address space in executable
+              form. The file name should name an ELF executable. The
+              result is an address space that is populated exactly as
+              needed to contain the loadable sections specified in the
+              ELF file's program header.  This routine will allocate
+              any GPT and page structures necessary to fabricate the
+              address space.
+            </p>
+            <p>
+              In contrast to <em>readfile</em>, this procedure returns
+              an environment-valued result. The environment will have
+              bound identifiers;
+            </p>
+            <table latex.colspec="lp{2in}">
+              <tbody>
+                <tr>
+                  <td><b>pc</b></td>
+                  <td>An integer-valued expression containing the
+                    binary's entry point.</td>
+                </tr>
+                <tr>
+                  <td><b>space</b></td>
+                  <td>A capability-valued expression containing the
+                    fabricated address space.</td>
+                </tr>
+              </tbody>
+            </table>
+          </li>
+        </defli>
+        <defli>
+          <label>guarded_space(<em>bank</em>, <em>cap</em>, <em>guard</em> [, <em>l2g</em>])</label>
+          <li>
+            <p>
+              Given a capability <em>bank</em> to a space bank, and a
+              capability <em>cap</em> to an existing address space,
+              returns a new capability to the same space having the
+              specified <em>guard</em> and <em>l2g</em> values. If
+              <em>l2g</em> is not provided, the current <em>l2g</em>
+              value of the address space capability is used.
+            </p>
+            <p>
+              In contrast to <em>guard</em>, which acts on the
+              capability alone, <em>guarded_space</em> may insert
+              additional GPT structures in order to satisfy a guard
+              request that would not fit trivially into the guard
+              field.
+            </p>
+          </li>
+        </defli>
+        <defli>
+          <label>insert_subspace(<em>bank</em>, <em>spc</em>, <em>subspc</em>, <em>offset</em> [, <em>l2arg</em>])</label>
+          <li>
+            <p>
+              Given capabilities a capability <em>bank</em> to a space
+              bank, and capabilities <em>spc</em> and <em>subspc</em>
+              that name existing address spaces, inserts the address
+              space named by <em>subspc</em> into the address space
+              named by <em>spc</em> at the specified
+              <em>offset</em>. If the effective size of
+              <em>subspc</em> exceeds the effective size of
+              <em>spc</em>, returns <em>subspc</em>.
+            </p>
+            <p>
+              The <em>l2arg</em> value, if supplied, gives the
+              <em>effective size</em> of the subspace being inserted,
+              which may be either larger or smaller than the actual
+              size of the subspace. In this case, the subspace is
+              inserted into the containing space <em>as if</em> it
+              were of the size indicated by <em>l2arg</em>.
+            </p>
+          </li>
+        </defli>
+        <defli>
+          <label>print_tree(<em>cap</em>)</label>
+          <li>
+            <p>
+              Given an address space capability <em>cap</em>,
+              recursively prints the objects comprising the address
+              space in raw form.
+            </p>
+          </li>
+        </defli>
+        <defli>
+          <label>print_space(<em>cap</em>)</label>
+          <li>
+            <p>
+              Given an address space capability <em>cap</em>,
+              recursively prints the objects comprising the address
+              space. The output is designed to provide a picture of
+              what pages are mapped where and with what permissions.
+            </p>
+          </li>
+        </defli>
+      </deflist>
+    </sect1>
+  </subpart>
+  <appendix>
+    <title>Change History</title>
+    <p>This section is an attempt to track the changes to this
+      document by hand. It may not always be accurate!</p>
+    <p>This section is non-normative.</p>
+    <sect1>
+      <title>Version 0.2</title>
+      <p>
+        Complete rewrite reflecting new implementation.
+      </p>
+    </sect1>
+    <sect1>
+      <title>Version 0.1</title>
+      <p>
+        Initial capture.
+      </p>
+    </sect1>
+  </appendix>
+  <bibliography>
+    <bibentry label="shapiro2007coyotos">
+      J. S. Shapiro, Jonathan W. Adams, Eric Northup, M. Scott
+      Doerrie, Swaroop Sridhar, Neal H. Walfield, and Marcus
+      Brinkmann.  <doctitle>Coyotos Microkernel
+      Specification</doctitle>, 2007, available online at <link
+      href="http://www.coyotos.org">www.coyotos.org</link>.
+    </bibentry>
+    <bibentry label="unicode410">
+      Unicode Consortium. The Unicode Standard, version 4.1.0, defined
+      by <doctitle>The Unicode Standard Version 4.0</doctitle>,
+      Addison Wesley, 2003, ISBN 0-321-18578-1, as amended by
+      <doctitle>Unicode 4.0.1</doctitle> and by <doctitle>Unicode
+        4.1.0</doctitle>. <tt>http://www.unicode.org</tt>.
+    </bibentry>
+  </bibliography>
+  </article>
+
+<!-- Local Variables: -->
+<!-- indent-tabs-mode:nil -->
+<!-- End: -->

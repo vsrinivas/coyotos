@@ -1,0 +1,12 @@
+package test;
+
+/// @brief Interface to test the case where four register words go in
+/// both directions.
+///
+/// This is an i386-specific test, to check a potential register
+/// allocator problem when the output is not optimized.
+interface TwoStrings {
+  typedef sequence<char, 256> boundedString;
+
+  void needsFourWords(boundedString msg, out boundedString reply);
+};

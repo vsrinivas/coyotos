@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sbox>
+<sbox>
+<!--   <word label="oid" szlabel="64_t"/> -->
+<!--   <word label="allocCount" szlabel="24"/> -->
+  <word label="flags" szlabel="32"/>
+  <word label="faultCode" szlabel="32"/>
+  <word label="faultInfo" szlabel="32/64"/>
+  <word label="actSaveArea" szlabel="32/64"/>
+  <word label="softInts" szlabel="32"/>
+  <word label="brand" szlabel="cap_t"/>
+  <word label="cohort" szlabel="cap_t"/>
+  <word label="schedule" szlabel="cap_t"/>
+  <word label="addrSpace" szlabel="cap_t"/>
+  <word label="handler" szlabel="cap_t"/>
+  <word label="capReg[0..31]" szlabel="cap_t"/>
+  <word label="rcvParam[0..15]" szlabel="bufitem_t"/>
+  <word label="nParam" szlabel="uint32_t"/>
+  <word label="(untyped parameter scratchpad)" szlabel="32[32]/64[16]"/>
+  <word label="(architecture registers)" szlabel="32/64*"/>
+</sbox>

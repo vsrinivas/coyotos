@@ -1,0 +1,13 @@
+module codepage {
+  def x = make_page(PrimeBank);
+  x[0] = 0xde;
+  x[1] = 0xad;
+  x[2] = 0xbe;
+  x[3] = 0xef;
+
+  print *x;
+}
+
+// Local Variables:
+// mode:c
+// End:

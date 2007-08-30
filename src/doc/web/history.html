@@ -1,0 +1,391 @@
+<html xml:lang="en" lang="en">
+  <head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <title>The Path to Coyotos</title>
+  <link rel="stylesheet" type="text/css" media="all" href="./styles.css">
+</head>
+  <body>
+<div id="topnav"><div class="wrapper">
+<a class="noborder" target="_top" href="./topnav/../index.html">
+      <img src="./topnav/home.fg.png" alt="Home">
+    </a><a class="noborder" target="_top" href="./topnav/../docs/index.html">
+      <img src="./topnav/docs.bg.png" alt="Docs">
+    </a><a class="noborder" target="_top" href="./topnav/../projects/index.html">
+      <img src="./topnav/projects.bg.png" alt="Projects">
+    </a><a class="noborder" target="_top" href="./topnav/../download/index.html">
+      <img src="./topnav/get_it.bg.png" alt="Get It">
+    </a>
+</div></div>
+<div id="leftnav"><div class="wrapper">
+<h1>News</h1>
+<p>
+      <b>4 March 2007</b>: <a href="./docs/ukernel/spec.html" target="_top"><em>Coyotos Microkernel Specification 0.4</em></a>
+    </p>
+<p>
+      <b>4 March 2007</b>: <a href="./http://www.bitc-lang.org" target="_top">New Bitc Web Site</a>
+    </p>
+<p>
+      <b>2 March 2007</b>: <a href="./docs/build/mkimage.html" target="_top"><em>MkImage Specification 0.2</em></a>
+    </p>
+<h1>Info</h1>
+<p>
+      <a href="./people.html">People</a><br>
+      <a href="./history.html">History</a>
+    </p>
+</div></div>
+<div id="content"><div class="wrapper">
+    <h1 class="title">The Path to Coyotos</h1>
+    <p>
+      Coyotos is the successor to the <a href="http://www.eros-os.org" shape="rect">EROS</a> system, which is in
+      turn the successor to the <a href="http://www.cis.upenn.edu/~KeyKOS" shape="rect">KeyKOS</a>
+      system. Since the system inherits 30 years of prior research
+      and development history, it seems appropriate to briefly
+      describe some of that history and the prople who contributed
+      to it.
+    </p>
+    <p>
+      The description that follows reflects the point of view of
+      Jonathan Shapiro. Like all perspectives, I'm sure it's wrong
+      in several details and I will have occasion to correct
+      it. Hopefully, the flavor of events should come through.
+    </p>
+    <h1>GNOSIS/KeyKOS</h1>
+    <p>
+      The earliest system in the Coyotos ancestry is the <a href="http://www.cis.upenn.edu/~KeyKOS" shape="rect">KeyKOS</a>
+      system. Architected by Norm Hardy, Charlie Landau, and Bill
+      Frantz, KeyKOS was a highly robust software-based capability
+      system. Charlie had previously built a capability-based
+      operating system at Lawrence Livermore National Laboratory,
+      and before that, worked with the capability-based PDP-1
+      spawned by Jack Dennis at MIT.. Norm had been a member of the
+      Advanced Computing Systems group at IBM (the group that
+      brought us both the S/360 and the RISC concept). Collectively,
+      this group crafted a system that combined extensive practical
+      experience with capability systems with the ``fixed resource''
+      biases of a processor architect. The result was spectactularly
+      robust.
+    </p>
+    <p>
+      Initially called GNOSIS (Great New Operating System In the
+      Sky), the first implementation was built at Tymshare, Inc. It
+      was written in assembly language on the IBM System/360
+      platform. GNOSIS issued its first terminal message in 1976,
+      and ran its first production application in 1983.  The last
+      GNOSIS/KeyKOS system was turned off circa 2000 after running
+      without interruption for 17 years.
+    </p>
+    <p>
+      While a technical <em>tour de force</em>, GNOSIS ultimately
+      was the victim of timing and finance. Tymshare was sold off to
+      McDonell-Douglas for $14M, which immediately spun out various
+      residual Tymshare technologies into startup companies. Among
+      them, GNOSIS was spun out into a new company, Key Logic,
+      Inc. and the name was changed to KeyKOS.
+    </p>
+    <p>
+      After the usual startup company financial challenges, Key
+      Logic obtained investment from Omron, Inc. (then a player in
+      the workstation business). As part of this agreement, Key
+      Logic rebuilt the KeyKOS system in C and ported it to the
+      Omron Luna 88k. They also constructed a UNIX-like
+      environment. This work was completed just in time for Omron to
+      withdraw from the workstation market. After a struggle to
+      obtain further financing, Key Logic Inc. ceased operations in
+      1990. The C-based system has never been released in product
+      form.
+    </p>
+    <p>
+      My own contact with this work came in 1990. As a co-founder of
+      HaL computer systems, I became involved in evaluating various
+      operating system platforms for use by HaL. In 1990, UNIX
+      robustness wasn't great, and we hoped to find something that
+      would be largely operator free and highly robust. Key Logic
+      made a presentation to us about KeyKOS. For reasons that were
+      largely political, HaL decided not to gamble on KeyKOS, but I
+      became convinced that KeyKOS offered something worthwhile.
+    </p>
+    <p>
+      After leaving HaL, I spent about a year starting in 1991
+      working with Ann Hardy (former V.P. of Software at Tymshare,
+      and President of Key Logic) to form a new company that would
+      carry the work forward. That effort stopped when it became
+      clear that the shell of Key Logic, Inc. was unable to execute
+      a license for KeyKOS (a long, sad story). Many years later,
+      Ann's next company (Agorics, Inc.) would eventually obtain a
+      license for KeyKOS, but by then EROS was out and the KeyKOS
+      license was largely moot.
+    </p>
+    <h1>From KeyKOS to EROS</h1>
+    <p>
+      Frustrated with the KeyKOS licensing problem, Norm Hardy and I
+      resolved to reverse engineer KeyKOS. I had never seen the
+      KeyKOS code (I still haven't), and I spent several months
+      ``deposing'' Norm on how KeyKOS was structured. That entire
+      session of discussions was recorded on tape, and to the best
+      of our knowledge everything that Norm disclosed had previously
+      been disclosed by Key Logic in one form or another — it
+      had just never been accumulated together in cohesive form. In
+      1991, I sat down to do the first EROS implementation. Having
+      recently finished work on <a target="amazon" href="http://www.amazon.com/exec/obidos/tg/detail/-/0131276638/qid=1101785553/sr=1-1/ref=sr_1_1/102-8001556-7998557?v=glance&amp;s=books" shape="rect"><em>A
+	  C++ Toolkit</em></a>, I started the first implementation in
+      C++.
+    </p>
+    <p>
+      That early EROS implementation is still lying around here
+      somewhere, but it bares little resemblance to the EROS that
+      exists today. The goal then was to faithfully duplicate
+      KeyKOS. As the work progressed, it became clear that there
+      were some fairly challenging architectural and verification
+      issues to be solved. Over time, the EROS work became as much
+      my own as Norm's (and I think Norm would agree with that). In
+      1993, I decided to go back to graduate school for a
+      Ph.D.. EROS went with me and became the focus of my
+      dissertation work.
+    </p>
+    <p>
+      EROS owes an incredible intellectual debt to Norm, Charlie,
+      and Bill. I have always tried to be scrupulous in
+      acknowledging this debt. The final EROS system added a number
+      of key advances relative to KeyKOS:
+    </p>
+    <ul>
+      <li>
+	<p>
+	  The final EROS system is a true microkernel. While KeyKOS
+	  was <a target="_top" href="http://www.cis.upenn.edu/~KeyKOS/NanoKernel/NanoKernel.html" shape="rect">described</a>
+	  as a microkernel, in hindsight it wasn't. Drivers were
+	  included in the kernel, and a modern implementation would
+	  have complexity only slightly less than that of Linux. The
+	  final EROS system moved all drivers into user-mode
+	  applications. In the process it introduced an interesting
+	  ``multiple worlds'' split between the persistent system
+	  and the non-persistent system that I should write up some
+	  day.
+	</p>
+      </li>
+      <li>
+	<p>
+	  While the KeyKOS confinement mechanism was <a target="_top" href="http://www.cis.upenn.edu/~KeyKOS/Patent/Patent.html" shape="rect">patented</a>
+	  in 1986, it was never formally verified. A verification
+	  proof of an alternative implementation was <a target="_top" href="http://www.eros-os.org/papers/oakland2000.ps" shape="rect">published</a>
+	  as part of the EROS work in 2000. The KeyKOS patent
+	  expired in December 2004.
+	</p>
+      </li>
+      <li>
+	<p>
+	  The KeyKOS performance <a target="_top" href="http://www.cis.upenn.edu/~KeyKOS/NanoKernel/NanoKernel.ps.gz" shape="rect">reported</a>
+	  in 1992 was comparable to that of Mach — fast for
+	  the day, but quite slow by current standards. By 1996, the
+	  <a target="_top" href="http://www.eros-os.org/papers/iwooos96-ipc.ps" shape="rect">published</a>
+	  EROS results were competative with the L4, then recognized
+	  as teh fastest microkernel. The performance was faster
+	  still when reported at <a target="_top" href="http://www.eros-os.org/papers/sosp99-eros-preprint.ps" shape="rect">OSDI</a>
+	  in 1999.
+	</p>
+      </li>
+      <li>
+	<p>
+	  The EROS work included a new formal access model for
+	  capability systems. Building on prior work by Jones,
+	  Lipton, Snyder, and Bishop, this model provided the first
+	  accounting for the safety of copy on write and memory
+	  metadata in the presence of untrusted user-mode memory
+	  managers.
+	</p>
+      </li>
+    </ul>
+    <p>
+      After a brief stint at IBM, I joined the Computer Science
+      faculty at Johns Hopkins University, and my group spent
+      several years evaluating the EROS system (and also pursuing
+      other research directions). This work:
+    </p>
+    <ul>
+      <li>
+	<p>
+	  Built and evaluated a high-performance network stack
+	  (USENIX 2004),
+	</p>
+      </li>
+      <li>
+	<p>
+	  Built and evaluated a trusted window system (<a target="_top" href="http://srl.cs.jhu.edu/pubs/SRL2003-05.pdf" shape="rect">paper</a>),
+	</p>
+      </li>
+      <li>
+	<p>
+	  Explored static model checking of kernel invariants (<a target="_top" href="http://srl.cs.jhu.edu/pubs/SRL2003-06.pdf" shape="rect">paper</a>),
+	</p>
+      </li>
+      <li>
+	<p>
+	  Looked at vulnerabilities inherent in synchronous IPC systems (<a target="_top" href="http://www.eros-os.org/papers/IPC-Assurance.ps" shape="rect">paper</a>),
+	</p>
+      </li>
+      <li>
+	<p>
+	  Started to lay groundwork for an integrated language/OS understanding
+	  of capability semantics (<a target="_top" href="http://srl.cs.jhu.edu/pubs/SRL2003-03.pdf" shape="rect">paper</a>),
+	</p>
+      </li>
+      <li>
+	<p>
+	  Attempted (and failed) to build a secure web browser on
+	  the EROS platform, and
+	</p>
+      </li>
+      <li>
+	<p>
+	  Has significantly influenced the next-generation of the L4
+	  system, which is a capability-based system borrowing many
+	  ideas from EROS.
+	</p>
+      </li>
+    </ul>
+    <p>
+      My conclusions from this work can be summarized as follows:
+    </p>
+    <ul>
+      <li>
+	<p>
+	  The various experiments validate the
+	  <em>paradigm</em>. The concepts of the EROS system are
+	  sound, and they compose with exactly the kind of power and
+	  flexibility that I was struggling to articulate in 1991.
+	</p>
+      </li>
+      <li>
+	<p>
+	  For a bunch of minor reasons, there were pieces of the
+	  EROS architecture that needed to be rebuilt in order to
+	  make application-level porting easier. In particular, we
+	  needed to get rid of persistence and improve support for
+	  multithreading in the IPC and scheduling primitives. The
+	  threading changes aren't profound, but eliminating
+	  persistence lets us greatly simplify the architecture and
+	  do a much cleaner implementation. Together these two
+	  changes will let us bring up a POSIX-like environment,
+	  which is crucial for application portability.
+	</p>
+      </li>
+      <li>
+	<p>
+	  As a consequence of our success with static model
+	  checking, I came to realize that end to end correctness
+	  verification may be possible for an EROS-like system.
+	</p>
+      </li>
+    </ul>
+    <p>
+      The first two issues could have been addressed by changes to
+      EROS. Verification required a new foundation, and this is a
+      major focus of the Coyotos effort.
+    </p>
+    <h1>Coyotos</h1>
+    <p>
+      Coyotos picks up where EROS left off. From an application
+      builder's perspective, the major change is that Coyotos
+      removes <a target="_top" href="http://www.eros-os.org/papers/storedesign2002.pdf" shape="rect">persistence</a>
+      from the architecture. This leads to many simplifications in
+      the implementation, and it has a bunch of consequences for the
+      system utilities, but an application designer probably doesn't
+      care that much — if anything, it makes the system
+      ``feel'' much more conventional. It can fairly be said that
+      EROS suffered from some degree of ``second system syndrome.''
+      We are explicitly trying <em>not</em> to introduce major
+      architectural innovation with Coyotos.
+    </p>
+    <p>
+      The other change is the move to verification. Coyotos is being
+      implemented in a new systems programming language (BitC) with
+      new ideas about theorem prover support for systems
+      programming. Our research goal is to produce the first open
+      source system with an ``open proofs'' trail and the tools
+      necessary to allow a third party to independently verify our
+      results. If we are successful, we will produce the first
+      general-purpose operating system and utility set with
+      end-to-end verification of security and correctness properties
+      that extends all the way through to the code. If we are
+      <em>not</em> successful, we will merely move the ball forward
+      substantially towards this goal.
+    </p>
+    <p>
+      Since this goal is obviously daft, it may be relevant to say
+      something about why I think it may be possible to pull it off:
+    </p>
+    <ul>
+      <li>
+	<p>
+	  Following the model of EROS and KeyKOS, Coyotos is an
+	  atomic kernel. This <em>dramatically</em> simplifies the
+	  verification problem.
+	</p>
+      </li>
+      <li>
+	<p>
+	  The semantics of capabilities is very naturally expressed
+	  as either an operational or a denotational
+	  semantics. Stating the correctness properties that we are
+	  trying to verify is relatively easy. This is in contrast
+	  to most operating systems, where simply capturing the
+	  external specification in formal terms is a multi-year
+	  effort for a team of experts.
+	</p>
+      </li>
+      <li>
+	<p>
+	  Unlike many previous attempts, we are willing to constrain
+	  both our programming language and our implementation
+	  design patterns to achieve the goal of verification. This
+	  is impractical under most circumstances.
+	</p>
+      </li>
+      <li>
+	<p>
+	  Most similar efforts (with the notable exception of PSOS)
+	  have been driven by people whose ultimate interest is
+	  theorem proving. The ultimate interest of our group is
+	  putting a real system into the field, and we view theorem
+	  proving as an important tool in service of this goal. This
+	  leads us to have a different view of how the tools should
+	  be architected, which <em>may</em> make a difference.
+	</p>
+      </li>
+      <li>
+	<p>
+	  It is exceedingly hard to assemble all of the necessary
+	  expertise in one room. It is my incredible good fortune to
+	  have in my group at Hopkins a set of people whose talents
+	  span programming languages, compilers, high-performance
+	  kernels, and (now) program verification. Better still, the
+	  compiler guy knows low-level systems stuff, the kernel guy
+	  knows goal-directed search, and the verification guy is a
+	  pretty good languages and kernel designer. I'm
+	  excited. Time will tell.
+	</p>
+      </li>
+    </ul>
+    <p>
+      An initial (early) view of our intended approach can be found
+      in the paper <em>Towards a Verified, General-Purpose Operating
+	System Kernel</em>, which can be found in the list of
+      publications under the ``Docs'' tab above.
+    </p>
+    <p>
+      I should also say that <em>my</em> role this time around won't
+      involve much code building. I'm sure that I will be unable to
+      resist the temptation to build the odd utility or two, and I'm
+      fairly sure that Eric, Swaroop, and Scott will firmly and
+      fondly tell me that I'm being a pain in the ass when I do. The
+      work on Coyotos will be done by this incredible team of
+      students, and I'm really looking forward to seeing what they
+      will come up with!
+    </p>
+    <p align="right">
+      Jonathan S. Shapiro<br>
+	December, 2004
+    </p>
+  </div></div>
+</body>
+</html>

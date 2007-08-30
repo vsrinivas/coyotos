@@ -1,0 +1,26 @@
+#!/bin/ksh
+
+if [[ -z $COYOTOS_ROOT ]]; then
+    dir="$PWD/foo"
+    COYOTOS_ROOT=${dir%%/coyotos/src/*}
+    if [[ $COYOTOS_ROOT = $dir ]]; then
+	echo "$dir: cannot find COYOTOS_ROOT: $COYOTOS_ROOT"
+	exit 2;
+    fi
+    COYOTOS_ROOT=${COYOTOS_ROOT}/coyotos
+fi
+
+if [[ ! -d $COYOTOS_ROOT ]]; then
+    echo "COYOTOS_ROOT: $COYOTOS_ROOT is not a directory"
+    exit 2;
+fi
+
+# for now, we assume target is i386
+exec_cmd() {
+    echo "$@"
+    exec "$@"
+}
+exec_cmd /usr/bin/gdb \
+    -x $COYOTOS_ROOT/src/sys/arch/i386/scripts/coyotos.gdb \
+    "$@" \
+    $COYOTOS_ROOT/src/sys/arch/i386/kernel/BUILD/coyotos

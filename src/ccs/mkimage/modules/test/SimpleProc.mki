@@ -1,0 +1,28 @@
+//
+// A simple harness for user-level instruction test which need only
+// a single text and data page.
+//
+module SimpleProc {
+  export def text = make_page(PrimeBank);
+  export def data = make_page(PrimeBank);
+  export def cap = make_cappage(PrimeBank);
+
+  export def text_addr = 0x1000;    // address to put code page at
+  export def data_addr = 0x3000;    // address to put data page at
+  export def cap_addr  = 0x5000;    // address to put cap page at
+
+  export def proc = make_process(PrimeBank);
+  proc.faultCode = 25;
+  proc.faultInfo = text_addr;
+  proc.addrSpace = 
+    insert_subspace(PrimeBank,
+    insert_subspace(PrimeBank,
+    insert_subspace(PrimeBank, NullCap(),
+		    readonly(text), text_addr),
+		    data, data_addr),
+		    cap, cap_addr);
+}
+
+// Local Variables:
+// mode:c
+// End:

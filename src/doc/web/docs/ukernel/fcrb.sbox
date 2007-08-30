@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sbox>
+<sbox>
+  <wbox>
+    <field label="id" size="1"/>
+    <field label="bl" size="1"/>
+    <field label="pm" size="1"/>
+    <field label="reserved" size="29"/>
+  </wbox>
+  <word label="protectedPayload" szlabel="32"/>
+  <word label="recipient" szlabel="cap_t"/>
+  <word label="rcvQueue" szlabel="cap_t"/>
+  <wbox>	
+    <field label="MS" size="1"/>
+    <field label="extRcvDescrip" size="31" szlabel="archaddr_t"/>
+  </wbox>
+  <word label="w1" szlabel="ipcword_t"/>
+  <word label="w0" szlabel="ipcword_t"/>
+  <word label="c0" szlabel="cap_t"/>
+  <word label="c1" szlabel="cap_t"/>
+</sbox>

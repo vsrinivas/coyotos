@@ -1,0 +1,72 @@
+/* This image is a baseline image for all of the by-hand test cases.
+ * It fabricates a process address space consisting of three pages:
+ * one for text, one for data, one for capabilities.
+ *
+ * The various individual test cases import this module and then
+ * populate the code page according to need.
+ */
+
+module SimpleProc {
+  // For some clients we need a capability page in the image, 
+  // and we want the ASM code and the mkimage code to agree about its
+  // address. Easiest way to do that is to put the address into an
+  // exported enum here:
+
+  export enum addr { cap = 0x5000 };
+
+  export def proc = make_process(PrimeBank);
+
+  export def capPage = make_cappage(PrimeBank);
+
+  // Set up a reply endpoint for this process:
+  def ep = make_endpoint(PrimeBank);
+  ep.recipient = proc;
+  ep.pm = 1;
+
+  proc.capReg[1] = ep;
+
+  export def setupSpace(proc, fileName) {
+    def img = loadimage(PrimeBank,fileName);
+
+    // Add a capability page, because some tests want that:
+    def space =
+      insert_subspace(PrimeBank, img.space, capPage, addr.cap);
+
+    print_space(space);
+
+    proc.faultCode = 25;	/* Startup fault */
+    proc.faultInfo = img.pc;	/* Initial PC */
+    proc.addrSpace = space;
+
+    //    print img;
+    return img;
+  }
+
+  //  /* Construct an address consisting of three pages: one for text, one
+  //     for data, one for capabilities. */
+  //  proc.addrSpace = 
+  //    insert_subspace(PrimeBank,
+  //    insert_subspace(PrimeBank,
+  //    insert_subspace(PrimeBank, NullCap(),
+  //                    readonly(text), text_addr),
+  //                    data, data_addr),
+  //                    cap, cap_addr);
+  //
+  //
+  //  fillpage(text, 0x90);		/* Fill with NOP */
+
+  //   // utility function to set all characters in a page to a particular value
+  //   def setContents(page, beg, len, val) {
+  //	if (len <= 1) {
+  //	    page[beg] = val;
+  //	} else {
+  //	    setContents(page, beg, len / 2, val);
+  //	    def newbeg = beg + len / 2;
+  //	    def sizerndup = len + 1;
+  //	    def newlen = sizerndup / 2;
+  //	    setContents(page, newbeg, newlen, val);
+  //	}
+  //   }
+  //
+  //   setContents(text, 0, 4096, 0x90);  // 0x90 = NOP
+}

@@ -1,0 +1,96 @@
+<?xml version="1.0"?>
+<!DOCTYPE book PUBLIC "-//EROS Group//DTD OSDoc XML V0.1//EN"
+               "http://www.coyotos.org/OSDoc/DTD/osdoc-0.1.dtd" [
+<!ENTITY BaseVersion "0.1">
+]>
+  <book id="base-if" xmlns:xi="http://www.w3.org/2001/XInclude">
+  <docinfo>
+<!--     ptsz="12" twocolumn="yes" -->
+    <title>Coyotos Core Domain Interfaces</title>
+    <subtitle>Version &BaseVersion; (<em>in progress</em>)</subtitle>
+    <authorgroup>
+      <author>
+	<firstname>Jonathan</firstname>
+	<othername>S.</othername>
+	<surname>Shapiro</surname>
+	<degree>Ph.D.</degree>
+      </author>
+      <author>
+	<firstname>Jonathan</firstname>
+	<othername>W.</othername>
+	<surname>Adams</surname>
+      </author>
+      <affiliation>
+	<orgname>The EROS Group, LLC</orgname>
+      </affiliation>
+    </authorgroup>
+    <pubdate>March 26, 2007</pubdate>
+    <copyright>
+      <year>2007</year> 
+      <holder>The EROS Group, LLC</holder>
+      <copyterms>
+	Verbatim copies of this document may be duplicated or
+	distributed in print or electronic form for non-commercial
+	purposes.
+      </copyterms>
+    </copyright>
+    <legalnotice>
+      <p>
+	THIS SPECIFICATION IS PROVIDED ``AS IS'' WITHOUT ANY
+	WARRANTIES, INCLUDING ANY WARRANTY OF MERCHANTABILITY,
+	NON-INFRINGEMENT, FITNESS FOR ANY PARTICULAR PURPOSE, OR ANY
+	WARRANTY OTHERWISE ARISING OF ANY PROPOSAL, SPECIFICATION OR
+	SAMPLE.
+      </p>
+    </legalnotice>
+    <categories>
+      <category>dev/coyotos</category>
+    </categories>
+    <synopsis>
+      <p>Interface documentation for the core utility domains.</p>
+    </synopsis>
+  </docinfo>
+  <toc/>
+  <preface>
+    <title>Acknowledgments</title>
+    <p>
+      Many elements of the utility domain design described here are
+      derived from earlier work on the KeyKOS <cite
+      ref="hardy1985keykos"/> and EROS <cite
+      ref="shap1999fastcapsystem"/> operating systems.
+    </p>
+    <p>
+      Comments and suggestions concerning these interfaces are
+      welcome. They should be filed as bug or enhancement requests in
+      the Coyotos issue tracking system and/or discussed on the
+      <tt>coyotos-dev</tt> electronic mailing list. In order to send,
+      you must be subscribed to the list. The subscription interface
+      may be found at:
+    </p>
+    <blockquote>
+      <p>
+	<tt>http://www.coyotos.org/mailman/listinfo/coyotos-dev</tt>.
+      </p>
+    </blockquote>
+    <p>
+      In order to keep the mail archives readable, we ask that you
+      send only ``plain text'' emails.
+    </p>
+  </preface>
+  <xi:include href="Builder.xmli"/>
+  <xi:include href="Constructor.xmli"/>
+  <xi:include href="SpaceBank.xmli"/>
+  <bibliography>
+    <bibentry label="hardy1985keykos">
+      Norman Hardy. ``The KeyKOS Architecture.'' <doctitle>Operating
+        Systems Review</doctitle>, <b>19</b>(4),  October 1985,
+        pp. 8&ndash;25.
+    </bibentry>
+    <bibentry label="shap1999fastcapsystem">
+      J. S. Shapiro, J. M. Smith, and D. J. Farber. ``EROS, A Fast
+      Capability System'' <doctitle>Proc. 17th ACM Symposium on Operating
+      Systems Principles</doctitle>. Dec 1999. pp. 170&ndash;185. Kiawah
+      Island Resort, SC, USA.
+    </bibentry>
+  </bibliography>
+</book>

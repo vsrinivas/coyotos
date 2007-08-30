@@ -1,0 +1,18 @@
+module bringup {
+  print make_page(PrimeBank);
+  print make_gpt(PrimeBank);
+  print make_endpoint(PrimeBank);
+  print make_cappage(PrimeBank);
+  print make_process(PrimeBank);
+
+  def p = make_process(PrimeBank);
+
+  p.faultInfo = 0;
+  p.faultCode = 25;		/* startup fault */
+
+  print p;
+}
+
+// Local Variables:
+// mode:c
+// End:

@@ -1,0 +1,25 @@
+module i386.SimpleProc {
+   import sp = SimpleProc;
+   export def text = sp.text;
+   export def text_addr = sp.text_addr;
+   export def data = sp.data;
+   export def data_addr = sp.data_addr;
+   export def cap = sp.cap;
+   export def cap_addr = sp.cap_addr;
+   export def proc = sp.proc;
+
+   // utility function to set all characters in a page to a particular value
+   def setContents(page, beg, len, val) {
+	if (len <= 1) {
+	    page[beg] = val;
+	} else {
+	    setContents(page, beg, len / 2, val);
+	    def newbeg = beg + len / 2;
+	    def sizerndup = len + 1;
+	    def newlen = sizerndup / 2;
+	    setContents(page, newbeg, newlen, val);
+	}
+   }
+
+   setContents(text, 0, 4096, 0x90);  // 0x90 = NOP
+}

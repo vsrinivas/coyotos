@@ -1,0 +1,15 @@
+package coyotos;
+
+/// @brief Object storage manager interface
+///
+/// <b>THIS IS A PLACEHOLDER</b>
+///
+/// The object backing store manager responds to kernel-initiated
+/// requests for object pagein or object pageout. Like the cap.fault
+/// interface it is a ``reverse'' interface in the sense that it is
+/// kernel defined but server implemented.
+///
+/// The details of the object backing store interface are not yet determined.
+interface ObStore extends Cap {
+};
+

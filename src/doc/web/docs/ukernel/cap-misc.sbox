@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sbox>
+<sbox>
+  <wbox>
+    <field label="type" size="6"/>
+    <field label="P" size="1"/>
+    <field label="00000" size="5"/>
+    <field label="reserved" size="20"/>
+  </wbox>
+  <word label="reserved" szlabel="96"/>
+</sbox>

@@ -1,0 +1,14 @@
+module test.innerfn {
+  def add_x(x) { 
+    def g(y) { return x + y; }
+    return g;
+  }
+
+  def add_3 = add_x(3);
+
+  print add_3(2);
+}
+
+// Local Variables:
+// mode:c
+// End:

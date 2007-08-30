@@ -1,0 +1,20 @@
+module i386.identify {
+  import sp = i386.SimpleProc;
+
+  sp.text[0] = 0xb8;    // mov  $0x0000210, %eax  # Invoke Cap 1, 1 arg
+  sp.text[1] = 0x10;
+  sp.text[2] = 0x02;
+  sp.text[3] = 0x00;
+  sp.text[4] = 0x00;
+  sp.text[5] = 0xbb;    // mov  $0x1000002, %ebx  # OC_coyotos_Cap_getType
+  sp.text[6] = 0x02;
+  sp.text[7] = 0x00;
+  sp.text[8] = 0x00;
+  sp.text[9] = 0x01;
+  sp.text[10] = 0xcd;   // int $30            # invoke system call
+  sp.text[11] = 0x30;
+}
+
+// Local Variables:
+// mode:c
+// End:

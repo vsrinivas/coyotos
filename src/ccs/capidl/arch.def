@@ -1,0 +1,7 @@
+/* Automatically generated from sys/ARCH-LIST */ 
+
+DEFARCH(i386, 1, LITTLE_ENDIAN, 32, 0, 32)
+DEFARCH(coldfire, 2, BIG_ENDIAN, 32, 0, 16)
+DEFARCH(arm, 3, LITTLE_ENDIAN, 32, 0, 32)
+
+#undef DEFARCH

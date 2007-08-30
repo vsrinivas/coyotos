@@ -1,0 +1,61 @@
+module testme {
+  def f(x) {
+    return x + 2;
+  }
+
+  def abs(x) {
+    if (x >= 0) {
+      return x;
+    }
+
+    return -x;
+  }
+
+  def a = 1;
+  print f(1);
+  print abs(2);
+  print abs(-3);
+
+  print a;
+
+  a = 2;
+  print a;
+
+  def w = wrap(new page);
+
+  print w;
+  print w.cap;
+
+  def pg = new page;
+  print "here is a page cap:";
+  print pg;
+  print_tree(pg);
+  print_space(pg);
+
+  w.cap = pg;
+  print w.cap;
+
+  def ep = new endpoint;
+
+  print *ep;
+
+  ep.pm = 1;
+  print *ep;
+
+  // ep.setPayloadMatch(0);
+
+  print *ep;
+
+
+  def g = new gpt;
+  print g;
+  print *g;
+  g.cap[5] = new page;
+
+  print *g;
+  print g.cap[5];
+}
+
+// Local Variables:
+// mode:c
+// End:

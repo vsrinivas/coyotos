@@ -1,0 +1,178 @@
+package coyotos;
+
+/**
+ * @brief Coyotos system storage allocator.
+ *
+ * The space bank implements the storage allocation and deallocation
+ * service. To allocate an object, you invoke a space bank and request
+ * an object of a specified type. To destroy an object, you invoke the
+ * space bank providing a capability to the object and ask that the
+ * object designated by that capability be destroyed. The destroy
+ * operation requires that the object must currently be ``owned'' by
+ * the bank being invoked.
+ *
+ * Space banks also provide bulk destruction services. Destroying a
+ * space bank via the destroyBank() operation causes all objects
+ * allocated from that bank to be destroyed, including any sub-banks.
+ * The removeBank() operation destroys the space bank itself, but
+ * ownership of the objects currently owned by that space bank
+ * (including sub-banks) is transferred to the parent of the removed
+ * bank.
+ *
+ * In a typical running system, there are many space bank
+ * capabilities. Typically, all of these capabilities are implemented
+ * by a single process known as the ``prime bank.''  Space banks are
+ * arranged in a hierarchy rooted at the prime bank.  New banks are
+ * formed by the createChild operation.
+ *
+ * Space banks come in various restricted variants.
+ */
+interface SpaceBank extends Cap {
+
+  /**
+   * @brief A limit on the amount of usable space has been reached.
+   */
+  exception LimitReached;
+
+  /// @brief Reduced-authority space bank variants
+  unsigned long bitset restrictions {
+    /// @brief Capability does not permit object or sub-bank allocation.
+    noAlloc = 1,
+    /// @brief Capability does not permit object destruction.
+    noFree = 2,
+    /// @brief Capability does not permit space bank destroy() or remove();
+    noDestroy = 4,
+    /// @brief Capability will not disclose remaining limit bounds.
+    noQueryLimits = 8,
+    /// @brief Capability does not permit alteration of bank limits.
+    noChangeLimits = 16,
+    /// @brief This bank cannot be destroyed by remove().
+    ///
+    /// This restriction is appropriate when destruction of the bank
+    /// should not permit allocated storage to survive. If a bank is
+    /// being used by an untrusted subsystem, the remove() operation
+    /// would permit the subsystem to conduct denial of resource
+    /// attacks against its source of storage. Once storage has been
+    /// inherited by a parent bank, the only means to destroy that
+    /// storage is to destroy the parent bank. The mechanism of denial
+    /// is to cause storage to be owned by a bank that contains other
+    /// state that the holder cannot afford to destroy. This attack is
+    /// prevented by imposing the noRemove restriction on the
+    /// subsystem's bank.
+    noRemove = 32
+  };
+
+  /// @brief Allocate objects.
+  ///
+  /// Allocates @p count objects of type @p obType, returning them in
+  /// @p c1, @p c2, @p c3.  If range.obType.otInvalid is passed as a
+  /// desired object type, the corresponding return capability will be
+  /// cap.null. The operation is all or nothing; if three objects are
+  /// requested but only two can be allocated, the LimitReached
+  /// exception is raised.
+  ///
+  /// An allocation performed on any bank is performed in parallel on
+  /// all of its parent banks up to the prime bank. This means that
+  /// the effective allocation limit is the <em>most constraining</em>
+  /// limit applied by the invoked bank and all of its parent banks.
+  ///
+  /// Raises LimitReached if this allocation would exceed the
+  /// limits of the current bank or one of its parents.
+  ///
+  /// Raises NoAccess if the capability has the noAlloc restriction.
+  void alloc(Range.obType obType1,
+	     Range.obType obType2,
+	     Range.obType obType3,
+	     out Cap c1, out Cap c2, out Cap c3) 
+    raises (LimitReached, NoAccess);
+  
+  /// @brief Free objects.
+  ///
+  /// Releases @p count objects, returning them to the free storage
+  /// pool. If the passed capabilities are not owned by this space
+  /// bank, the cap.RequestError exception is raised.
+  ///
+  /// @bug What happens if some, but not all, objects are owned by the
+  /// bank needs to be defined.
+  ///
+  /// Raises NoAccess if the capability has the noFree restriction.
+  void free(unsigned long count, Cap c1, Cap c2, Cap c3);
+  
+  /// @brief Allocate a process.
+  ///
+  /// Allocates a new process object, installing @p brand in the brand
+  /// slot of the process. Processes can be allocated using alloc(),
+  /// but doing so will not permit their brand slot to be populated.
+  ///
+  /// A process allocated using allocProcess() should be deallocated
+  /// using free().
+  Cap allocProcess(Cap brand)
+    raises (LimitReached);
+
+  /// @brief Destroy the target bank as in destroy(), and reply to the
+  /// specified @p rcvr capability with result @p resultCode.
+  ///
+  /// If @p resultCode is RC_OK, the reply to @p rcvr will be a
+  /// "normal" (non-error) reply with no payload. Otherwise, it will
+  /// be an exceptional reply with @p resultCode as the specified
+  /// exception code.
+  ///
+  /// Note that as with all spacebank replies, the reply will be
+  /// non-blocking. if @p rcvr is not receiving, the reply will be
+  /// lost.
+  ///
+  /// If the operation fails, the failure is returned to the <b>caller</b>,
+  /// not @p rcvr.
+  void destroyBankAndReturn(Cap rcvr, exception_t resultCode);
+
+  /// @brief Structure for limit information.
+  struct limits {
+    array<unsigned long long, Range.obType.otNUM_TYPES> byType;
+  };
+
+  /// @brief Set the limits imposed by this bank.
+  void setLimits(limits lims) raises (NoAccess);
+  /// @brief Retrieve the current limits imposed by this bank (directly).
+  limits getLimits() raises (NoAccess);
+
+  /// @brief Retrieve the most constraining limits that apply to
+  /// allocations from this bank, including parent limits.
+  limits getEffectiveLimits() raises (NoAccess);
+
+  /// @brief Retrieve the current usage of the bank
+  limits getUsage() raises (NoAccess);
+
+  /// @brief Destroy bank and storage.
+  ///
+  /// In addition to deallocating the space bank itself, the destroy
+  /// operation deallocates all storage that has been allocated from
+  /// this bank.
+  inherits destroy;
+
+  /// @brief Destroy this bank, transfering ownership of storage and
+  /// sub-banks to the parent bank.
+  void remove() raises (NoAccess);
+
+  /// @brief Create a child bank from the current bank.
+  SpaceBank createChild() raises (LimitReached);
+
+  /// @brief Verify that a bank is authentic.
+  ///
+  /// Tests whether a capability references an official space
+  /// bank. Note that to be able to usefully call this, you must have
+  /// a capability that you know is a capability to an official space
+  /// bank. The constructor holds such a capability and uses it to
+  /// validate the bank that is passed for object
+  /// construction. Applications can therefore bootstrap bank
+  /// authentication from the initial bank provided through their
+  /// constructor.
+  boolean verifyBank(SpaceBank bank);
+
+  /// @brief Return bank capability with reduced authority.
+  ///
+  /// Returns bank capability to the same bank with the additional
+  /// restrictions specified by @p mask. These restrictions are
+  /// applied in addition to any pre-existing restrictions on the
+  /// invoked capability.
+  SpaceBank reduce(restrictions mask);
+};

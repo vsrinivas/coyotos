@@ -1,0 +1,9 @@
+module inc_eax {
+  import sp = SimpleProc;
+
+  sp.setupSpace(sp.proc, "inc_eax.exe");
+}
+
+// Local Variables:
+// mode:c
+// End:

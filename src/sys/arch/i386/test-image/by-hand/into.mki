@@ -1,0 +1,11 @@
+module into {
+  import sp = SimpleProc;
+
+  sp.setupSpace(sp.proc, "into.exe");
+
+  print *sp.proc.addrSpace;
+}
+
+// Local Variables:
+// mode:c
+// End:

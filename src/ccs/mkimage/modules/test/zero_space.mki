@@ -1,0 +1,59 @@
+module test.zero_space {
+  def gpt_setAllSlots(x, y) {
+    x.cap[0] = y;
+    x.cap[1] = y;
+    x.cap[2] = y;
+    x.cap[3] = y;
+    x.cap[4] = y;
+    x.cap[5] = y;
+    x.cap[6] = y;
+    x.cap[7] = y;
+    x.cap[8] = y;
+    x.cap[9] = y;
+    x.cap[10] = y;
+    x.cap[11] = y;
+    x.cap[12] = y;
+    x.cap[13] = y;
+    x.cap[14] = y;
+    x.cap[15] = y;
+  }
+  def zeropg = readonly(make_page(PrimeBank));
+
+  def zerol1 = make_gpt(PrimeBank);
+  gpt_setAllSlots(zerol1, zeropg);
+  zerol1.l2v = 12;
+  zerol1 = weaken(guard(zerol1, 0, 16));
+
+  def zerol2 = make_gpt(PrimeBank);
+  gpt_setAllSlots(zerol2, zerol1);
+  zerol2.l2v = 16;
+  zerol2 = weaken(guard(zerol2, 0, 20));
+
+  def zerol3 = make_gpt(PrimeBank);
+  gpt_setAllSlots(zerol3, zerol2);
+  zerol3.l2v = 20;
+  zerol3 = weaken(guard(zerol3, 0, 24));
+
+  def zerol4 = make_gpt(PrimeBank);
+  gpt_setAllSlots(zerol4, zerol3);
+  zerol4.l2v = 24;
+  zerol4 = weaken(guard(zerol4, 0, 28));
+
+  def zerol5 = make_gpt(PrimeBank);
+  gpt_setAllSlots(zerol5, zerol4);
+  zerol5.l2v = 28;
+  zerol5 = weaken(guard(zerol5, 0, 32));
+
+  def zerol5op = opaque(zerol5);
+
+  print zerol5op;
+  print zerol5;
+  print zerol4;
+  print zerol3;
+  print zerol2;
+  print zerol1;
+  print zeropg;
+}
+// Local Variables:
+// mode:c
+// End:

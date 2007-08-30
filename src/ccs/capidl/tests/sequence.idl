@@ -1,0 +1,21 @@
+package test;
+
+/// @brief Interface to test the case where four register words go in
+/// both directions.
+///
+/// This is an i386-specific test, to check a potential register
+/// allocator problem when the output is not optimized.
+interface S {
+  typedef sequence<char,16> shortStr;
+
+  void send(shortStr s);
+  void receive(out shortStr s);
+
+  void indirSend(long w2,
+		 long w3,
+		 long w4,
+		 long w5,
+		 long w6,
+		 long w7,
+		 shortStr s);
+};

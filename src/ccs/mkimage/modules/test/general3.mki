@@ -1,0 +1,8 @@
+module testme {
+  print 10000;
+  print 010000;
+  print 0x10000;
+}
+// Local Variables:
+// mode:c
+// End:

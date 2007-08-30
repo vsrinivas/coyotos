@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sbox>
+<sbox>
+  <wbox>
+    <field label="c" size="1"/>
+    <field label="001" size="3"/>
+    <field label="j" size="4"/>
+    <field label="0" size="2"/>
+    <field label="buffer limit" size="22" szlabel="22/54"/>
+  </wbox>
+  <word label="buffer pointer" szlabel="32/64"/>
+  <word label="..."/>
+</sbox>

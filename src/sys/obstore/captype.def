@@ -1,0 +1,112 @@
+/*
+ * Copyright (C) 2007, The EROS Group, LLC.
+ *
+ * This file is part of the EROS Operating System runtime library.
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2
+ * of the License, or (at your option) any later version.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, 59 Temple Place - Suite 330 Boston, MA 02111-1307, USA.
+ */
+
+/** @file
+ * @brief Definition of capability type codes. 
+ *
+ * These neeed to be accessable to assembly code and so are defined
+ * using a separate definitions file. See also capability.h
+ */
+
+#ifndef DEFCAP
+#define DEFCAP(ty, ft, code)
+#endif
+
+#ifndef NODEFCAP
+#define NODEFCAP(ty, ft, code)
+#endif
+
+DEFCAP(Null,        Invalid,  0x00)
+DEFCAP(Window,      Invalid,  0x01)
+DEFCAP(LocalWindow, Invalid,  0x02)
+DEFCAP(CapBits,     Invalid,  0x03)
+DEFCAP(Discrim,     Invalid,  0x04)
+DEFCAP(Range,       Invalid,  0x05)
+DEFCAP(Sleep,       Invalid,  0x06)
+DEFCAP(IRQCtl,      Invalid,  0x07)
+DEFCAP(SchedCtl,    Invalid,  0x08)
+DEFCAP(Checkpoint,  Invalid,  0x09)
+DEFCAP(ObStore,     Invalid,  0x0A)
+DEFCAP(PinCtl,      Invalid,  0x0B)
+DEFCAP(Schedule,    Invalid,  0x0C)
+DEFCAP(SysCtl,      Invalid,  0x0D)
+DEFCAP(KernLog,     Invalid,  0x0E)
+DEFCAP(IOPriv,      Invalid,  0x0F)
+
+// Insert new miscellaneous capabilities after 0x0F
+
+NODEFCAP(reserved,  Invalid,  0x10)
+NODEFCAP(reserved,  Invalid,  0x11)
+NODEFCAP(reserved,  Invalid,  0x12)
+NODEFCAP(reserved,  Invalid,  0x13)
+NODEFCAP(reserved,  Invalid,  0x14)
+NODEFCAP(reserved,  Invalid,  0x15)
+NODEFCAP(reserved,  Invalid,  0x16)
+NODEFCAP(reserved,  Invalid,  0x17)
+NODEFCAP(reserved,  Invalid,  0x18)
+NODEFCAP(reserved,  Invalid,  0x19)
+NODEFCAP(reserved,  Invalid,  0x1A)
+NODEFCAP(reserved,  Invalid,  0x1B)
+NODEFCAP(reserved,  Invalid,  0x1C)
+NODEFCAP(reserved,  Invalid,  0x1D)
+NODEFCAP(reserved,  Invalid,  0x1E)
+NODEFCAP(reserved,  Invalid,  0x1F)
+
+DEFCAP(Endpoint,    Endpoint, 0x20)
+DEFCAP(Page,        Page,     0x21)
+DEFCAP(CapPage,     CapPage,  0x22)
+DEFCAP(GPT,         GPT,      0x23)
+NODEFCAP(reserved,  Invalid,  0x24)	/* formerly oGPT */
+DEFCAP(Process,     Process,  0x25)
+DEFCAP(AppInt,      Endpoint, 0x26)
+
+// Insert new object capabilities at 0x27.
+
+NODEFCAP(reserved,  Invalid,  0x27)
+NODEFCAP(reserved,  Invalid,  0x28)
+NODEFCAP(reserved,  Invalid,  0x29)
+NODEFCAP(reserved,  Invalid,  0x2A)
+NODEFCAP(reserved,  Invalid,  0x2B)
+NODEFCAP(reserved,  Invalid,  0x2C)
+NODEFCAP(reserved,  Invalid,  0x2D)
+NODEFCAP(reserved,  Invalid,  0x2E)
+NODEFCAP(reserved,  Invalid,  0x2F)
+NODEFCAP(reserved,  Invalid,  0x30)
+NODEFCAP(reserved,  Invalid,  0x31)
+NODEFCAP(reserved,  Invalid,  0x32)
+NODEFCAP(reserved,  Invalid,  0x33)
+NODEFCAP(reserved,  Invalid,  0x34)
+NODEFCAP(reserved,  Invalid,  0x35)
+NODEFCAP(reserved,  Invalid,  0x36)
+NODEFCAP(reserved,  Invalid,  0x37)
+NODEFCAP(reserved,  Invalid,  0x38)
+NODEFCAP(reserved,  Invalid,  0x39)
+NODEFCAP(reserved,  Invalid,  0x3A)
+NODEFCAP(reserved,  Invalid,  0x3B)
+NODEFCAP(reserved,  Invalid,  0x3C)
+NODEFCAP(reserved,  Invalid,  0x3D)
+NODEFCAP(reserved,  Invalid,  0x3E)
+
+// New sendable capabilities should work down from 0x3E
+
+DEFCAP(Entry,       Endpoint, 0x3F)
+
+#undef DEFCAP
+#undef NODEFCAP

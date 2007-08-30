@@ -1,0 +1,34 @@
+package coyotos;
+
+/// @brief Discriminate among capability categories.
+
+interface Discrim extends Cap {
+  /// @brief Capability classifications returned by the classify
+  /// operation.
+  unsigned long enum capClass {
+    clNull = 0,
+    clWindow = 1,
+    clMemory = 2,		// Page, cappage, or GPT.
+    clSched = 3,
+    clEndpoint = 4,
+    clEntry = 5,
+    clProcess = 6,
+    clOther = 255
+  };
+
+  /// @brief Return the classification of the passed capability, which
+  /// is one of the selections in the capClass enumeration.
+  capClass classify(Cap c);
+
+  /// @brief Return true exactly if this capability is discreet.
+  ///
+  /// A discreet capability is one that (transitively) conveys no
+  /// authority to mutate. These include CapBits, Discrim, Null,
+  /// Window, and LocalWindow. These also include weak Page, CapPage,
+  /// and GPT capabilities.
+  boolean isDiscreet(Cap c);
+
+  /// @brief Compare two capabilities for (exact) identity.
+  boolean compare(Cap c1, Cap c2);
+};
+

@@ -1,0 +1,12 @@
+module subbank {
+  import sb = coyotos.SpaceBank;
+  print PrimeBank;
+
+  print make_page(PrimeBank);
+  def bank = make_bank(PrimeBank);
+  print make_page(make_bank(bank));
+}
+
+// Local Variables:
+// mode:c
+// End:

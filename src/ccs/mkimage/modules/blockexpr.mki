@@ -1,0 +1,15 @@
+module blockexpr {
+  import base = base;
+  def a = ({ 
+      def x = 1;
+      def y = 2;
+      x + y;
+    });
+
+  doprint("(local) a is ", a, "\n");
+  doprint("base.a is ", base.a, "\n");
+}
+
+// Local Variables:
+// mode:c
+// End:

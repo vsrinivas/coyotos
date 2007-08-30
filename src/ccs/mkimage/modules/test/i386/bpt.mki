@@ -1,0 +1,9 @@
+module i386.bpt {
+  import sp = i386.SimpleProc;
+
+  sp.text[0] = 0xcc;   // INT3
+}
+
+// Local Variables:
+// mode:c
+// End:

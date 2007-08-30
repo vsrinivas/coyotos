@@ -1,0 +1,9 @@
+module bpt_midpage {
+  import sp = SimpleProc;
+
+  sp.setupSpace(sp.proc, "bpt_midpage.exe");
+}
+
+// Local Variables:
+// mode:c
+// End:

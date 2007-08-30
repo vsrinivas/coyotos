@@ -1,0 +1,1147 @@
+<?xml version="1.0"?>
+<!DOCTYPE article PUBLIC "-//EROS Group//DTD OSDoc XML V0.1//EN"
+               "http://www.coyotos.org/OSDoc/DTD/osdoc-0.1.dtd">
+  <article id="dev.build" xmlns:xi="http://www.w3.org/2001/XInclude">
+  <docinfo>
+    <title>The Coyotos Build System</title>
+    <subtitle>Version 0.3</subtitle>
+    <authorgroup>
+      <author>
+	<firstname>Jonathan</firstname>
+	<surname>Shapiro</surname>
+	<degree>Ph.D.</degree>
+      </author>
+      <affiliation>
+	<orgname>Systems Research Laboratory</orgname>
+	<address>Dept. of Computer Science</address>
+	<address>Johns Hopkins University</address>
+      </affiliation>
+    </authorgroup>
+    <pubdate></pubdate>
+    <copyright>
+      <year>2005</year> 
+      <holder>Johns Hopkins University</holder>
+    </copyright>
+    <categories>
+      <category>dev/build</category>
+    </categories>
+    <synopsis>
+      <p>Provides an overview of the Coyotos build system and the
+      structure of the source code tree.</p>
+    </synopsis>
+  </docinfo>
+  <abstract>
+    <p>
+      Coyotos requires a regrettably complicated build procedure. The
+      complexity is mainly driven by two issues: the need for cross
+      compilation and the fact that some of the things in the build
+      tree come from other (foreign) build environments &mdash; most
+      notably things built with autoconf.
+    </p>
+    <p>
+      This document describes how to obtain and install the cross
+      tools, how the build tree is structured, what the complications
+      are, and how the Coyotos build mechanism is intended to operate.
+    </p>
+    <p>
+      <em>The description provided here is provisional. We are testing
+      a new, simplified build process relative to the older EROS build
+      process.</em>
+    </p>
+  </abstract>
+  <toc/>
+  <sect1>
+    <title>Setting up a Build Environment</title>
+    <p>
+      The Coyotos development team runs Fedora Core. At the time of
+      this writing, we use Fedora Core version 4, but our usual
+      practice is to run the latest Fedora release. In practical
+      terms, this means that if Fedora has updated recently you can
+      probably still rely on the cross environment working, but you
+      should probably upgrade soon, because we will only be working on
+      (and therefore testing) the latest release.
+    </p>
+    <p>
+      We try to tinker with the cross environment as little as
+      possible, so it is fairly pointless to rebuild it every time the
+      source tree is built. On the other hand, it <em>does</em> need
+      to be updated once in a while, either to supply a bug fix or to
+      add a new component. Our solution is that we have packaged the
+      cross tools as RPM files, and we make these available via a YUM
+      repository. <b>If it is feasible for you to use this YUM
+      repository, we strongly recommend it.</b>
+    </p>
+    <p>
+      The following discussion assumes that you are building for the
+      recent Pentium family (i386 target). We will shortly support at
+      least one other architecture. If so, you should substitute the
+      appropriate target name for <progident>i386</progident> wherever
+      it appears below.
+    </p>
+    <sect2>
+      <title>Recognized Targets</title>
+      <p>
+	The targets that are
+	currently recognized take the form
+	``<em>os</em>-<em>architecture</em>'' where ``os'' is one of
+	``coyotos'' or ``capros'',<footnote><p>We are currently maintaining a
+	cross-build suite for the capros project.</p>
+	</footnote> and ``architecture'' is one of:
+      </p>
+      <deflist>
+	<defli>
+	  <label><b>i386</b></label>
+	  <li>
+	    <p>
+	      IA32 processors and derivatives, eventually including
+	      Geode and similar embedded processors. Current work is
+	      targeted exclusively at PC-based desktop machines, which
+	      is our primary development system.
+	    </p>
+	    <p>
+	      It would have been better to call this family ``IA32,''
+	      but the use of ``i386'' as a family identifier is nearly
+	      universal among <progident>configure</progident> scripts,
+	      and changing the label wasn't important enough to justify
+	      the patch effort required.
+	    </p>
+	  </li>
+	</defli>
+	<defli>
+	  <label><b>m68k</b></label>
+	  <li>
+	    <p>
+	      Coldfire processors.
+	    </p>
+	  </li>
+	</defli>
+	<defli>
+	  <label><b>arm</b></label>
+	  <li>
+	    <p>
+	      ARM-based processors. No work for this target is
+	      currently being done in Coyotos. The target is
+	      maintained in the cross tools chain so that the <link
+	      href="http://www.capros.org">CapROS</link> project and the
+	      Coyotos project can work from a common tool chain to
+	      avoid duplication of effort.
+	    </p>
+	  </li>
+	</defli>
+      </deflist>
+      <p>
+	We would eventually like to see support for <b>x86_64</b>, but
+	no port of <progident>newlib</progident> has been done to that
+	platform yet.
+      </p>
+    </sect2>
+    <sect2>
+      <title>Setting up on Coyotos</title>
+      <p>
+	The best development environment for Coyotos is, of course,
+	Coyotos itself. If you cannot find a Coyotos port for your
+	platform, <em>please write one.</em>
+      </p>
+      <p>
+	Okay, okay. This isn't likely for a while, so let's move on to
+	those <em>other</em> systems that you may need to suffer with
+	until an upgrade to Coyotos becomes available...
+      </p>
+    </sect2>
+    <sect2>
+      <title>Setting up on Linux/YUM Systems</title>
+      <p>
+	First, import the RPM signing key used by The EROS
+	Group, LLC.<footnote><p>For the paranoid, this key can also be
+	obtained from the pgp.mit.edu key server by searching for
+	<tt>packager@eros-os.org</tt>. If imported, you should find
+	that it is signed using my (Jonathan Shapiro's) offline
+	signing key. The fingerprint of my offline signing key is
+	DFAB6639. If you export this key, you can directly import the
+	ascii armored file using <tt>rpm --import</tt>.
+	  </p>
+	</footnote> This key is used to sign all of our packages. It can be
+	imported by:
+      </p>
+      <literallayout>
+rpm --import http://srl.cs.jhu.edu/YUM/EROS-Group-LLC.rpm-pubkey.asc</literallayout>
+      <p>
+	If you are running FC6, you can add the YUM
+	repository to your <progident>yum</progident> and
+	<progident>up2date</progident> configurations by executing (as
+	root):
+      </p>
+      <literallayout>
+rpm -ivh http://srl.cs.jhu.edu/YUM/coyotos/4/i386/Coyotos-Repository-3.2-2.noarch.rpm</literallayout>
+      <p>
+	Once the repository set up, you can install some helpful tools
+	(and a required library) by running (as root):
+      </p>
+      <literallayout>
+yum install coyotos-i386-xenv</literallayout>
+      <p>
+	The <progident>coyotos-i386-xenv</progident> package is a
+	``virtual'' package &mdash; it simply supplies the necessary
+	dependencies so that YUM will find all of the pieces you need.
+	As of this writing, the packages installed are:
+      </p>
+      <deflist>
+	<defli>
+	  <label><b>coyotos-common-filesystem</b></label>
+	  <li>
+	    <p>
+	      Architecture independent file system skeleton for
+	      <filename>/coyotos</filename>
+	    </p>
+	  </li>
+	</defli>
+	<defli>
+	  <label><b>coyotos-common-binutils</b></label>
+	  <li>
+	    <p>
+	      Architecture independent support files for the binary
+	      utilities.
+	    </p>
+	  </li>
+	</defli>
+	<defli>
+	  <label><b>coyotos-common-gcc3</b></label>
+	  <li>
+	    <p>
+	      Architecture independent support files for GCC.
+	    </p>
+	  </li>
+	</defli>
+	<defli>
+	  <label><b>coyotos-common-gcc3-cpp</b></label>
+	  <li>
+	    <p>
+	      Architecture independent support files for CPP.
+	    </p>
+	  </li>
+	</defli>
+	<defli>
+	  <label><b>coyotos-i386-filesystem</b></label>
+	  <li>
+	    <p>
+	      Architecture specific file system skeleton for
+	      <filename>/coyotos</filename>
+	    </p>
+	  </li>
+	</defli>
+	<defli>
+	  <label><b>coyotos-i386-binutils</b></label>
+	  <li>
+	    <p>
+	      Assembler, linker, and so forth for cross compilation.
+	    </p>
+	  </li>
+	</defli>
+	<defli>
+	  <label><b>coyotos-i386-newlib</b></label>
+	  <li>
+	    <p>
+	      The <progident>newlib</progident> C library for Coyotos
+	      native applications. This is likely to be updated a fair
+	      bit.
+	    </p>
+	  </li>
+	</defli>
+	<defli>
+	  <label><b>coyotos-i386-gcc3-gcc</b></label>
+	  <li>
+	    <p>
+	      GCC version 3 that targets the Coyotos target environment.
+	    </p>
+	  </li>
+	</defli>
+	<defli>
+	  <label><b>coyotos-i386-gcc3-cpp</b></label>
+	  <li>
+	    <p>
+	      C preprocessor.
+	    </p>
+	  </li>
+	</defli>
+      </deflist>
+      <p>
+	If you are targeting the Pentium family, you may also find it
+	helpful to install <progident>qemu</progident>, a full-machine
+	emulator for the PC. We rely on this heavily for debugging,
+	and if you don't have a lab full of machines it is probably
+	the best way to experiment. You can install this by:
+      </p>
+      <literallayout>
+yum install qemu</literallayout>
+      <p>
+	The <progident>qemu</progident> package is a native tool, so
+	it installs in the customary directories. All of the Coyotos
+	cross environment tools install into
+	<progident>/coyotos/</progident>. If you install them with
+	YUM, you can remove them by:
+      </p>
+      <literallayout>
+rpm -e `rpm -q -a |grep coyotos`
+rpm -e qemu libsherpa libsherpa-devel</literallayout>
+      <p>
+	If you are on a RPM system but you prefer <em>not</em> to use
+	the YUM-based method, you are certainly welcome to install
+	these packages by hand, but it will be harder to stay up to
+	date. Alternatively, you can build the cross environment
+	yourself (see below).
+      </p>
+      <p>
+	We would be willing to set up the necessary metadata for
+	users of <progident>apt</progident> as well, but we would need
+	some guidance. A further concern is that we don't tend to run
+	and Debian systems, so it would be difficult to test the RPMs
+	for that environment.
+      </p>
+    </sect2>
+    <sect2>
+      <title>Setting up on Other UNIX's</title>
+      <p>
+	It's really a much better plan to use the provided cross
+	environment packages, because that way we can easily provide
+	updates to the cross tools that will arrive in the normal way
+	for your system.  If you are building on some other UNIX
+	derivative that has not accepted the Dao of YUM, you may find
+	that nothing will do but to build the cross environment for
+	yourself. First, as root, you should create the directory
+	<progident>/coyotos</progident> and use the
+	<progident>chown</progident> command to make it writable to
+	you and owned by you:
+      </p>
+      <literallayout>
+# as root:
+mkdir /coyotos
+chown <em>yourlogin</em>:<em>yourgroup</em> /coytos</literallayout>
+      <sect3>
+	<title>If You Have Constrained Space</title>
+	<p>
+	  Find an empty directory with an unreasonably large amount of
+	  available disk space, <progident>cd</progident> to it, and
+	  proceed as follows:
+      </p>
+      <literallayout>
+rsync -avz rsync://www.coyotos.org/src.coyotos/src/ccs-xenv/ ./ccs-xenv/
+(cd ccs-xenv; make -f Makefile.xenv TARGETS="coyotos-i386")</literallayout>
+      <p>
+	This will compile and install the complete cross
+	environment. Once this is done, you can delete the cross
+	environment source directory. It takes up a lot of space. If
+	you need to compile the tools for multiple targets, you can
+	list them in the TARGETS variable, for example:
+      </p>
+      <literallayout>
+rsync -avz rsync://www.coyotos.org/src.coyotos/src/ccs-xenv/ ./ccs-xenv/
+(cd ccs-xenv; make -f Makefile.xenv TARGETS="coyotos-m68k coyotos-i386")</literallayout>
+      <p>
+	If you are unable to install the cross tools in
+	<progident>/coyotos</progident>, you can specify another
+	location to the <progident>make</progident> command:
+      </p>
+      <literallayout>
+(cd ccs-xenv; make -f Makefile.xenv TARGETS="coyotos-i386" CROSSROOT=$HOME/coyotos-xenv)</literallayout>
+      <p>
+	This will require some fiddling in the rest of the build
+	environment, and it is not a configuration that we test. If
+	you choose to put your tools someplace unusual, then at build
+	time you will need to set the environment variable
+	<b>COYOTOS_XENV</b> to point to wherever you put it (the same
+	value that you gave for <b>CROSSROOT</b> when you built the
+	cross environment in the command above).
+      </p>
+      <p>
+	Once the cross environment is installed, you can safely delete
+	the source directory. We aren't yet rebuilding this stuff to
+	run natively, and it consumes a very large amount of space.
+      </p>
+      </sect3>
+      <sect3>
+	<title>If You Plan to Track the Entire Tree</title>
+	<p>
+	  If you are planning to download the entire source tree
+	  anyway, you are better off proceeding by:
+	</p>
+	<literallayout>
+rsync -avz rsync://www.coyotos.org/src.coyotos/ coyotos/
+(cd coyotos/src/ccs-xenv; make -f Makefile.xenv TARGETS="coyotos-i386")</literallayout>
+      </sect3>
+    </sect2>
+    <sect2>
+      <title>Setting up on Windows</title>
+      <p>
+	You can download a set of Fedora installation CD's from our
+	Fedora mirror repository. When you get to the place where it
+	asks whether you want to delete all existing partitions,
+	remember that as much as you may <em>want</em> to, you
+	probably can't afford to lose your Windows install quite yet.
+      </p>
+    </sect2>
+  </sect1>
+  <sect1>
+    <title>Obtaining the Sources</title>
+    <p>
+      The coyotos sources can be built in just about any convenient
+      place. The top level directory of the Coyotos source tree
+      <em>must</em> be named <progident>coyotos</progident>, because
+      the makefiles rely on this to find other parts of the
+      tree. However, the <progident>coyotos</progident> directory can
+      live <em>underneath</em> any convenient location. In the
+      following instructions, we will assume that you are placing it
+      underneath your home directory.
+    </p>
+    <sect2>
+      <title>General Public</title>
+      <p>
+	If you have space to burn, the easy way to get the sources is to
+	use <progident>rsync</progident>:
+      </p>
+      <literallayout>
+cd <em>somplace-convenient</em>
+rsync -avz rsync://www.coyotos.org/src.coyotos/ coyotos/
+</literallayout>
+      <p indent="no">
+	Note that this should <em>not</em> be the same
+	<progident>coyotos</progident> directory that you compiled the
+	cross compilation tools into. The idea is that the directory
+	with the cross compilation tools can be shared by multiple
+	users. This one is for your personal build of the Coyotos
+	tree. Placing the two trees in the same directory <em>will not
+	work</em> (which is something we should fix at some point).
+      </p>
+      <p>
+	It is likely that you do not want to keep a local copy of the
+	cross environment sources for now. You can safely remove them
+	after the <progident>rsync</progident> has completed by running:
+	by:
+      </p>
+      <literallayout>
+rm -rf coyotos/src/ccs-xenv
+</literallayout>
+      <p>
+	If you are downloading over a slow link, or if you have limited
+	space, it may be better to let the Coyotos makefiles grab only
+	the parts that you need/want. To do this:
+      </p>
+      <literallayout>
+cd <em>somplace-convenient</em>
+mkdir -p coyotos/src
+rsync -avz rsync://www.coyotos.org/src.coyotos/src/Makefile coyotos/src/Makefile
+make -k -C coyotos/src sync
+</literallayout>
+      <p>
+	If you notice a complaint that
+	<progident>pkgrules.mk</progident> is not found, ignore it
+	&mdash; the <progident>make&nbsp;sync</progident> command will
+	correct this. Note that the <progident>-k</progident> argument
+	is important!
+      </p>
+    </sect2>
+    <sect2>
+      <title>SRL Denizens</title>
+      <p>
+	If you are a member of the Systems Research Laboratory, you can
+	use the <progident>make&nbsp;sync</progident> command to check
+	out a copy of the tree. Then talk to a member of the lab to find
+	out how to change your workspace user so that you can commit
+	changes.  At the present time, this repository is not directly
+	available for public connection.
+      </p>
+    </sect2>
+  </sect1>
+  <sect1>
+    <title>Organization of the Source Tree</title>
+    <p>
+      The Coyotos source tree is organized into
+      <term>packages</term>. A package is a collection of code that is
+      built as a unit.   The build structure assumes that the Coyotos source
+      tree is set up as follows:
+    </p>
+    <literallayout>
+coyotos
+  src
+    build    - makefile fragments for the build system
+    ccs      - coyotos compilation system package
+    ccs-xenv - the cross environment package
+    doc      - the documentation tree (including this web site)
+    sys      - the coyotos kernel package
+    lib
+      <em>package1</em> - library package
+      <em>package2</em> - ...
+      ...
+      <em>packageN</em>
+    bin
+      <em>package1</em> - application package
+      <em>package2</em> - ...
+      ...
+      <em>packageN</em>
+    examples
+      <em>package1</em> - example package
+      <em>package2</em> - ...
+      ...
+      <em>packageN</em>
+</literallayout>
+    <p>
+      Each package has a top-level makefile supporting a number of
+      standard make targets. The procedure for building a given
+      package is determined by the package author. In practice, there
+      seem to be four ``categories'' of package: 
+    </p>
+    <ol>
+      <li>
+	<p>
+	  The <em>build</em> package, which contains the various
+	  makefile fragments and rules that support the rest of the
+	  EROS build system.
+	</p>
+      </li>
+      <li>
+	<p>
+	  The <em>ccs</em> package, which contains the tools needed in
+	  order to cross-build the kernel and applications. The CCS
+	  package is a relatively large and static package, and we are
+	  working on ways to establish RPM files that will support
+	  binary-only installs of these tools.
+	</p>
+      </li>
+      <li>
+	<p>
+	  So-called <em>native</em> packages, which use the Coyotos
+	  build system explained in this document.
+	</p>
+      </li>
+      <li>
+	<p>
+	  <em>Foreign</em> packages &mdash; typically ones that are
+	  built from other source bases &mdash; are packages that do
+	  <em>not</em> follow the Coyotos build practices. In these
+	  cases, the package-level makefile (and the package
+	  directory) are simply wrapper makefiles that in turn invoke
+	  the foreign make process in whatever way is appropriate.
+	</p>
+      </li>
+    </ol>
+    <p>
+      There are ordering dependencies among packages. At the moment,
+      these are captured implicitly in a variable in the top level
+      makefile (packages are built in the order of specification). We
+      need to revise this so that each package can state explicitly
+      what other packages must be built first.
+    </p>
+    <p>
+      The build tree is designed to sit under a directory named
+      <filename>coyotos</filename>, which may live at any convenient
+      location. This directory is named by the environment variable
+      <envvar>COYOTOS_ROOT</envvar>. If the
+      <envvar>COYOTOS_ROOT</envvar> environment variable is not set,
+      the build system will attempt to locate it by searching upwards
+      in the current working directory string to find a directory of
+      the form <filename><em>prefix</em>/coyotos/src</filename>. It
+      will then assume that <envvar>COYOTOS_ROOT</envvar> should be
+      set to
+      <filename><em>prefix</em>/coyotos</filename>.<footnote><p>One
+      problem arising from this design is that confusion can result if
+      someone creates an internal directory within the build tree
+      named <filename>src</filename>. This is fairly common in
+      UNIX-based library software, so we will undoubtedly improve this
+      search mechanism in short order. The goal is to ensure that it
+      is almost never necessary to set the
+      <envvar>COYOTOS_ROOT</envvar> environment variable by hand.</p>
+      </footnote> From this point on in this document, when we use a
+      path starting with <filename>coyotos/</filename>, it should be
+      understand to refer to the directory named by
+      <envvar>COYOTOS_ROOT</envvar>.
+    </p>
+    <sect2>
+      <title>Impact of IDL</title>
+      <p>
+	Coyotos is an IDL-based system. The interfaces for Coyotos
+	subsystems are specified using an <term>interface description
+	  language</term> (IDL).  Interface description filenames end with
+	<b>.capidl</b> for ``capability IDL.'' The IDL files are used to
+	generate:
+      </p>
+      <ul>
+	<li>
+	  <p>
+	    Client-side header files needed by a client when calling a
+	    provider.
+	  </p>
+	</li>
+	<li>
+	  <p>
+	    Client-side stub libraries that translate provider
+	    invocation arguments into a Coyotos <term>interprocess
+	      communication</term> (IPC) message.
+	  </p>
+	</li>
+	<li>
+	  <p>
+	    XML documentation that describes the interface. This
+	    documentation is later gathered to create the system object
+	    reference manual.
+	  </p>
+	</li>
+	<li>
+	  <p>
+	    Server-side header files needed by a provider to
+	    <em>implement</em> an CapIDL interface.
+	  </p>
+	</li>
+	<li>
+	  <p>
+	    Server-side stub code that demarshals requests and marshals
+	    responses. This is also used to implement a CapIDL
+	    interface.
+	  </p>
+	</li>
+      </ul>
+      <p>
+	It is possible to have circular dependencies among interfaces,
+	but not among interface implementations.
+      </p>
+      <p>
+	In general, the client-side IDL headers need to be generated
+	before a given piece of client code can be compiled, and the
+	client-side stubs need to be generated before client code can
+	be linked. There are two ways in which this might be
+	implemented:
+      </p>
+      <ol>
+	<li>
+	  <p>
+	    Each client application can generate and compile it's own
+	    copy of the necessary client headers and client stub
+	    libraries. This is feasible, but it is a nuisance and it
+	    makes the compile process take an unreasonably long time.
+	  </p>
+	</li>
+	<li>
+	  <p>
+	    A pre-pass can be made to generate the headers and client
+	    stubs, which can then be used in common by all of the
+	    clients that depend on them. This has the advantage of not
+	    building the headers and stubs redundantly, but has the
+	    cost that the unit of build is now the package rather than
+	    the directory.
+	  </p>
+	</li>
+      </ol>
+      <p>
+	We initially tried the first approach in the EROS build
+	process. We found that it was excessively inconvenient, and we
+	switched to the second method. The Coyotos build process uses
+	the second method. In the EROS build system, we found that the
+	automatic dependency generation mechanism does a pretty good
+	job of avoiding unnecessary rebuilds.
+      </p>
+      <p>
+	However, this approach creates a quandry for foreign packages,
+	because we aren't in a position to modify the makefiles of
+	those packages to force a complete package rebuild whenever
+	<command>make</command> is invoked. Even if we could resolve
+	this, the foreign packages aren't necessarily designed to be
+	friendly to the complete package build discipline. Therefore:
+      </p>
+      <caution>
+	<p>
+	  The developer must be aware of whether they are performing a
+	  <command>make</command> within a Coyotos package or a
+	  foreign package. Within a Coyotos package, the default
+	  result of the <command>make</command> command will be to
+	  rebuild the current package. Within a foreign package, the
+	  default result of the <command>make</command> command will
+	  be whatever procedure is defined as normal by that
+	  package. Since the <filename>makefile</filename> at the
+	  package level conforms to the Coyotos build procedures, a
+	  <command>make</command> in the package-level directory can
+	  be relied on to rebuild the complete package.
+	</p>
+      </caution>
+    </sect2>
+    <sect2>
+      <title>Normal Build Sequence</title>
+      <p>
+	When the <command>make</command> command is invoked from the
+	<filename>coyotos/src</filename> directory, each package root
+	directory is visited in order, and the
+	<command>make&nbsp;install</command> command is issued for
+	that package. The build order is:
+      </p>
+      <ol>
+	<li>
+	  <p>
+	    The <filename>coyotos/src/ccs</filename> package if
+	    present,<footnote><p>We intend to make the output of the
+	    <filename>coyotos/src/ccs</filename> package build
+	    available as installable RPM files for developer
+	    convenience.</p></footnote>
+	  </p>
+	</li>
+	<li>
+	  <p>The <filename>coyotos/src/sys</filename> package,
+	  </p>
+	</li>
+	<li>
+	  <p>
+	    Packages in	<filename>coyotos/src/lib</filename>, in the
+	    order specified in the top-level library makefile,
+	  </p>
+	</li>
+	<li>
+	  <p>
+	    Packages in	<filename>coyotos/src/bin</filename> in the
+	    order specified in the top-level binaries makefile,
+	  </p>
+	</li>
+	<li>
+	  <p>
+	    Packages in <filename>coyotos/src/examples</filename> in
+	    the order specified in the top-level binaries makefile,
+	  </p>
+	</li>
+      </ol>
+      <p>
+	Because packages can be foreign, the internal build rules for
+	a given package are inherently package dependent. All
+	package-level makefiles are expected to implement the
+	following <command>make</command> targets:
+      </p>
+      <ul>
+	<li>
+	  <p>
+	    <command>make&nbsp;install</command> Build and install all
+	    content in subdirectories of this one, then build and
+	    install the content of the current directory.
+	  </p>
+	</li>
+	<li>
+	  <p>
+	    <command>make&nbsp;world</command> Rebuild the entire source tree from the top.
+	  </p>
+	</li>
+	<li>
+	  <p>
+	    <command>make&nbsp;package</command> Rebuild the current
+	    package by issuing <command>make&nbsp;install</command>
+	    from the top of the package tree. In Coyotos packages,
+	    this is usually the default <command>make</command>
+	    target.
+	  </p>
+	</li>
+	<li>
+	  <p>
+	    <command>make&nbsp;clean</command> Delete all generated
+	    content in the current directory and its subdirectories.
+	  </p>
+	</li>
+	<li>
+	  <p>
+	    <command>make&nbsp;nodepend</command> Discard all
+	    automatically generated dependency information from the
+	    tree. Dependency information is usually updated
+	    automatically by the Coyotos makefile rules, but it
+	    sometimes becomes out of date and must be forcibly
+	    deleted. When doing this, it is often necessary to use
+	    <command>make&nbsp;-k</command>, and it is recommended
+	    that a clean should be performed as well:
+	  </p>
+	  <literallayout>
+make -k clean nodepend
+</literallayout>
+	</li>
+      </ul>
+      <p>
+	Each of the <command>make</command> targets above is also
+	available at the <filename>coyotos/src</filename> level
+	of the tree, but the scope of effect is the entire source tree
+	rather than a single package. In addition, the following
+	targets are available at the top level:
+      </p>
+      <ul>
+	<li>
+	  <p>
+	    <command>make&nbsp;targdir-clobber</command> Delete the
+	    entire installed directory tree.
+	  </p>
+	</li>
+	<li>
+	  <p>
+	    <command>make&nbsp;pristine</command> Wipes out the
+	    installed directory tree, performs a clean on every
+	    package, removes all automatically generated dependencies,
+	    and then rebuilds the entire tree from scratch.
+	  </p>
+	</li>
+      </ul>
+      <p>
+	At the top level of the source tree, the default
+	<command>make</command> target is
+	<command>make&nbsp;world</command>.
+      </p>
+    </sect2>
+  </sect1>
+  <sect1>
+    <title>Adding a New Package To The Tree</title>
+    <p>
+      Adding a new package to the Coyotos build tree is actually
+      fairly simple:
+    </p>
+    <ol>
+      <li>
+	<p>
+	  Create a new directory below
+	  <filename>coyotos/src/lib</filename>, 
+	  <filename>coyotos/src/bin</filename>, or
+	  <filename>coyotos/src/examples</filename>.
+	</p>
+      </li>
+      <li>
+	<p>
+	  Place an appropriate package-level makefile in that
+	  directory, according to whether you are implementing a
+	  foreign package or a Coyotos package.
+	</p>
+      </li>
+      <li>
+	<p>
+	  Append your package directory to the <makevar>DIRS</makevar>
+	  variable in <filename>coyotos/src/lib/Makefile</filename>,
+	  <filename>coyotos/src/bin/Makefile</filename>, or
+	  <filename>coyotos/src/examples/Makefile</filename>, as
+	  appropriate.
+	</p>
+      </li>
+    </ol>
+    <p>
+      Note that we will adding package-level dependency tracking in
+      the future, which will hopefully allow you to rebuild only those
+      packages that are needed to support the package you are trying
+      to test. As the source tree grows, we expect that this
+      capability will become increasingly attractive.
+    </p>
+    <p>
+      Here is an annotated example makefile for the package level:
+    </p>
+    <literallayout>
+# Copyright notice
+
+# Default target. Every makefile should specify a default
+# target. This should be the first non-comment content in
+# the makefile. Package-level makefiles should specify
+# <progident>package</progident> as their default target.
+
+default: package
+
+# Relative path to <filename>coyotos/src</filename>. All
+# makefiles rely on being able to locate the top-level source
+# directory in order to include other makefile fragments.
+# The definition of COYOTOS_SRC should appear immediately
+# beneath the identification of the default make target.
+COYOTOS_SRC=../..
+
+# Subdirectories to build. This is a list of directories
+# that should be visited in sequence by the normal build 
+# process. The Coyotos makefiles use the <makevar>DIRS</makevar> variable
+# to drive build recursion. Therefore, <em>foreign packages
+# should NOT specify subdirectories using the <makevar>DIRS</makevar> variable!</em>
+DIRS=subdir1 subdir2 subdir3
+
+# Additional directories to clean [optional]. This is useful
+# if you have directories such as test directories that are
+# designed to be built by hand. These should not be visited
+# by the normal build mechanism, but you probably want them
+# cleaned by <command>make&nbsp;clean</command>. Every element of <makevar>DIRS</makevar> will
+# automatically be added to <makevar>CLEANDIRS</makevar>.
+CLEANDIRS=otherdir
+
+# Include the generic package-level makefile support stuff.
+# This defines all of the package-level make targets:
+include $(COYOTOS_SRC)/build/make/pkgrules.mk
+
+# COYOTOS PACKAGES:
+#
+# That's it. The real work is done by the included makefile
+# fragments by recursing using the <makevar>DIRS</makevar> variable.
+
+# FOREIGN PACKAGES ONLY:
+#
+# Additional targets (if any) that you may want should be
+# defined here. Foreign packages will want to define
+# targets to execute the build and to perform a recursive
+# clean:
+local-install:
+      # Commands to (recursively) build and install
+local-clean:
+      # Commands to (recursively) clean
+
+# Add dependencies so that the clean and install targets
+# will do the right thing:
+install: local-install
+clean: clean-install
+
+</literallayout>
+  </sect1>
+  <sect1>
+    <title>Coyotos Makefiles</title>
+    <p>
+      If you are trying to build a wrapper package for a foreign code
+      base, you are largely on your own. The package-level makefiles
+      supply the <command>make&nbsp;world</command>,
+      <command>make&nbsp;package</command>,
+      <command>make&nbsp;nodepend</command>,
+      <command>make&nbsp;install</command>, and
+      <command>make&nbsp;clean</command> rules. Filling in the details
+      is up to you. The balance of this document focuses on makefiles
+      that are built to follow the Coyotos build conventions.
+    </p>
+    <p>
+      The package level makefile is really just a directory wrapper
+      that directs recursion. Nearly the same makefile structure is
+      used in each container directory within the Coyotos source
+      tree. The only difference is that Coyotos directory makefiles
+      include <filename>makerules.mk</filename> rather than
+      <filename>pkgrules.mk</filename>. Eventually, the recursive
+      build procedure descends into some directory where real work
+      needs to be done. At that point, it becomes necessary to create
+      a more complicated makefile, and we need to start explaining
+      which make variables do what.
+    </p>
+    <p>
+      The automatic build rules supported by the Coyotos build system
+      support generating documentation from XML, generating code from
+      C/C++, and generating code from BitC. All of these perform
+      automatic dependency generation where appropriate.
+    </p>
+    <p>
+      The general pattern of a Coyotos makefile is:
+    </p>
+    <ul>
+      <li>
+	<p>
+	  Define default target and path to top of source tree
+	</p>
+      </li>
+      <li>
+	<p>
+	  Define framing makefile variables
+	</p>
+      </li>
+      <li>
+	<p>
+	  Include <filename>makerules.mk</filename>
+	</p>
+      </li>
+      <li>
+	<p>
+	  Add target-specific rules, if any.
+	</p>
+      </li>
+    </ul>
+    <p>
+      Each type of generated output has its own set of framing
+      makefile variables, which are described below.
+    </p>
+    <sect2>
+      <title>XML Documentation</title>
+      <p>
+	The Coyotos documentation system is based on the assumption
+	that Coyotos documentation is written in XML using the
+	<doctitle>osdoc</doctitle> DTD. The Coyotos documentation tree
+	includes a set of XSLT transformers that produce both online
+	(HTML) and offline (PDF) versions of these documents. The
+	PDF versions are generated using LaTeX.
+      </p>
+      <p>
+	The document generation process is controlled by the
+	<makevar>XMLSOURCE</makevar> variable. This variable should be
+	defined <em>before</em> including
+	<filename>makerules.mk</filename>. It's content should be a
+	list of XML input file names <em>without</em> the
+	<filename>.xml</filename> file name suffix. For the document
+	you are reading, the relevant line of the makefile is:
+      </p>
+      <literallayout>
+XMLSOURCE=build
+</literallayout>
+      <p>
+	The documentation support makefile fragments are only included
+	if the <makevar>XMLSOURCE</makevar> variable is defined. By
+	default, both HTML and PDF output are generated for all XML
+	input documents.
+      </p>
+      <p>
+	The XML translation mechanism also knows how to generate
+	<filename>.eps</filename> and <filename>.gif</filename> (soon
+	switching to PNG) files from XFIG input. Figure files should
+	be identified by the <makevar>FIGSOURCE</makevar> makefile
+	variable. As with <makevar>XMLSOURCE</makevar>, this should be
+	defined before <filename>makerules.mk</filename> is included:
+      </p>
+      <literallayout>
+FIGSOURCE=fig1.fig fig2.fig fig3.fig
+</literallayout>
+      <p>
+	We need better figure management system than XFIG, but the
+	current system is better than nothing.
+      </p>
+      <p>
+	Because generating <filename>.gif</filename> and
+	<filename>.eps</filename> files from the
+	<filename>.fig</filename> sources is so fast, and because the
+	output all goes in the same directory in any case, the current
+	xml makefile fragments don't really attempt to associate
+	individual figures to individual documents within a single XML
+	document directory.
+      </p>
+    </sect2>
+    <sect2>
+      <title>Building Object Code</title>
+      <p>
+	In contrast to documentation, which is driven from the list of
+	source files, object code compilation is driven from the list
+	of target files. An example is provided below.
+      </p>
+      <p>
+	Several of the
+	makefile variables shown deserve particular attention, because
+	they control various aspects of the build process:
+      </p>
+      <deflist>
+	<defli>
+	  <label><makevar>CROSS_BUILD</makevar></label>
+	  <li>
+	    <p>
+	      States whether the build in this directory is done for
+	      the host (<progident>CROSS_BUILD=no</progident>) or for
+	      the target environment
+	      (<progident>CROSS_BUILD=yes</progident>). This variable
+	      needs to be declared before
+	      <filename>makerules.mk</filename> is included. It
+	      determines which set of compilers and build rules are
+	      used to build source files in the current directory.
+	    </p>
+	  </li>
+	</defli>
+	<defli>
+	  <label><makevar>OBJECTS</makevar></label>
+	  <li>
+	    <p>
+	      The complete list of object files
+	      (<filename>.o</filename> files) that should be built in
+	      this directory. The <makevar>OBJECTS</makevar> variable
+	      is also used to determine the automatic dependency
+	      management files that need to be generated.
+	    </p>
+	  </li>
+	</defli>
+	<defli>
+	  <label><makevar>OPTIM</makevar></label>
+	  <li>
+	    <p>
+	      The optimization level that should be applied. This
+	      defaults to <command>-O2</command>, but can be
+	      overridden locally.
+	    </p>
+	  </li>
+	</defli>
+	<defli>
+	  <label><makevar>IMGMAP</makevar></label>
+	  <li>
+	    <p>
+	      Each service that is built into the system bootstrap
+	      image has an associated image map fragment (a
+	      <filename>.imgmap</filename> file). A corresponding
+	      header file is created for each image map file. The list
+	      of image map files, if any, should be given using the
+	      <makevar>IMGMAP</makevar> variable.
+	    </p>
+	  </li>
+	</defli>
+      </deflist>
+      <p>
+	And here is an annotated example:
+      </p>
+      <literallayout>
+default: package
+
+COYOTOS_SRC=../../..
+# Use the <makevar>CROSS_BUILD</makevar> variable to say that this is a cross build.
+# If absent, the build is assumed to be a host build.
+CROSS_BUILD=yes  
+
+# Convention: binaries (or libraries) built in the current 
+# directory are named by the <makevar>TARGETS</makevar> variable.
+TARGETS=$(BUILDDIR)/sample
+
+# Convention: bootstrap image map files must be named by the
+# <makevar>IMGMAP</makevar> variable. If <filename><em>x</em>.imgmap</filename> is listed in the <makevar>IMGMAP</makevar>
+# variable, then <filename><em>$(BUILDDIR)/x</em>-constituents.h</filename> will be automatically generated
+# by the automatic make rules.
+IMGMAP=sample.imgmap
+
+# Convention: all object files produced in this directory should
+# be listed in the <makevar>OBJECTS</makevar> variable, and should
+# be prefixed by "$(BUILDDIR)/". If there are multiple targets, each
+# should have its own specialized <makevar>X_OBJECTS</makevar>, <makevar>Y_OBJECTS</makevar> variables,
+# which should be accumulated into <makevar>OBJECTS</makevar>
+OBJECTS=$(BUILDDIR)/sample.o
+
+# Default optimization level can be overridden by setting the value
+# of <makevar>OPTIM</makevar>.
+OPTIM=-O
+# Include path can be modified by altering value of <makevar>INC</makevar>
+INC=-I$(EROS_ROOT)/include
+# Additional defines can be provided by altering value of <makevar>DEFS</makevar>
+DEFS=-DSOMEDEF
+
+include $(COYOTOS_SRC)/build/make/makerules.mk
+
+# Convention: local 'all' target causes $(TARGETS) to be built.
+# That is, 'all' is the local build target. The 'all' target
+# should not recurse &mdash; it is assumed that the install
+# target has already done that.
+all: $(TARGETS)
+
+# Link rule for the sample binary (<em>this will need to change for</em>
+# <em>Coyotos</em>)
+$(BUILDDIR)/sample: $(OBJECTS) $(DOMCRT0) $(DOMLIB)
+	$(DOMLINK) $(DOMLINKOPT) $(DOMCRT0) $(OBJECTS) -lsmall $(DOMLIB) -o $@
+
+# Convention: 'install' target depends on 'all', installs
+# targets into destination directory relative to <makevar>COYOTOS_ROOT</makevar>
+install: all
+	$(INSTALL) -d $(COYOTOS_ROOT)/domain
+	$(INSTALL) -m 755 $(TARGETS) $(COYOTOS_ROOT)/domain
+	$(INSTALL) -m 644 $(IMGMAP) $(COYOTOS_ROOT)/domain
+
+# Convention: last line of makefile should be the following, which
+# ensures that existing automatic dependency files are reloaded
+# after each execution.
+-include $(BUILDDIR)/.*.m
+</literallayout>
+      <p>
+	Normally, the above mechanisms are sufficient. The
+	<filename>makerules.mk</filename> file includes
+	<filename>makevars.mk</filename>, which internally constructs
+	values for the usual make variables
+	<makevar>GCCFLAGS</makevar>, <makevar>GPLUSFLAGS</makevar>,
+	and so forth. Along the way, the value of
+	<makevar>CROSS_BUILD</makevar> is used to decide how to set
+	the values of variables <makevar>GCC</makevar>,
+	<makevar>GPLUS</makevar>, <makevar>LD</makevar>, and
+	friends. A more complete list of all variables associated with
+	the build mechanism is certainly needed. For a better sense of
+	what is going on, see <filename>makevars.mk</filename> and
+	<filename>build-rules.mk</filename>. The variable names
+	definitely need to be regularized and cleaned up.
+      </p>
+      <p>
+	The compilation mechanism is tuned to rebuild the associated
+	automatic dependency files whenever an object file is rebuilt.
+      </p>
+    </sect2>
+  </sect1>
+  </article>

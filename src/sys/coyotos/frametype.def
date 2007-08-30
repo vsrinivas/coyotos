@@ -1,0 +1,56 @@
+/*
+ * Copyright (C) 2007, The EROS Group, LLC.
+ *
+ * This file is part of Coyotos kernel.
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2
+ * of the License, or (at your option) any later version.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, 59 Temple Place - Suite 330 Boston, MA 02111-1307, USA.
+ */
+
+/** @file
+ * @brief Definition of Object Frame type codes. 
+ *
+ * These neeed to be accessable to assembly code and so are defined
+ * using a separate definitions file. See also capability.h
+ */
+
+#ifndef DEFFRAME
+#define DEFFRAME(ft, val)
+#endif
+
+#ifndef ALIASFRAME
+#define ALIASFRAME(alias_ft, ft, val)
+#endif
+
+#ifndef NODEFFRAME
+#define NODEFFRAME(ft, val)
+#endif
+
+/*
+ * These frame types must be in numerical order, with DEFFRAMEs and
+ * ALIASFRAMEs first, followed by a single NODEFFRAME which contains
+ * NTYPE.  The number allocations must be dense.
+ */
+DEFFRAME(Page,     0)
+DEFFRAME(Process,  1)
+DEFFRAME(GPT,      2)
+DEFFRAME(Endpoint, 3)
+
+ALIASFRAME(CapPage, Page, 4)  /* CapPages are treated as Pages */
+
+NODEFFRAME(NTYPE,  5)
+
+#undef DEFFRAME
+#undef ALIASFRAME
+#undef NODEFFRAME

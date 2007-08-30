@@ -1,0 +1,7 @@
+package coyotos;
+
+/**
+ * @brief Capability page interface
+ */
+interface CapPage extends AddressSpace {
+};

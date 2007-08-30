@@ -1,0 +1,37 @@
+package coyotos;
+
+/**
+ * @brief Endpoint interface
+ *
+ * An endpoint is a destination for a message. Endpoints are described
+ * in detail in the Coyotos Microkernel Specification.
+ */
+interface Endpoint extends Cap {
+  /// @brief Set the recipient process @p p.
+  ///
+  /// Raised the RequestError exception if the inserted capability is
+  /// not a process capability.
+  void setRecipient(coyotos.Process p);
+
+  /// @brief Enable protected payload matching.
+  ///
+  /// Note that payload matching cannot be disabled once enabled. This
+  /// ensures that Entry capabilities which become invalid as a result
+  /// of a payload match failure remain invalid.
+  void setPayloadMatch();
+
+  /// @brief Set the endpoint identifier value to @p id.
+  void setEndpointID(unsigned long long id);
+
+  /// @brief Fetch the endpoint identifier valued.
+  unsigned long long getEndpointID();
+
+  /// @brief Fabricate an entry capability to this endpoint.
+  Cap makeEntryCap(payload_t payload);
+
+  /// @brief Fabricate an application interrupt issuance capability to
+  /// this endpoint capable of sending application-defined interrupt
+  /// <em>i</em> exactly if bit <em>i</em> of @p allowedInts is
+  /// non-zero.
+  AppInt makeAppInt(unsigned long allowedInts);
+};

@@ -1,0 +1,9 @@
+module add_data {
+  import sp = SimpleProc;
+
+  sp.setupSpace(sp.proc, "add_data.exe");
+}
+
+// Local Variables:
+// mode:c
+// End:

@@ -1,0 +1,43 @@
+package coyotos;
+
+/// @brief Kernel interface for per-process fault handlers.
+///
+/// A fault handler should implement this interface on its entry point
+/// capability. When delivering a fault to an external handler, the
+/// kernel will upcall the fault according to the protocol of this
+/// interface.
+
+interface MemoryHandler extends Cap {
+  /// @brief Kernel-invoked entry point for process fault handler.
+  ///
+  /// This entry point is invoked by the kernel. The capability @p
+  /// proc names the process that incurred the fault.  The @p fault
+  /// structure provides the fault code and the issued address
+  /// <em>relative to the managed GPT</em> at which the fault
+  /// occurred.
+  ///
+  /// Whether the fault will be resolved is at the discretion of the
+  /// invoked handler. If the handler chooses to resolve the fault, it
+  /// should take any action necessary to prevent recurrence and then
+  /// call the Process.resume method on @p proc with the @c clearFault
+  /// parameter set to @c true. This will clear the fault and allow
+  /// the victim process to restart the faulting instruction.
+  ///
+  /// If the memory fault handler is unable to resolve the fault, it
+  /// should call the Process.resume method on @p proc with the @c
+  /// clearFault parameter set to @c false. This will cause the
+  /// process to restart with the fault still pending, which will
+  /// cause the per-process handler to be invoked.
+  ///
+  /// Note that the process capability @p proc supplied by the kernel
+  /// at this interface is the restricted "restart" form. It permits
+  /// only the resume() method and the getType() method. Any other
+  /// operation will generate a NoAccess response.
+  ///
+  /// The capability supplied in the reply slot at the time of upcall
+  /// from the kernel will be the Null capability. Merely replying in
+  /// the conventional way is @em not sufficient to restart the
+  /// faulted process.
+  void handle(Process proc, Process.FC faultCode, 
+	      unsigned long long faultInfo);
+};

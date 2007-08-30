@@ -1,0 +1,10 @@
+module circ2 {
+
+  import id = circ1;
+
+  def a = 1;
+}
+
+// Local Variables:
+// mode:c
+// End:

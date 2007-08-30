@@ -1,0 +1,12 @@
+module test.space2 {
+  print "readfile(\"BUILD/mkimage\")";
+  def foo = readfile("BUILD/mkimage");
+  print_space(foo);
+  print lookup_addr(foo, 0x0000);
+  print lookup_addr(foo, 0x10c0);
+  print lookup_addr(foo, 0x10d0);
+  print lookup_addr(foo, 0x20d0);
+}
+// Local Variables:
+// mode:c
+// End:

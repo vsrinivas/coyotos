@@ -1,0 +1,321 @@
+<?xml version="1.0"?>
+<!DOCTYPE article PUBLIC "-//EROS Group//DTD OSDoc XML V0.1//EN"
+               "http://www.coyotos.org/OSDoc/DTD/osdoc-0.1.dtd" [
+
+<!ENTITY DocVersion "0.1">
+]>
+  <article id="ukernel-reliable-secure" xmlns:xi="http://www.w3.org/2001/XInclude">
+  <docinfo>
+    <title>Debunking Linus's Latest</title>
+<!--     <subtitle>Version &DocVersion;</subtitle> -->
+    <authorgroup>
+      <author>
+	<firstname>Jonathan</firstname>
+	<surname>Shapiro</surname>
+	<degree>Ph.D.</degree>
+      </author>
+<!--       <author> -->
+<!-- 	<firstname>Eric</firstname> -->
+<!-- 	<surname>Northup</surname> -->
+<!--       </author> -->
+      <affiliation>
+	<orgname>Systems Research Laboratory</orgname>
+	<address>Dept. of Computer Science</address>
+	<address>Johns Hopkins University</address>
+      </affiliation>
+    </authorgroup>
+    <pubdate>May 11, 2006</pubdate>
+<!--     <copyright> -->
+<!--       <year>2006</year>  -->
+<!--       <holder>Jonathan S. Shapiro</holder> -->
+<!--     </copyright> -->
+    <categories>
+      <category>dev/misc</category>
+    </categories>
+    <synopsis>
+      <p>Thoughts in reponse to the latest Tanenbaum/Torvalds exchange.</p>
+    </synopsis>
+  </docinfo>
+  <!-- latex.breakafter="yes" -->
+<!--   <abstract latex.incolumn="yes"> -->
+<!--     <p> -->
+<!--       Coyotos is a (mostly) evolutionary step from the EROS kernel. -->
+<!--       This document briefly summarizes the major architectural -->
+<!--       differences between EROS and Coyotos, and gives the rationale -->
+<!--       for each change. It looks both at the changes that have been -->
+<!--       definitely decided, and also at some questions in the -->
+<!--       Coyotos architecture that still remain open. -->
+<!--     </p> -->
+<!--   </abstract> -->
+  <p>
+    Well, it appears to be 1992 all over again. Andy Tanenbaum is
+    once again advocating microkernels, and Linus Torvalds is once
+    again saying what an ignorant fool Andy is.  It probably won't
+    surprise you much that I got a bunch of emails asking for
+    <em>my</em> thoughts on the exchange. I should probably keep my
+    mouth shut, but here they are.  Linus, as usual, is strong on
+    opinons and short on facts.
+  </p>
+  <p>
+    For those of you who are coming to this late, Andy's article
+<doctitle><link
+href="http://www.computer.org/portal/site/computer/menuitem.5d61c1d591162e4b0ef1bd108bcd45f3/index.jsp?&amp;pName=computer_level1_article&amp;TheCat=1005&amp;path=computer/homepage/0506&amp;file=cover1.xml&amp;xsl=article.xsl&amp;">Can
+We Make Operating Systems Reliable and Secure?</link></doctitle>
+appeared in the May 2006 <b>IEEE Computer</b>. Linus's response
+appeared online (in <doctitle><link
+href="http://www.realworldtech.com/forums/index.cfm?action=detail&amp;id=66630&amp;threadid=66595&amp;roomid=11">email</link></doctitle>).
+The web-based version of this note provides links to both.
+  </p>
+  <p>
+    <b>May 15 Addendum</b>: Andy has written his own rebuttal at <link
+    href="http://www.cs.vu.nl/~ast/reliable-os">www.cs.vu.nl/~ast/reliable-os</link>,
+    which is also good reading.
+  </p>
+  <sect1>
+    <title>Some Thoughts on Tanenbaum's Article</title>
+    <p>
+      The Tanenbaum article gives a nice overview of issues in
+      operating system reliability, and a general audience
+      introduction to Microsoft's <em>Singularity</em>, the
+      <em>L4</em> work on operating system rehosting (which is
+      <em>not</em> paravirtualization), and Tanenbaum's own work on
+      <em>Minix-3</em>. It is a general article for a general
+      audience, and one should not confuse it for any sort of
+      scholarly treatment of the area.
+    </p>
+    <p>
+      This kind of writing, by the way, is very hard for experts to
+      do. We get caught in the details of our areas, and it is very
+      hard to come to the surface far enough to explain this stuff to
+      a general audience &mdash; or even to our colleagues. The space
+      and citation limits for <doctitle>IEEE Computer</doctitle> add
+      further challenges, so take what follows with caution. There is
+      simply no way that Andy could have addressed such complex issues
+      in a balanced way in the space that he had.
+    </p>
+    <p>
+      Some issues: Concerning paravirtualization, the article doesn't
+      give credit to the right group. It doesn't mention two systems
+      that have been demonstrating his case in research and commercial
+      environments for decades. Finally, the article neglects two
+      obvious facts that strongly support Andy's argument. Let me deal
+      with each of these issues briefly, and then turn to Linus.
+    </p>
+    <sect2>
+      <title>Paravirtualization</title>
+      <p>
+        Paravirtualization is an important idea, both in its own right
+        and as a partial solution for reliability. It is going to be
+        critical in the success of the Intel and AMD hardware
+        virtualization support.
+      </p>
+      <p>
+        The credit for this idea and its development properly belongs
+        with the Xen team) at Cambridge University (see:
+        <doctitle><link
+        href="http://www.cl.cam.ac.uk/Research/SRG/netos/papers/2003-xensosp.pdf">Xen
+        and the Art of Virtualization</link></doctitle>, not with the
+        L4 team in Dresden. The idea of adapting paravirtualization to
+        a microkernel for use <em>within</em> an operating system is,
+        frankly, silly. Several existing microkernels, including
+        L4.sec (though not L3 or L4), KeyKOS, EROS, Coyotos, and
+        CapROS, have isolation and communication mechanisms that are
+        already better suited to this task. My list intentionally does
+        <em>not</em> include Minix-3, where IPC is unprotected. The
+        major change between L4 and L4.sec is the migration to
+        protected IPC.
+      </p>
+      <p>
+        In practice, the reason that the L4 team looked at
+        paravirtualization was to show that doing it on a microkernel
+        was actually <em>faster</em> than doing it on Xen. This was
+        perfectly obvious to anybody who had actually read the
+        research literature: the L4Linux performance was noticeably
+        better than the Xen/Linux performance. The only question was:
+        how well would L4Linux scale when multiple copies of Linux
+        were run. The answer was: very well.
+      </p>
+      <p>
+        Xen's efforts to provide production-grade reliability and
+        security have not yet succeeded.  L4 has unquestionably
+        demonstrated reliability, but only in situations where the
+        applications are not hostile. L4 has <em>not</em> demonstrated
+        practical success in security or fault isolation. This is the
+        new push in the L4 community. It is why L4.sec (a new research
+        project centered at Dresden) has adopted some fairly
+        substantial architectural evolution in comparison to the L3
+        and L4 architectures.
+      </p>
+    </sect2>
+    <sect2>
+      <title>Other Systems</title>
+      <p>
+        The KeyKOS/EROS/Coyotos line of work (and now CapROS) have
+        been <em>doing</em> what this article talks about since the
+        late 1970's. KeyKOS was a significant commercial success. EROS
+        was a retreat to a pure research phase. CapROS (which is based
+        on the EROS code) is being developed commercially by Charlie
+        Landau for medium robustness embedded applications. Coyotos
+        (which is my own successor to EROS) will be shipping in 2007
+        into a number of mission critical applications around the
+        world, and shortly thereafter into high-robustness medical
+        applications.
+      </p>
+      <p>
+        Setting aside my own work, there is also the example of the
+        AS/400. The OS/400 operating system isn't a microkernel
+        system, but the OS/400 infrastructure <em>does</em> support
+        component-structured applications (which is the <em>real</em>
+        goal of microkernel designs), and the people who have built
+        software on it swear by both the robustness and the
+        maintainability of the resulting systems. Unfortunately, I'm
+        not aware of any good comparative measurements supporting this
+        assertion. If you know of any, please <em>tell</em> me!
+      </p>
+    </sect2>
+    <sect2>
+      <title>The Facts</title>
+      <p>
+        Ultimately, there are two compelling reasons to consider
+        microkernels in high-robustness or high-security environments:
+      </p>
+      <ul>
+        <li>
+          <p>
+            There are <em>several</em> examples of microkernel-based
+            systems that have succeeded in these applications
+            <em>because</em> of the system structuring that
+            microkernel-based designs demand.
+          </p>
+        </li>
+        <li>
+          <p>
+            There are <em>zero</em> examples of high-robustness or
+            high-security monolithic systems.
+          </p>
+        </li>
+      </ul>
+      <p>
+        With that said, let me move on to Linus.
+      </p>
+    </sect2>
+  </sect1>
+  <sect1>
+    <title>Linus's Latest Response</title>
+    <p>
+      Linus makes some statements that are (mostly) true, but he draws
+      the wrong conclusions.
+    </p>
+    <blockquote>
+      <p>
+        <em>... It's ludicrous how microkernel proponents claim
+          that their system is "simpler" than a traditional
+          kernel. It's not. It's much much more complicated, exactly
+          because of the barriers that it has raised between data
+          structures.</em>
+      </p>
+      <p>
+        <em>The fundamental result of [address] space separation is that
+          you can't share data structures. That means that you can't
+          share locking, it means that you must copy any shared data,
+          and that in turn means that <b>you have a much harder time
+            handling coherency.</b></em>
+      </p>
+    </blockquote>
+    <p>
+      The last sentence is obviously wrong: when you do not share
+      data structures, there is no coherency problem by
+      definition. 
+      Technically, it <em>is</em> possible to share memory in
+      microkernel-based applications, but the statement is true in
+      the sense that this practice is philosophically discouraged.
+    </p>
+    <p>
+      I don't think that experienced microkernel advocates have ever
+      argued that a microkernel system is simpler overall. Certainly,
+      no such argument has appeared in the literature. The components
+      are easier to test and engineer, but Linus makes a good point
+      when he says <em>The fact that each individual piece is simple
+      and secure does not make the aggregate ... simple</em> (he adds:
+      <em><b>or</b> secure</em>, which is wrong). I don't think that
+      any of us would claim that large systems are simple, but this
+      complexity is an intrinsic attribute of large systems. It has
+      nothing to do with software construction.
+    </p>
+    <p>
+      What modern microkernel advocates claim is that properly
+      component-structured systems are engineerable, which is an
+      entirely different issue. There are many supporting examples for
+      this assertion in hardware, in software, in mechanics, in
+      construction, in transportation, and so forth. There are
+      <em>no</em> supporting examples suggesting that unstructured
+      systems are engineerable. In fact, the suggestion flies in the
+      face of the entire history of engineering experience going back
+      thousands of years. The triumph of 21st century software, if
+      there is one, will be learning how to structure software in a
+      way that lets us apply what we have learned about the
+      <em>systems</em> engineering (primarily in the fields of
+      aeronautics and telephony) during the 20th century.
+    </p>
+    <p>
+      Linus argues that certain kinds of systemic performance
+      engineering are difficult to accomplish in
+      component-structured systems. At the level of drivers this is
+      true, and this has been an active topic of research in the
+      microkernel community in recent years. At the level of
+      applications, it is completely false. The success of things
+      like GNOME and KDE rely utterly on the use of IDL-defined
+      interfaces and separate component construction. Yes, these
+      components share an address space when they are run, but this
+      is an artifact of implementation. The important point here is
+      that these applications scale <em>because</em> they are
+      component structured.
+    </p>
+    <p>
+      Ultimately, Linus is missing the point. The alternative to
+      structured systems is <em>unstructured</em> systems. The type of
+      sharing that Linus advocates is the central source of
+      reliability, engineering, and maintenance problems in software
+      systems today. The goal is not to do sharing efficiently. The
+      goal is to structure a system in such a way that sharing is
+      minimized and carefully controlled. Shared-memory concurrency is
+      <em>extremely</em> hard to manage. Consider that
+      <em>thousands</em> of bugs have been found in the Linux kernel
+      in this area alone. In fact, it is well known that this approach
+      cannot be engineered for robustness, and shared memory
+      concurrency is routinely excluded from robust system designs for
+      this reason.
+    </p>
+    <p>
+      Yes, there are areas where shared memory interfaces are required
+      for performance reasons. These are much fewer than Linus
+      suppposes, but they are indeed hard to manage (see:
+      <doctitle><link
+      href="http://www.eros-os.org/papers/IPC-Assurance.ps">Vulnerabilities
+      in Synchronous IPC Designs</link></doctitle>). The reasons have
+      to do with resource accountability, not with system structure.
+    </p>
+    <p>
+      When you look at the evidence in the field, Linus's statement
+      ``the whole argument that microkernels are somehow `more secure'
+      or `more stable' is also total crap'' is simply wrong. In fact,
+      <em>every</em> example of stable or secure systems in the field
+      today is microkernel-based. There are no demonstrated examples
+      of highly secure or highly robust unstructured (monolithic)
+      systems in the history of computing.
+    </p>
+    <p>
+      The essence of Linus's argument may be restated as
+      ``Microkernel-based systems make it very hard to successfully
+      use a design approach that is known to be impossible to
+      engineer robustly.''
+    </p>
+    <p>
+      I agree completely.
+    </p>
+  </sect1>
+  </article>
+
+<!-- Local Variables: -->
+<!-- indent-tabs-mode:nil -->
+<!-- End: -->

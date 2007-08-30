@@ -1,0 +1,50 @@
+package coyotos;
+
+/**
+ * @brief Process instantiation interface.
+ *
+ * The constructor is responsible for fabricating new process
+ * instances from application images. It also implements a test of
+ * confinement.
+ *
+ * A confined process is one that cannot (initially) communicate with
+ * any party other than its creator. The constructor tests confinement
+ * by examining the capabilities initially held by the process. As
+ * each capability is installed, the constructor determines whether
+ * this capability is ``safe'' (meaning that it does not permit
+ * outward communication) or a ``hole.'' Prior to fabricating a new
+ * process instance, a client can ask the fabricating constructor
+ * whether its yield would be confined.
+ *
+ * Constructors also implement a query to determine whether a process
+ * is its yield. This allows a client to determine whether a process
+ * alleging to be an instance of some binary X was in fact created by
+ * the constructor of X instances.
+ *
+ * The constructor itself is part of the system-wide trusted computing
+ * base. Its determination concerning process confinement can be
+ * relied upon @em provided the constructor itself is authentic. The
+ * authenticity of the constructor can be determined by asking the
+ * metaconstructor (the constructor of constructors) to authenticate
+ * its yield. In the normal Coyotos configuration, both the
+ * metaconstructor and the space bank verifier are readily available
+ * to applications as part of the standard runtime environment.
+ *
+ * A constructor lifecycle proceeds in two phases. In the builder
+ * phase, it is possible to install new capabilities into the
+ * constructor (see coyotos.builder). The coyotos.builder.seal()
+ * operation produces the constructor capability. Once sealed, new
+ * capabilities cannot be added to the constructor.
+ */
+interface Constructor extends Cap {
+
+  /// @brief Return true exactly if the constructor's yield is
+  /// confined.
+  boolean isYieldConfined();
+
+  /// @brief Create a new instance of the constructor's yield.
+  ///
+  /// The created instance is allocated from the provided space bank
+  /// and executes under the provided schedule.
+  Cap create(SpaceBank bank, Schedule sched);
+};

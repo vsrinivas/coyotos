@@ -1,0 +1,77 @@
+package coyotos;
+
+/// @brief Operations common to all Coyotos memory-related capabilities.
+///
+/// The memory interface captures constant values and operations that
+/// are common to all memory-related capabilities.
+abstract interface Memory extends Cap {
+  /// @brief Values used in the memory capability permissions mask.
+  ///
+  /// <b>Issue:</b> These values could be pre-biased to match the
+  /// positioning of the type field. Should they be? How confident are
+  /// we about the commitment to a 5-bit type field?
+  unsigned long bitset restrictions {
+    /// @brief Capability is weak.
+    ///
+    /// All capabilities fetched through a weak capability are
+    /// returned with (conservatively) read only and weak
+    /// permissions. If the kernel cannot determine how to perform
+    /// this downgrade, the returned capability will be null.
+    weak = 1,
+    /// @brief Capability is read only.
+    ///
+    /// This capability does not permit mutation of the target object.
+    readOnly = 2,
+    /// @brief Capability does not permit execution.
+    ///
+    /// On hardware that supports a non-execute control bit, attempts
+    /// to execute from a range marked noExecute will generate exceptions.
+    noExecute = 4,
+    /// @brief Capability is opaque.
+    ///
+    /// GPT does not permit slot fetch or store operations. This
+    /// restriction is not meaningful for Page or CapPage objects.
+    opaque = 8,
+    /// @brief Capability is no-call.
+    ///
+    /// No keeper will be called below this point in the memory traversal.
+    /// This restriction is not meaningful for Page or CapPage objects. 
+    noCall = 16
+  };
+
+  /// @brief Size of an address length.
+  typedef unsigned long l2value_t;
+
+  /// @brief Structure describing a guard word.
+  ///
+  /// Ideally we would like to specify this as a bitfield, but the
+  /// differences in bitfield packing rules from one platform to the
+  /// next involve too many variations for CapIDL to handle. We
+  /// therefore resort (reluctantly) to using a single word. The least
+  /// significant 7 bits of the word contain the l2g value. The most
+  /// significant 24 bits contain the match value.
+  typedef unsigned long guard_t;
+
+  /// @brief Return copy of current memory capability with reduced
+  /// permissions.
+  ///
+  /// The returned capability will implement the same concrete
+  /// interface as the invoked capability with appropriately reduced
+  /// permissions.
+  ///
+  /// Raises RequestError if an attempt is made to set the opaque or
+  /// no-call bits on a Page or CapPage capability.
+  Memory reduce(restrictions mask);
+
+  /// @brief Return a capability having a different guard value.
+  ///
+  /// The @p guard argument specifies the guard value to be set.
+  Memory setGuard(guard_t guard);
+
+  /// @brief Return the guard value stored in the capability.
+  void getGuard(out guard_t guard);
+ 
+  /// @brief Return the restriction bits set for this memory
+  /// capability.
+  unsigned long getRestrictions();
+};

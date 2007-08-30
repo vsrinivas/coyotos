@@ -1,0 +1,26 @@
+module test.program {
+  def image = loadimage("BUILD/mkimage");
+
+  enum {
+    null = 1,
+    range = 2
+  };
+
+  def tools = new cappage;
+  tools[null] = NullCap();
+  tools[range] = Range();
+
+  def proc = new process;
+  proc.faultCode = 25;		/* process startup fault code */
+  proc.faultInfo = image.pc;
+  proc.dataSpace = image.space;
+  proc.capReg[0] = tools;
+
+  print *proc;
+  print *proc.dataSpace;
+  print_space(proc.dataSpace);
+}
+
+// Local Variables:
+// mode:c
+// End:

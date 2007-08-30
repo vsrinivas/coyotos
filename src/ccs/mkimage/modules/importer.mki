@@ -1,0 +1,11 @@
+module importer {
+  import base = base;
+  def a = 2;
+
+  doprint("(local) a is ", a, "\n");
+  doprint("base.a is ", base.a, "\n");
+}
+
+// Local Variables:
+// mode:c
+// End:

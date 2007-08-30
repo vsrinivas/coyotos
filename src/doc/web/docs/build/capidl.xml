@@ -1,0 +1,773 @@
+<?xml version="1.0"?>
+<!DOCTYPE article PUBLIC "-//EROS Group//DTD OSDoc XML V0.1//EN"
+               "http://www.coyotos.org/OSDoc/DTD/osdoc-0.1.dtd" [
+
+<!ENTITY DocVersion "0.1">
+]>
+  <article id="capidl-spec" xmlns:xi="http://www.w3.org/2001/XInclude">
+  <docinfo twocolumn="yes">
+    <title>CapIDL Language Specification</title>
+    <subtitle>Version &DocVersion;</subtitle>
+    <authorgroup>
+      <author>
+	<firstname>Jonathan</firstname>
+	<surname>Shapiro</surname>
+	<degree>Ph.D.</degree>
+      </author>
+      <author>
+	<firstname>Mark</firstname>
+	<surname>Miller</surname>
+      </author>
+      <affiliation>
+	<orgname>Systems Research Laboratory</orgname>
+	<address>Dept. of Computer Science</address>
+	<address>Johns Hopkins University</address>
+      </affiliation>
+    </authorgroup>
+    <pubdate>February 13, 2006</pubdate>
+    <copyright>
+      <year>2006</year> 
+      <holder>Jonathan S. Shapiro</holder>
+      <holder>Mark Miller</holder>
+    </copyright>
+    <legalnotice>
+      <p indent="no">
+	THIS SPECIFICATION IS PROVIDED ``AS IS'' WITHOUT ANY
+	WARRANTIES, INCLUDING ANY WARRANTY OF MERCHANTABILITY,
+	NON-INFRINGEMENT, FITNESS FOR ANY PARTICULAR PURPOSE, OR ANY
+	WARRANTY OTHERWISE ARISING OF ANY PROPOSAL, SPECIFICATION OR
+	SAMPLE.
+      </p>
+    </legalnotice>
+    <categories>
+      <category>dev/build</category>
+    </categories>
+    <synopsis>
+      <p>Provisional specification for the CapIDL interface definition
+        language.</p>
+    </synopsis>
+  </docinfo>
+  <abstract latex.incolumn="yes" latex.breakafter="yes">
+    <p>
+      CapIDL is an interface definition language for capability-based
+      systems. It is loosely derived from the CORBA IDL language, and
+      specialized for the needs of capability-based systems.
+    </p>
+    <p>
+      This document provides an English-language specification of the
+      CapIDL input language and its intended meaning. CapIDL
+      intentionally does <em>not</em> include any specification of
+      transport-level data layout or application-layer serialization
+      rules. It is solely a specification of the interface layer.
+    </p>
+  </abstract>
+  <toc/>
+  <sect1>
+    <title>Overview</title>
+    <p>
+      This document is the reference definition for CapIDL.  CapIDL is
+      a language for the specification of interfaces between
+      subsystems. It is somewhat based on CORBA IDL. In contrast to
+      CORBA IDL, CapIDL is specialized for interfaces where:
+    </p>
+    <ul>
+      <li>
+        <p>
+          Interfaces are designated by capabilities. An interface name
+          is therefore a CapIDL type.
+        </p>
+      </li>
+      <li>
+        <p>
+          Caller and callee are firmly separated. CapIDL intentionally
+          lacks any means to define interfaces that rely on shared
+          memory or by-reference argument transmission.
+        </p>
+      </li>
+      <li>
+        <p>
+          Because accurate reference documentation for interfaces is
+          critical, CapIDL provides mechanisms for the definition of
+          interface and method documentation, and provides XML as an
+          output language. This XML can be post-processed to HTML,
+          OSDOC, or (presumably) other desired forms. The reference
+          interface documentation for the <link
+          href="../ukernel/spec.html">Coyotos</link> kernel is generated
+          this way.
+        </p>
+      </li>
+    </ul>
+    <p>
+      CapIDL is intended to provide a specification that is neutral
+      with respect to source language, but it attempts to tread the
+      line between being ``neutral'' and being ``naive.'' As a
+      concrete example of this, consider the definition of the POSIX
+      <progident>read()</progident> function. In languages that allow
+      preallocation of buffer storage, it is desirable to express the
+      fact that the output of the read can be placed directly into
+      this buffer. CORBA provides no means of saying this.
+    </p>
+  </sect1>
+  <sect1>
+    <title>Specification Conventions</title>
+    <p>
+      The primary conventions used in this document concern the
+      presentation of grammar rules. In grammar rule specifications,
+      non-terminals are presented in lowercase italics, categorical
+      terminals are shown in normal face, and literal terminals appear
+      in bold face or within single-quote characters. White space is
+      permitted between tokens. CapIDL is case sensitive; all CapIDL
+      keywords are lowercase.
+    </p>
+    <p>
+      Except when quoted, the characters <b>{</b> and <b>}</b>
+      indicate meta-syntatic grouping following the customary
+      representation of EBNF grammars. The superscript characters
+      <b>*</b>, <b>+</b>, and <b>?</b> indicate, respectively, zero or
+      more, one or more, or an optional item or group. Except when
+      quoted, the character ``:'' indicates the separation between a
+      non-terminal and its EBNF definition. For categorical terminals,
+      sets of input characters are abbreviated by enclosing them
+      within square brackets. Within such a set, the character '-'
+      denotes an inclusive lexical sequence according to the usual
+      conventions of regular expressions.
+    </p>
+  </sect1>
+  <sect1>
+    <title>Theory of Operation</title>
+    <p>
+      <em>Examples in this section are non-normative.</em>
+    </p>
+    <p>
+      Conceptually, an interface definition language specifies two
+      things:
+    </p>
+    <ol>
+      <li>
+        <p>
+          A collection of (versioned) interfaces, each of which
+          defines constants, types, and methods.
+        </p>
+      </li>
+      <li>
+        <p>
+          A set of name spaces that define containing scopes for these
+          interfaces.
+        </p>
+      </li>
+    </ol>
+    <p>
+      In practice, matters are slightly complicated by pragmatics. It
+      is desirable to be able to specify two (or more) interfaces in
+      separate input files that reside in the same name space, and it
+      is necessary to be able to specify independent name spaces that
+      ultimately can be unified into a single conceptual hierarchical
+      space of identifiers. The CapIDL <term>package</term> defines an
+      ``open'' name space that allows both objectives to be
+      satisfied. The recommended usage pattern follows the Java
+      convention for package names: the defining entity uses a
+      reversed, dotted domain name, as in:
+    </p>
+    <literallayout>
+package org.coyotos;</literallayout>
+    <p indent="no">
+      as its top-level name space.
+    </p>
+    <p>
+      Logically, packages and the identifiers they contain are defined
+      to occupy a single, unified namespace. It is an (unreliably
+      checked) error for a single identifier
+      <progident>a.b</progident> to refer ambiguously to both a
+      package and a declared element within a package. This
+      restriction is validated by CapIDL when possible. Since
+      interfaces are simultaneously being defined by multiple,
+      non-communicating organizations, it is impossible for a CapIDL
+      implementation to check this requirement in general. In
+      practice, the use of domain names as package names means that
+      most such errors occur within a single, localized group of
+      cooperating developers and are detected.
+    </p>
+    <p>
+      Coyotos interface definitions may make use of single
+      inheritance. The inheriting interface <em>extends</em> its
+      parent interface, providing all methods of the parent plus
+      additional methods unique to the extending interface:
+    </p>
+    <literallayout>
+interface parent {
+  <em>... declarations ...</em>
+};
+interface child extends parent {
+  <em>... additional declarations ...</em>
+}</literallayout>
+    <p>
+      Interfaces may make use of types defined on other interfaces,
+      provided this does not result in static circular dependency
+      among the interfaces involved. For this purpose, the use of an
+      interface name <em>as a type</em> does not create a dependency:
+      an interface name used as a type is conceptually a reference
+      type. In practice, such ``lateral'' interface cross-references
+      are rare; the more common pattern is for an interface to make
+      general use of other interface names as types, but to rely only
+      on data types defined by itself and its ancestor interfaces.
+    </p>
+    <p>
+      When used as a type name, an interface name denotes that a
+      capability argument is expected, and that the passed capability
+      is expected to be of the specified interface type (or an
+      extension). The CapIDL design assumes that capabilities are
+      dynamically typed, and does not emit code to type-check
+      capability arguments.
+    </p>
+  </sect1>
+  <sect1>
+    <title>Lexical Matters</title>
+    <p>
+      <leadin>Character Set</leadin> The CapIDL input character set is
+      the UTF-8 encoded UNICODE character set.
+    </p>
+    <p>
+      <leadin>Comments</leadin> CapIDL supports two comment formats
+      derived from C and C++. Any sequence beginning with
+      <tt><b>//</b></tt> and ending with the next newline is a
+      comment.  Any character sequence beginning with
+      <tt><b>/*</b></tt> and ending with the next <tt><b>*/</b></tt>
+      is a comment. No beginning of comment appearing within a comment
+      is considered lexically significant. For purposes of input
+      tokenization, a comment is considered to be whitespace, and
+      terminates any input token. Comments therefore cannot be used
+      for ``token splicing.''
+    </p>
+    <p>
+      <leadin>Documentation Comments</leadin> Certain comments have no
+      significance for purposes of programmatic interface
+      specification, but have significance to the humans who use these
+      interfaces. Any comment beginning with <tt><b>/***</b></tt>
+      followed by a space or a newline begins a documentation comment
+      that is terminated by the next appearance of <tt><b>*/</b></tt>
+      in the input. Similarly, any <em>consecutive sequence</em> of
+      comments beginning with <tt><b>///</b></tt> and terminating with
+      the next newline is a documentation comment. For this purpose, a
+      ``consecutive sequence'' of documentation comments is deemed to
+      include any sequence of <tt><b>///</b></tt> comments that are
+      separated only by white space.
+    </p>
+    <p>
+      Many productions in the CapIDL grammar include an underlined
+      <progident>Ident</progident> in a production that defines that
+      identifier. The appearance of this underlined terminal in the
+      indicates that the nearest preceding documentation comment will
+      be associated with the symbol being defined by the present
+      production <em>provided</em> that comment has not already been
+      associated with some other symbol.
+    </p>
+    <p>
+      <leadin>Identifiers</leadin> A CapIDL identifier consists of a
+      leading alphabetic character followed by zero or more
+      alphanumeric characters. For this purpose, the underscore
+      character is considered alphabetic:
+    </p>
+    <literallayout>
+Ident: [a-zA-Z_][a-zA-Z0-9_]*</literallayout>
+    <p indent="no">
+      Identifiers beginning with two leading underscores are reserved.
+      In general, a use-occurrence of an identifier may be a ``dotted
+      name''
+    </p>
+    <literallayout>
+<em>dotted_name</em>: Ident {'.' Ident}<sup>*</sup></literallayout>
+    <p indent="no">
+      With the intended meaning ``search for the leftmost identifier
+      according to the usual lexical scoping rules, treat the resolved
+      name as a scope, and search (recursively) within that scope for
+      the succeeding identifiers, but in no case should this search
+      resolve to any identifier definition that lexically follows the
+      use-occurence in any incompletely defined scope in the current
+      unit of compilation.
+    </p>
+    <p>
+      While the CapIDL input character set is UTF-8 encoded UNICODE,
+      CapIDL identifiers are restricted to the ISO-LATIN-1 subset of
+      the UNICODE identifier specification. In principle, the
+      identifier specification could be extended to UNICODE characters
+      more generally, and we expect that it eventually <em>will</em>
+      be extended in this fashion. For the moment, there remain many
+      programming languages whose source code character set is
+      restricted to the ISO-LATIN-1 subset. CapIDL adopts this
+      restriction for the sake of broad compatibility.
+    </p>
+    <p>
+      <leadin>Integer Literals</leadin> An integer literal
+      <progident>IntLit</progident> consists of a sequence of decimal
+      digits:
+    </p>
+    <literallayout>
+IntLit: [0-9]<sup>+</sup></literallayout>
+    <p><leadin>Constant Expresions</leadin> CapIDL allows the use of
+      an arbitrary arithmetic expression using the operators ``+'',
+      ``-'', ``*'', and ``/'' with their usual meanings and
+      precedence. Parenthesization is permitted. Both unary negation
+      and binary subtraction are supported. Constant expression values
+      are computed using arbitrary precision arithmetic. The
+      associated grammar rules are:
+    </p>
+    <literallayout>
+<em>const_expr</em>: <em>const_sum_expr</em>
+<em>const_sum_expr</em>:
+    <em>const_mul_expr</em>
+  | <em>const_mul_expr</em> '+' <em>const_mul_expr</em>
+  | <em>const_mul_expr</em> '-' <em>const_mul_expr</em>
+<em>const_mul_expr</em>:
+    <em>const_term</em>
+  | <em>const_term</em> '*' <em>const_term</em>
+  | <em>const_term</em> '/' <em>const_term</em>
+<em>const_term</em>:
+    <em>dotted_name</em>
+  | <em>literal</em>
+  | '(' <em>const_expr</em> ')'</literallayout>
+    <p indent="no">
+      with the restriction that a <em>dotted_name</em> must reference
+      some previously defined constant. Note that for purposes of
+      expression computation, character literals are considered to
+      denote their corresponding code points as integers.
+    </p>
+    <p>
+      <leadin><em>To Do</em></leadin> The specification will soon, but
+      does not yet, specify an input syntax for character, string, and
+      floating point literals.
+    </p>
+  </sect1>
+  <sect1>
+    <title>Structure of a Compilation Unit</title>
+    <p>
+      A CapIDL unit of compilation consists of a package declaration
+      followed by one or more declarations:
+    </p>
+    <literallayout>
+<em>UOC</em>: <em>package_dcl</em> <em>decl</em><sup>*</sup>
+<em>package_dcl</em>: <b>package</b> <em>dotted_name</em>
+<em>decl</em>:
+    <em>const_dcl</em> ';'
+  | <em>typedef_dcl</em> ';'
+  | <em>enum_dcl</em> ';'
+  | <em>bitset_dcl</em> ';'
+  | <em>except_dcl</em> ';'
+  | <em>struct_dcl</em> ';'
+  | <em>union_dcl</em> ';'
+  | <em>namespace_dcl</em> ';'
+  | <em>interface_dcl</em> ';'</literallayout>
+    <p indent="no">
+      Every declaration defined at package scope is defined within the
+      namespace defined by its containing package. The package and
+      declaration namespace are unified: it is an error for a single
+      identifier <progident>a.b</progident> to refer ambiguously to
+      both a package and a declared element within a package. This
+      requirement is validated by CapIDL when possible, but in the
+      absence of complete input it is not possible for CapIDL to
+      universally detect this error.
+    </p>
+  </sect1>
+  <sect1>
+    <title>Types</title>
+    <p>
+      The types of CapIDL are defined by:
+    </p>
+    <literallayout>
+<em>type</em>:
+  | <em>param_type</em>
+  | <em>seq_type</em>
+  | <em>buf_type</em>
+<em>param_type</em>:
+    <em>simple_type</em>
+  | <em>string_type</em>
+  | <em>array_type</em>
+  | <b>object</b>
+  | <em>dotted_name</em></literallayout>
+    <p indent="no">
+      Where <progident>object</progident> indicates any capability
+      type. Note that certain types may appear within structure,
+      union, and typedef declarations, but may not appear directly as
+      parameter types. This restriction exists to ensure that the
+      CapIDL code generator has a name for certain types that may not
+      be natively expressable in certain target languages.
+    </p>
+    <sect2>
+      <title>Basic Types</title>
+      <p>
+        The simple types of CapIDL consist of the integer types,
+        floating point types, character types, and
+        <progident>boolean</progident>. The character type
+        <progident>wchar</progident> includes an optional size specifier
+        giving the character code point size in bits. Legal values are
+        8, 16, and 32. If unadorned the <progident>wchar</progident>
+        type defaults to a 32-bit UNICODE code point.
+      </p>
+      <p>
+        The <progident>integer</progident> type may carry an optional
+        size qualifier giving the representation size of the integer
+        type in bits. The representable range of the corresponding value
+        is [-2<sup>n-1</sup>,2<sup>n-1</sup>-1]. The types
+        <progident>byte</progident>,
+        <progident>short</progident>,
+        <progident>long</progident>, and
+        <progident>long long</progident> are convenience syntaxes for
+        signed integer types of (respectively) 8, 16, 32, and 64 bits.
+      </p>
+      <p>
+        The <progident>unsigned</progident> type similarly may carry an
+        optional size qualifier in bits. The representable range of the
+        corresponding value is [0, 2<sup>n</sup>-1].
+        The types
+        <progident>unsigned byte</progident>,
+        <progident>unsigned short</progident>,
+        <progident>unsigned long</progident>, and
+        <progident>unsigned long long</progident> are convenience syntaxes for
+        unsigned integer types of (respectively) 8, 16, 32, and 64 bits.
+      </p>
+      <p>
+        Note that the unadorned type <progident>integer</progident>
+        indicates an <em>arbitrary precision</em> integer value. Such
+        a value has no statically known size. In general, the use of a
+        dynamically sized type requires additional data copying in the
+        stub code generated by CapIDL.
+      </p>
+      <literallayout>
+<em>simple_type</em>:
+    <b>boolean</b>
+  | <em>char_type</em>
+  | <em>integer_type</em>
+  | <em>float_type</em>
+
+<em>char_type</em>:
+    <b>char</b>
+  | <b>wchar</b>
+  | <b>wchar</b> '&lt;' <em>const_expr</em> '&gt;'
+
+<em>integer_type</em>:
+    <em>signed_integer_type</em>
+  | <em>unsigned_integer_type</em>
+
+<em>signed_integer_type</em>:
+    <b>integer</b>
+  | <b>integer</b> '&lt;' <em>const_expr</em> '&gt;'
+  | <b>byte</b>
+  | <b>short</b>
+  | <b>long</b>
+  | <b>long long</b>
+
+<em>unsigned_integer_type</em>:
+    <b>unsigned</b> '&lt;' <em>const_expr</em> '&gt;'
+  | <b>unsigned byte</b>
+  | <b>unsigned short</b>
+  | <b>unsigned long</b>
+  | <b>unsigned long long</b></literallayout>
+      <p>
+        The <progident>float</progident> type may carry an optional size
+        qualifier giving the representation size of the floating point
+        type in bits. All floating point values use IEEE format. Legal
+        values for the floating point size are 32, 64, and 128. The
+        types <progident>float</progident>,
+        <progident>double</progident>, and <progident>long
+          double</progident> are convenience syntax for floating point
+        types of (respectively) 32, 64, and 128 bits.
+      </p>
+<pagebreak/>
+      <literallayout>
+<em>float_type</em>:
+    <b>float</b> '&lt;' <em>const_expr</em> '&gt;'
+  | <b>float</b>
+  | <b>double</b>
+  | <b>long double</b></literallayout>
+    </sect2>
+    <sect2>
+      <title>Enumeration Types</title>
+      <p>
+        CapIDL supports two enumeration types: enumerations and bit
+        sets. An enumeration declaration takes the form:
+      </p>
+      <literallayout>
+<em>enum_dcl</em>:
+  <em>integer_type</em> <b>enum</b> ident 
+    '{' <em>enum_def</em> 
+        { ',' <em>enum_def</em> }<sup>*</sup> '}' ';'
+<em>enum_def</em>: ident 
+<em>enum_def</em>: ident '=' <em>const_expr</em></literallayout>
+      <p indent="no">
+        In the absence of a provided <em>const_expr</em>, the
+        enumeration value of an enumeration element takes on the
+        sequentially next greater value. If the first element of an
+        enumeration does not have a provided <em>const_expr</em>, it
+        is assigned the value zero.
+      </p>
+      <p>
+        The enumeration declaration introduces both new constant
+        definitions and a new type definition.
+      </p>
+      <p>
+        A bitset takes the form:
+      </p>
+      <literallayout>
+<em>bitset_dcl</em>:
+  <em>unsigned_integer_type</em> <b>bitset</b> ident 
+    '{' <em>enum_def</em> 
+        { ',' <em>enum_def</em> }<sup>*</sup> '}' ';'
+<em>enum_def</em>: ident 
+<em>enum_def</em>: ident '=' <em>const_expr</em></literallayout>
+      <p indent="no">
+        Bitsets are semantically equivalent to enumerations, with the
+        caveat that they may generate different type declarations in
+        some emitted languages. For example, in C++, the following code
+        generates a type error:
+      </p>
+      <literallayout>
+enum enum_t {
+  one = 1,
+  two = 2
+};
+int foo(enum_t arg);
+  ...
+foo(one|two);</literallayout>
+      <p indent="no">
+        If this enumeration is declared in CapIDL using a bitset, the
+        code will be emitted to use a typedef of an unsigned integer
+        type rather than an enumeration, which evades the warning.
+      </p>
+    </sect2>
+    <sect2>
+      <title>Composite Types</title>
+      <p>
+        A structure declaration takes the form:
+      </p>
+      <literallayout>
+<em>struct_dcl</em>:
+  <b>struct</b> ident '{' <em>member</em><sup>+</sup> '}' ';'
+<em>member</em>:
+    <em>struct_dcl</em> ';'
+  | <em>union_dcl</em> ';'
+  | <em>enum_dcl</em> ';'
+  | <em>bitset_dcl</em> ';'
+  | <em>namespace_dcl</em> ';'
+  | <em>const_dcl</em> ';'
+  | <em>element_dcl</em> ';'
+<em>element_decl</em>:  <em>type</em> ident
+<em>enum_def</em>: ident '=' <em>const_expr</em></literallayout>
+      <p>
+        A union declaration takes the form:
+      </p>
+      <literallayout>
+<em>union_dcl</em>:
+  <b>union</b> ident '{' 
+  <b>switch</b> '(' <em>switch_type</em> ident ')' '{'
+    <em>case</em><sup>+</sup>
+  '}' '}' ';'
+<em>switch_type</em>:
+    <em>integer_type</em>
+  | <em>char_type</em>
+  | <em>dotted_name</em>
+  | <b>boolean</b>
+<em>case</em>:
+  <em>case_label</em><sup>+</sup> <em>case_def</em><sup>*</sup> <em>element_dcl</em> ';'
+<em>case_label</em>:
+    <b>case</b> <em>const_expr</em> ':'
+  | <b>default</b> ':'
+<em>case_def</em>:
+    <em>struct_dcl</em> ';'
+  | <em>union_dcl</em> ';'
+  | <em>enum_dcl</em> ';'
+  | <em>bitset_dcl</em> ';'
+  | <em>namespace_dcl</em> ';'
+  | <em>const_dcl</em> ';'</literallayout>
+      <p indent="no">
+        Note that structure and union declarations implicitly define a
+        name space.
+      </p>
+    </sect2>
+    <sect2>
+      <title>Sequence Types</title>
+      <p>
+        CapIDL provides three classes of sequence types: arrays,
+        sequences, and buffers.  An array describes a fixed-length
+        vector of some type, and may appear only in a typedef,
+        structure, or union. Arrays are value types. A sequence
+        describes a dynamically sized (possibly statically bounded)
+        vector of some type. The ``content'' of a sequence type is
+        generally indirect.  A buffer describes a dynamically sized
+        (possibly statically bounded) vector of some type.
+      </p>
+      <p>
+        The difference between a sequence and a vector lies in their
+        use as parameters. an ``out buffer'' is actually an ``in''
+        parameter describing the size (the limit) of the buffer, and a
+        compound ``out'' parameter describing the number of elements
+        actually received (the new length) and the location into which
+        they should be received. Sequences should be used when the
+        destination storage for the out parameter should be allocated
+        by the CapIDL-generated stub procedure. Buffers should be used
+        when the destination storage for the out parameter is
+        preallocated by the caller.
+      </p>
+      <literallayout>
+<em>array_type</em>:
+  <b>array</b> '&lt;' <em>type</em> ',' <em>const_expr</em> '&gt;'
+<em>seq_type</em>:
+    <b>sequence</b> '&lt;' <em>type</em> '&gt;'
+  | <b>sequence</b> '&lt;' <em>type</em> ',' 
+                 <em>const_expr</em> '&gt;'
+<em>buf_type</em>:
+    <b>buffer</b> '&lt;' <em>type</em> '&gt;'
+  | <b>buffer</b> '&lt;' <em>type</em> ',' 
+               <em>const_expr</em> '&gt;'</literallayout>
+    </sect2>
+    <sect2>
+      <title>Exceptions</title>
+      <p>
+        An exception defines an alternate return value for an
+        interface method. Generally, the return value of a method is a
+        union of several exception types plus a ``normal'' return
+        type. Exceptions <em>may</em> have member fields to carry
+        additional information about the exceptional condition. Use of
+        such fields is rare.
+      </p>
+      <literallayout>
+<em>except_dcl</em>:
+    <b>except</b> ident
+  | <b>except</b> ident '{' <em>member</em><sup>+</sup> '}' ';'</literallayout>
+      <p indent="no">
+        Where <em>member</em> is defined above in the discussion of
+        <em>struct_dcl</em>.
+      </p>
+    </sect2>
+    <sect2>
+      <title>Typedef</title>
+      <p>
+        A new name may be introduced for an existing type using a
+        typedef declaration:
+      </p>
+      <literallayout>
+<em>typedef_dcl</em>:
+  <b>typedef</b> <em>type</em> ident</literallayout>
+    </sect2>
+  </sect1>
+  <sect1>
+    <title>Constants</title>
+    <p>
+      A constant declaration takes the form:
+    </p>
+    <literallayout>
+<em>const_dcl</em>:
+   <b>const</b> <em>simple_type</em> ident
+     '=' <em>const_expr</em> ';'</literallayout>
+    <p indent="no">
+      A declared constant may be used in any subsequent
+      <em>const_expr</em> wherever a <em>dotted_name</em> is expected.
+    </p>
+  </sect1>
+  <sect1>
+    <title>Name Spaces</title>
+    <p>
+      A namespace provides a means for wrapping a series of
+      declarations in a common containing scope:
+    </p>
+    <literallayout>
+<em>namespace_dcl</em>:
+  <b>namespace</b> ident '{' <em>decl</em><sup>+</sup> '}'</literallayout>
+  </sect1>
+  <sect1>
+    <title>Interfaces</title>
+    <p>
+      All of the preceding exist for the purpose of defining
+      interfaces and their methods. An interface is a (versioned)
+      namespace of methods and other declarations.
+    </p>
+    <literallayout>
+<em>interface_dcl</em>:
+  <b>interface</b> ident
+    { <b>extends</b> <em>dotted_name</em> }<sup>?</sup>
+    { <b>raises</b> '(' <em>exceptions</em> ')' }<sup>?</sup>
+  '{' <em>if_def</em><sup>+</sup> '}'
+<em>exceptions</em>:
+  <em>dotted_name</em> { ',' <em>dotted_name</em> }<sup>*</sup></literallayout>
+    <p indent="no">
+      Where <em>if_def</em> consists of:
+    </p>
+    <literallayout>
+<em>if_def</em>:
+    <em>struct_dcl</em>
+  | <em>union_dcl</em>
+  | <em>except_dcl</em>
+  | <em>namespace_dcl</em>
+  | <em>enum_dcl</em>
+  | <em>bitset_dcl</em>
+  | <em>typedef_dcl</em>
+  | <em>const_dcl</em>
+  | <em>opr_dcl</em></literallayout>
+    <p>
+      Note that an interface <em>raises</em> clause may refer to
+      exceptions that are declared within the raising interface.
+    </p>
+    <p>
+      The important production here is the one for <em>opr_decl</em>,
+      which is used to describe methods of interfaces. The general
+      form of <em>opr_decl</em> is:
+    </p>
+    <literallayout>
+<em>opr_dcl</em>:
+    { <b>nostub</b> | <b>client</b> }<sup>?</sup>
+    <b>oneway void</b> ident '(' <em>inparams</em><sup>?</sup> ')'
+    { <b>raises</b> '(' <em>exceptions</em> ')' }<sup>?</sup>
+  | { <b>nostub</b> | <b>client</b> }<sup>?</sup>
+    <em>ret_type</em> ident '(' <em>params</em><sup>?</sup> ')'
+    { <b>raises</b> '(' <em>exceptions</em> ')' }<sup>?</sup>
+  | { <b>inherits</b> ident
+<em>ret_type</em>: <b>void</b> | <em>type</em>
+<em>inparams</em>: <em>param_type</em> ident 
+          { ',' <em>param_type</em> ident }<sup>*</sup>
+<em>params</em>: <em>inout_param_type</em> ident 
+        { ',' <em>inout_param_type</em> ident }<sup>*</sup>
+<em>inout_param_type</em>: <b>out</b><sup>?</sup> <em>param_type</em></literallayout>
+    <p>
+      A <b>oneway</b> method has no expected reply, and must therefore
+      always have a return type of void.
+    </p>
+    <p>
+      The qualifier <b>nostub</b> indicates that the stub procedure
+      has been generated by hand, and CapIDL should not generate a
+      stub for this method.
+    </p>
+    <p>
+      The qualifier <b>client</b> indicates that a method is entirely
+      implemented in a client library, and is not actually part of the
+      interface protocol. Such a method may be included either for
+      descriptive completeness or for backwards compatibility. Note
+      that <b>client</b> implies <b>nostub</b>.
+    </p>
+    <p>
+      A method may raise exceptions as indicated in it's
+      <em>raises</em> clause. In addition, every method may raise any
+      exception identified for the interface as a whole.
+    </p>
+    <p>
+      An <b>inherits</b> declaration indicates explicitly that an
+      operation is inherited from a parent interface. this declaration
+      has no semantic effect. Its purpose is to allow additional,
+      interface-specific documentation to be added to an inheritor's
+      implementation of a function.
+    </p>
+  </sect1>
+  <appendix>
+    <title>Change History</title>
+    <p>This section is an attempt to track the changes to this
+      document by hand. It may not always be accurate!</p>
+    <p>This section is non-normative.</p>
+    <sect1>
+      <title>Version 0.1</title>
+      <p>
+        Initial capture.
+      </p>
+    </sect1>
+  </appendix>
+  </article>
+
+<!-- Local Variables: -->
+<!-- indent-tabs-mode:nil -->
+<!-- End: -->

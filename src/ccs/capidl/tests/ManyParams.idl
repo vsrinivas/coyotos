@@ -1,0 +1,32 @@
+package test;
+
+/// @brief Interface to test the case where four register words go in
+/// both directions.
+///
+/// This is an i386-specific test, to check a potential register
+/// allocator problem when the output is not optimized.
+interface ManyParams {
+  void needsFourWords(
+		      /* ipw0 holds invocation parameter word */
+		      /* ipw1 holds opcode */
+		      long john, // ipw2
+		      long james, // ipw3
+		      long peter, // ipw4
+		      long paul, // ipw5
+		      long fred, // ipw6
+		      long barney, // ipw7
+		      long al, 	// ipw8
+		      long capone, // ipw9
+
+		      /* opw0 holds invocation parameter word */
+		      out long mary, // opw1
+		      out long jane, // opw2
+		      out long alice, // opw3
+		      out long nancy, // opw4
+		      out long wilma, // opw5
+		      out long betty, // opw6
+		      out long bridgitte, // opw7
+		      out long marilyn, // opw8
+		      out long irma // opw9
+		      );
+};

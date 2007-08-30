@@ -1,0 +1,40 @@
+<?xml version="1.0"?>
+<!DOCTYPE directory PUBLIC "-//EROS Group//DTD OSDoc XML V0.1//EN"
+               "http://www.coyotos.org/OSDoc/DTD/osdoc-0.1.dtd">
+<directory xmlns:xi="http://www.w3.org/2001/XInclude">
+  <title>Coyotos Documentation</title>
+  <xi:include href="dir.dev.gxml#xpointer(/fakeroot/*)"/>
+<!--   <dirgroup> -->
+<!--     <title>User Documentation</title> -->
+<!--     <p>There is no user documentation (yet).</p> -->
+<!--   </dirgroup> -->
+  <dirgroup>
+    <title>Developer Documentation</title>
+    <p>Documents in this area should be of interest to
+    developers. They provide information on the BitC language, the
+    OSDoc documentation system, the build system, and various other
+    parts of the Coyotos system.</p>
+    <dir-expand-entries category="dev"/>
+    <dirgroup>
+      <title>Coyotos</title>
+      <dir-expand-entries category="dev/coyotos"/>
+    </dirgroup>
+    <dirgroup>
+      <title>Coyotos Build Tools</title>
+      <dir-expand-entries category="dev/build"/>
+    </dirgroup>
+    <dirgroup>
+      <title>Miscellaneous</title>
+      <dir-expand-entries category="dev/misc"/>
+    </dirgroup>
+    <dirgroup>
+      <title>The System View</title>
+      <dir-expand-entries category="dev/system"/>
+    </dirgroup>
+  </dirgroup>
+  <dirgroup>
+    <title>Published Papers</title>
+    <p>Papers about Coyotos or BitC.</p>
+    <dir-expand-entries category="papers"/>
+  </dirgroup>
+</directory>

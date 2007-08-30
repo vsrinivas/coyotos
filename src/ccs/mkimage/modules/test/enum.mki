@@ -1,0 +1,15 @@
+module test.enum {
+  enum {
+    a,
+    b = 3,
+    c
+  };
+
+  print a;
+  print b;
+  print c;
+}
+
+// Local Variables:
+// mode:c
+// End:

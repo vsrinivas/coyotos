@@ -1,0 +1,222 @@
+/* -*- mode: c++ -*- */
+%copyright {
+/*
+ * Copyright (C) 2007, The EROS Group, LLC.
+ *
+ * This file is part of the Coyotos Operating System.
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 2,
+ * or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+ */
+}
+
+%include {
+#include <stdint.h>
+#include <libsherpa/BigNum.hxx>
+#include <libcoyimage/CoyImage.hxx>
+#include "Value.hxx"
+#include "FQName.hxx"
+#include "Environment.hxx"
+#include "INOstream.hxx"
+#include "Interp.hxx"
+}
+
+%header { 
+struct UocInfo;
+}
+ 
+%members {
+ private:  
+  static unsigned long long astCount;
+  
+ public:
+  unsigned long long ID; // Unique ID of this AST
+
+  GCPtr<Value> litValue;
+  
+  unsigned printVariant;	// which syntax to use for pretty printing
+
+  GCPtr<UocInfo> uocInfo;  
+
+  // If this is a global identifier, fqn is its canonical fully
+  // qualified name. The interface component of an fqn is the
+  // IFNAME of the interface in which the symbol was defined.
+  // the ident component is the identifier under which the
+  // symbol was defined at the point of its original definition,
+  // which may or may not be the name that it has in any other
+  // environment (because USE may have aliased it under a different
+  // name).
+  FQName fqn;                 // CANONICAL fully qualified name
+
+  static GCPtr<AST> makeBoolLit(const sherpa::LToken &tok);
+  static GCPtr<AST> makeCharLit(const sherpa::LToken &tok);
+  static GCPtr<AST> makeIntLit(const sherpa::LToken &tok);
+  static GCPtr<AST> makeFloatLit(const sherpa::LToken &tok);
+  static GCPtr<AST> makeStringLit(const sherpa::LToken &tok);
+  
+  // Generate an identifier AST with a newly generated internal name.
+  // This will not have any particular type assigned to it, and is
+  // intended to be used in the front end passes before the type
+  // checker is involved.
+  static GCPtr<AST> genSym(const char *pfx = "tmp");
+
+  std::string asString() const;
+
+  void PrettyPrint(INOstream& out) const;
+  void PrettyPrint(std::ostream& out) const;
+
+  // For use in GDB:
+  void PrettyPrint() const;
+
+  sherpa::GCPtr<Value> interp(InterpState& is);
+} 
+
+%sourcetop {
+#include "UocInfo.hxx"
+
+using namespace sherpa ;
+unsigned long long AST::astCount = 0;
+}
+
+%source {
+GCPtr<AST> 
+AST::makeBoolLit(const sherpa::LToken &tok)
+{
+  GCPtr<AST> ast = new AST(at_boolLiteral, tok);
+  ast->litValue = new BoolValue(tok.str);
+  return ast;
+}
+
+GCPtr<AST> 
+AST::makeCharLit(const sherpa::LToken &tok)
+{
+  // FIX: (shap) This needs to convert to ordinal representation
+  // and use a more appropriate element type.
+
+  GCPtr<AST> ast = new AST(at_charLiteral, tok);
+  ast->litValue = new CharValue(tok.str);
+  return ast;
+}
+
+GCPtr<AST>  
+AST::makeIntLit(const sherpa::LToken &tok) 
+{
+  GCPtr<AST> ast = new AST(at_intLiteral, tok);
+  ast->litValue = new IntValue(tok.str);
+  return ast;
+}
+
+GCPtr<AST> 
+AST::makeFloatLit(const sherpa::LToken &tok) 
+{ 
+  GCPtr<AST> ast = new AST(at_floatLiteral, tok);
+  ast->litValue = new FloatValue(tok.str);
+  return ast;
+}
+
+GCPtr<AST> 
+AST::makeStringLit(const sherpa::LToken &tok)
+{
+  GCPtr<AST> ast = new AST(at_stringLiteral, tok);
+  ast->litValue = new StringValue(tok.str);
+  
+  return ast;
+}
+}
+
+%construct {
+  ID = ++(AST::astCount);
+  printVariant = 0;		// until otherwise stated
+}
+
+/* Use LEAF declarations for literals. */
+
+// IDENTIFIERS
+LEAF ident;
+LEAF string;
+LEAF ifident;
+AST usesel = ident ident;
+GROUP var = ident | usesel;
+
+// LITERALS [2.4]
+GROUP literal = intLiteral | stringLiteral | floatLiteral;
+
+// BOOLEAN LITERALS
+LEAF boolLiteral;
+// INTEGER LITERALS
+LEAF intLiteral;
+// INTEGER LITERALS
+LEAF charLiteral;
+// FLOATING POINT LITERALS
+LEAF floatLiteral;
+// STRING LITERALS
+LEAF stringLiteral;
+
+// COMPILATION UNITS
+// Note: UOC should match BLOCK.
+AST uoc = ident stmt+;
+
+// STATEMENTS
+GROUP stmt = s_print
+           | s_printstar
+           | s_def
+           | s_export_def
+           | s_assign
+           | s_return
+           | s_fndef
+           | s_export_fndef
+           | s_export
+           | s_enum
+           | s_export_enum
+           | s_import
+           | block
+           | expr;
+
+AST block = stmt+;
+
+AST s_print = expr;
+AST s_printstar = expr;
+AST s_assign = expr expr;
+AST s_return = expr;
+AST s_def = ident expr;
+AST s_export_def = ident expr;
+AST s_fndef = ident idlist block;
+AST s_export_fndef = ident idlist block;
+AST idlist = ident*;
+AST s_export = ident*;
+AST s_import = ident ident;
+AST s_enum = (ident|Null) enum_bind*;
+AST s_export_enum = (ident|Null) enum_bind*;
+AST enum_bind = ident expr?;
+AST s_bank = expr block;
+
+// EXPRESSIONS
+GROUP expr = 
+  intLiteral | stringLiteral
+  | ident
+  | fncall
+  | dot
+  | ifelse
+  | block
+  | vecref;
+
+AST fncall = expr expr*;
+
+AST ifelse = expr block (block|ifelse)?;
+
+AST dot = expr ident;
+
+AST vecref = expr expr;
+
+AST docString = stringLiteral?;

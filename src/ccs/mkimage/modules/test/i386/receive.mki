@@ -1,0 +1,15 @@
+module i386.receive {
+  import sp = i386.SimpleProc;
+
+  sp.text[0] = 0xb8;    // mov  $0x0400000, %eax  # Invoke Cap, RP set
+  sp.text[1] = 0x00;
+  sp.text[2] = 0x00;
+  sp.text[3] = 0x40;
+  sp.text[4] = 0x00;
+  sp.text[5] = 0xcd;   // int $30            # invoke system call
+  sp.text[6] = 0x30;
+}
+
+// Local Variables:
+// mode:c
+// End:

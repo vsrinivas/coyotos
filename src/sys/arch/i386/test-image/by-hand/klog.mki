@@ -1,0 +1,16 @@
+module klog {
+  import sp = SimpleProc;
+  
+  sp.setupSpace(sp.proc, "klog.exe");
+
+  def replyEP = make_endpoint(PrimeBank);
+  replyEP.recipient = sp.proc;
+  replyEP.pm = 1;
+
+  sp.proc.capReg[1] = replyEP;
+  sp.proc.capReg[2] = KernLog();
+}
+
+// Local Variables:
+// mode:c
+// End:

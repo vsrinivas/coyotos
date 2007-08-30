@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sbox>
+<sbox>
+  <wbox>
+    <field label="PM" size="1"/>
+    <field label="SM" size="1"/>
+    <field label="reserved" size="2"/>
+    <word label="endpointID" szlabel="60"/>
+  </wbox>
+  <word label="protPayload"/>
+  <word label="recipient" szlabel="cap_t"/>
+  <word label="ipw0" szlabel="64"/>
+  <word label="ipw1" szlabel="64"/>
+  <word label="ipw2" szlabel="64"/>
+</sbox>

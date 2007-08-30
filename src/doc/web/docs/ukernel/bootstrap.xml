@@ -1,0 +1,303 @@
+<?xml version="1.0"?>
+<!DOCTYPE article PUBLIC "-//EROS Group//DTD OSDoc XML V0.1//EN"
+               "http://www.coyotos.org/OSDoc/DTD/osdoc-0.1.dtd" [
+
+]>
+  <article id="bootstrap" xmlns:xi="http://www.w3.org/2001/XInclude">
+  <docinfo twocolumn="yes">
+    <title>Coyotos Bootstrap</title>
+    <authorgroup>
+      <author>
+	<firstname>Jonathan</firstname>
+	<surname>Shapiro</surname>
+	<degree>Ph.D.</degree>
+      </author>
+      <affiliation>
+	<orgname>Systems Research Laboratory</orgname>
+	<address>Dept. of Computer Science</address>
+	<address>Johns Hopkins University</address>
+      </affiliation>
+    </authorgroup>
+    <pubdate>September 27, 2005</pubdate>
+    <copyright>
+      <year>2005</year> 
+      <holder>Jonathan S. Shapiro</holder>
+    </copyright>
+    <categories>
+      <category>dev/coyotos</category>
+    </categories>
+    <synopsis>
+      <p>Description of the Coyotos bootstrap behavior.</p>
+    </synopsis>
+  </docinfo>
+  <abstract>
+    <p>
+      A quick look at the Coyotos kernel bootstrap mechanism.
+    </p>
+  </abstract>
+  <toc/>
+  <sect1>
+    <title>Overview</title>
+    <p>
+      One of the annoyingly complicated parts of the <link
+      href="http://www.eros-os.org">EROS</link> project was the kernel
+      bootstrap mechanism. This was complicated for several reasons:
+    </p>
+    <ul>
+      <li>
+	<p>
+	  The PC isn't exactly a friendly place for boot loader
+	  authors. Try writing 16-bit real mode code using a 32-bit C
+	  compiler for yourself. It's Fun!
+	</p>
+      </li>
+      <li>
+	<p>
+	  At the time, no general and flexible boot loader
+	  existed. Bryan Ford and Erich Stefan Boleyn were developing
+	  the <link
+	  href="http://www.gnu.org/software/grub/">grub</link> boot
+	  loader at about the same time we did the EROS boot loader.
+	</p>
+      </li>
+      <li>
+	<p>
+	  EROS didn't have a file system, and all of the existing boot
+	  loaders (particularly LILO and Grub) were very filesystem
+	  oriented.
+	</p>
+      </li>
+      <li>
+	<p>
+	  On the PC, there is a good bit of information you need from
+	  the BIOS, and it is helpful to collect it in the bootstrap
+	  program and throw it over the wall to the kernel. How to do
+	  this was a moving target at the time, because the PC
+	  environment was changing quite rapidly (LBA, bigger drives,
+	  new and incompatible BIOS extensions, and so forth).
+	</p>
+	<p>
+	  Further, there were existing legacy BIOSes that we felt we
+	  wanted to continue to support, mainly because I owned a
+	  couple of machines that ran them.
+	</p>
+      </li>
+    </ul>
+    <p>
+      As we begin the Coyotos project, matters have improved. Grub is
+      well established, and it is fairly easy to extend. Grub2 is
+      multiplatform, which is better still. Best of all, Grub is
+      already designed to provide to the OS essentially all of the
+      information that the EROS bootstrap was designed to provide (and
+      then some).
+    </p>
+    <p>
+      It isn't clear yet whether Coyotos will be persistent. We have
+      gone back and forth on this. At the moment we are leaning
+      towards peristence. If we choose to do a conventional file
+      system, then supporting Coyotos should simply be a matter of
+      adding an appropriate filesystem support module to Grub. The
+      issues I want to tackle here are:
+    </p>
+    <ul>
+      <li>
+	<p>
+	  <b>Preload:</b> How should preloaded regions be handled?
+	</p>
+      </li>
+      <li>
+	<p>
+	  <b>Transition:</b> If we adopt a file system, how do we deal
+	  with the interim condition where the Coyotos file system
+	  module (if any) isn't yet integrated into the mainstream
+	  Grub distribution.
+	</p>
+      </li>
+      <li>
+	<p>
+	  <b>Compatibility:</b> What other boot environments (if any)
+	  need to be considered?
+	</p>
+      </li>
+      <li>
+	<p>
+	  <b>Persistence:</b> What should we do if we decide to go
+	  with persistence?
+	</p>
+      </li>
+    </ul>
+  </sect1>
+  <sect1>
+    <title>Preload</title>
+    <p>
+      Both EROS and Coyotos will need to preload a binary image that
+      is conceptually equivalent to an <progident>initrd</progident>
+      image. The term <progident>initrd</progident> stands for
+      ``initial ram disk.'' Linux uses this mechanism to load an
+      initial set of loadable device drivers into the kernel. In
+      particular, the initial ram disk is used to load the
+      <em>disk</em> drivers that are in turn used to load the rest of
+      the system.
+    </p>
+    <p>
+      From the perspective of Grub, however, the
+      <progident>initrd</progident> image is simply a file that is
+      loaded into memory without interpretation. Grub handles these by
+      providing a mechanism to load ``modules'' on behalf of the
+      booted kernel, and we can use the same basic mechanism to load
+      preloaded ranges. Grub also provides a mechanism for supplying
+      module-specific parameters. We can hijack this mechanism to
+      advise the kernel whether a given module is read-only,
+      read-write, and so forth.
+    </p>
+    <p>
+      In EROS, and presumably in Coyotos if we go with a persistent
+      design, the disk included a ``range table.'' This table
+      describes contiguous ranges on the disk, and the type of
+      each. Some of these ranges are marked for preload. For bootstrap
+      purposes, we can think of the disk image as a trivial file
+      system wherein each file is a range and all files are
+      contiguous.
+    </p>
+    <p>
+      In order to integrate this approach with Grub, we need to write
+      a file system interpreter that views the range table as the top
+      level directory of the file system. What we should probably do
+      is add a ``name'' field to each range so that we can use a
+      grub-like loading convention. In this approach, loading of named
+      ranges corresponds to loading of named files. The names don't
+      have to be very long or very sophisticated &mdash; the range
+      table is not a user file system.
+    </p>
+    <p>
+      One very convenient aspect of this approach is that it lets us
+      handle booting from a local floppy or file system for
+      testing. In that scenario, each preloaded range is actually
+      loaded from a file that is stored on some host file system
+      (e.g. in your development <progident>/boot</progident>
+      partition). This <em>might</em> turn out to be the easiest way
+      to boot Coyotos in production. Equally important, it provides a
+      means to deal with the second stage Grub files -- we can simply
+      stick a RAMFS image into a range somewhere.
+    </p>
+    <p>
+      One scenario that this <em>doesn't</em> address is ROM or
+      network boot. More on this below.
+    </p>
+  </sect1>
+  <sect1>
+    <title>Transitional Support</title>
+    <p>
+      Whatever form the Coyotos on-disk image takes, it is not
+      supported by the current Grub implementation, and it will not
+      <em>be</em> supported during some transitional phase. While it
+      is fairly simple to add the necessary support to Grub, there
+      <em>may</em> be a delay in integration, and there <em>will</em>
+      be a delay due to release propagation.
+    </p>
+    <p>
+      The workaround for this is fairly straightforward: as part of
+      the Coyotos distribution, we supply a Coyotos-specific version
+      of Grub. This version knows how to deal with the Coyotos disk
+      image. When we need to boot up on systems that run earlier
+      (non-compatible) versions of Grub, we can proceed in one of two
+      ways:
+    </p>
+    <ol>
+      <li>
+	<p>
+	  Boot using the non-compatible grub, which boots us
+	  (i.e. <em>our</em> grub) as though we were a raw bootable
+	  partition.
+	</p>
+      </li>
+      <li>
+	<p>
+	  Rearrange things to boot <em>our</em> grub as the primary
+	  boot loader.
+	</p>
+      </li>
+    </ol>
+    <p>
+      Either approach will work. The pleasant thing about this is that
+      we can distribute a Grub variant that understands Coyotos disk
+      images and be able to use it immediately.
+    </p>
+  </sect1>
+  <sect1>
+    <title>Compatibility</title>
+    <p>
+      There are really two compatibility issues to consider, and they
+      are independent:
+    </p>
+    <ul>
+      <li>
+	<p>
+	  Are there environments where Grub cannot be used?
+	</p>
+      </li>
+      <li>
+	<p>
+	  If so, should we continue to use the multiboot mechanism for
+	  providing environment characterization to the booted kernel?
+	</p>
+      </li>
+    </ul>
+    <p>
+      Regrettably, there <em>are</em> environments where booting with
+      Grub is difficult:
+    </p>
+    <ul>
+      <li>
+	<p>
+	  ROM-based systems, which provide no file system.
+	</p>
+      </li>
+      <li>
+	<p>
+	  Legacy network boot systems, notably NetBoot and PXE, where
+	  in some cases the network bootstrap code doesn't support the
+	  multiboot specification
+	  (e.g. <progident>pxelinux</progident>).
+	</p>
+      </li>
+    </ul>
+    <p>
+      For such systems, I think the right approach is to build (or
+      borrow) an appropriate bootstrap loader for that application,
+      and modify it to pass the minimally required environment
+      information to the booted kernel using the multiboot interface
+      specification. Minimally required information includes the
+      memory environment and the initial console graphics
+      configuration (if any). The goal is to end up in a position
+      where all versions of the kernel assume that they get a
+      multiboot compliant handoff.
+    </p>
+  </sect1>
+  <sect1>
+    <title>Persistence</title>
+    <p>
+      If we adopt a persistent design, then the system must (in
+      effect) boot from a database. As discussed above, we can view
+      the range table as a degenerate non-hierarchical file system,
+      and adding Grub support for this should not be difficult. The
+      later stages of grub itself can be loaded from within a
+      Coyotos/EROS disk range.
+    </p>
+  </sect1>
+  <appendix>
+    <title>Change History</title>
+    <p>This section is an attempt to track the changes to this
+      document by hand. It may not always be accurate!</p>
+    <sect1>
+      <title>Changes in version 0.1</title>
+      <ul>
+	<li>
+	  <p>
+	    First document version.
+	  </p>
+	</li>
+      </ul>
+    </sect1>
+  </appendix>
+</article>

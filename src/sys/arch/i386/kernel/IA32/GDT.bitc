@@ -1,0 +1,22 @@
+(defrepr GDT
+  (case (segment
+	 (the (bitfield uint32 16) loLimit)
+	 (the (bitfield uint32 16) loBase)
+	 (the (bitfield uint32 8) midBase))
+	(system
+	 (the (bitfield uint32 16) loOffset)
+	 (the (bitfield uint32 16) selector)))
+  type : (the (bitfield uint32 4)) ; segment type
+  (tag system segment) : (bitfield uint32 1)
+  (the (bitfield uint32 2) dpl)
+  (the (bitfield uint32 2) p)	;present
+  (case (segment
+	 ((the (bitfield uint32 4) hiLimit)
+	  (the (bitfield uint32 1) avl)	;available
+	  (the (bitfield uint32 1) l)	;64 bit segment
+	  (the (bitfield uint32 1) sz)	;16 or 32 bit
+	  (the (bitfield uint32 1) granularity) ;page/byte
+	  (the (bitfield uint32 8) hiBase)))
+	(system 
+	 ((the (bitfield uint32 8) hiOffset))))
+  )

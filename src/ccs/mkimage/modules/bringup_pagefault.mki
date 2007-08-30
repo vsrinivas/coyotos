@@ -1,0 +1,16 @@
+module bringup_pagefault {
+  def p = make_process(PrimeBank);
+
+  def image = loadimage(PrimeBank, "BUILD/mkimage");
+
+  p.faultCode = 25;		/* startup fault */
+  p.faultInfo = image.pc;
+  p.addrSpace = image.space;
+
+  print p;
+  print *p;
+}
+
+// Local Variables:
+// mode:c
+// End:

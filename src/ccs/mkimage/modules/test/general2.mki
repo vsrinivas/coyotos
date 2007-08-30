@@ -1,0 +1,9 @@
+module testme {
+  def g = new gpt;
+
+  // This *ought* to fail, but at the moment it doesn't:
+  def x = g.cap;
+}
+// Local Variables:
+// mode:c
+// End:

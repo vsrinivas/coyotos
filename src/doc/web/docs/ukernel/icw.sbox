@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sbox>
+<sbox>
+  <wbox>
+    <field label="nipcw" size="8"/>
+    <field label="ncap" size="8"/>
+    <field label="reserved" size="9"/>
+    <field label="cw" size="1"/>
+    <field label="yx" size="1"/>
+    <field label="st" size="1"/>
+    <field label="ur" size="1"/>
+    <field label="rc" size="1"/>
+    <field label="ds" size="1"/>
+    <field label="nb" size="1"/>
+  </wbox>
+</sbox>

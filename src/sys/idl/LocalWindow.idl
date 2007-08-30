@@ -1,0 +1,9 @@
+package coyotos;
+
+/**
+ * @brief Address space local window interface
+ */
+interface LocalWindow extends Window {
+  /// @brief Retrieve the rootSlot value stored in this window capability.
+  unsigned long getRootSlot();
+};

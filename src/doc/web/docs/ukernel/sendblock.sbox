@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sbox>
+<sbox>
+  <word label="w[63]" szlabel="ipcword_t"/>
+  <word label="..." szlabel="1"/>
+  <word label="w[0]" szlabel="ipcword_t"/>
+  <word label="strPtr" szlabel="32/64"/>
+  <word label="strLen" szlabel="32"/>
+  <word label="capStrPtr" szlabel="32/64"/>
+  <word label="capStrLen" szlabel="32"/>
+  <word label="ProtectedPayload" szlabel="32"/>
+  <word label="cap[3]" szlabel="capitem_t"/>
+  <word label="..." szlabel="1"/>
+  <word label="cap[0]" szlabel="capitem_t"/>
+  <word label="InvokedCap" szlabel="capitem_t"/>
+  <word label="ReceiveCap" szlabel="capitem_t"/>
+</sbox>

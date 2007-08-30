@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sbox>
+<sbox>
+  <word label="savedSoftInts" szlabel="32"/>
+  <word label="savedFlags" szlabel="arch defined"/>
+  <word label="savedSP" szlabel="32/64"/>
+  <word label="savedPC" szlabel="32/64"/>
+  <word label="aEntryFlags" szlabel="32/64"/>
+  <word label="aEntrySP" szlabel="32/64"/>
+  <word label="aEntryPC" szlabel="32/64"/>
+  <wbox>
+    <field label="a" size="1"/>
+    <field label="sx" size="1"/>
+    <field label="si" size="1"/>
+    <field label="reserved" size="29"/>
+  </wbox>
+</sbox>

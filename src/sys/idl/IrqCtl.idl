@@ -1,0 +1,39 @@
+package coyotos;
+
+/// @brief Low-level interrupt control capability.
+///
+/// An IrqCtl capability provides the authority to be notified when a
+/// given interrupt to occur. The kernel implements an internal
+/// receive queue associated with each hardware interrupt. When the
+/// interrupt arrives, all endpoints posted on that interface will be
+/// notified of arrival by means of a message send.
+///
+/// <b>Open Issue:</b>
+///
+/// Exactly one of getInterruptQueue or registerEndpoint should be
+/// implemented. Which one will depend on what makes more sense when
+/// this part of the kernel is actually implemented. The issue is that
+/// it may not be straightforward to get an OID reliably assigned to
+/// an interrupt line. If it <em>is</em> possible to get that
+/// association working the getInterruptQueue interface is preferred
+/// because it gives finer control over who can wait on what.
+///
+/// Note, however, that if endpoint ever implements a getReceiveQueue
+/// operation the IRQ receive queue will be exposed in any case, so
+/// resolving this issue may turn out not to be optional in any case.
+interface IrqCtl extends Cap {
+  /// @brief Retrieve a capability to the receive queue associated
+  /// with the specified hardware interrupt.
+  RcvQueue getInterruptQueue(unsigned long irq);
+
+  /// @brief Register an endpoint to be notified when this interrupt
+  /// arrives. If the endpoint is already bound to a receive queue, it
+  /// will be unbound from the existing receive queue and associated
+  /// with the per-IRQ queue.
+  ///
+  /// @bug This seems completely unnecessary, since having the receive
+  /// queue lets me do this already. Is this just a convenience
+  /// interface?
+  void registerEndpoint(unsigned long irq, Endpoint ep);
+};
+

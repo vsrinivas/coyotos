@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sbox>
+<sbox>
+  <wbox>
+    <field label="type" size="6"/>
+    <field label="P" size="1"/>
+    <field label="0" size="1"/>
+    <field label="0000" size="4"/>
+    <field label="AllocCount" size="20"/>
+  </wbox>
+  <word label="ProtectedPayload"/>
+  <word label="OID" szlabel="64"/>
+</sbox>

@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sbox>
+<sbox>
+  <word label="recv_bound" szlabel="32"/>
+  <word label="send_str_len" szlabel="32"/>
+  <word label="recv_ipc_w3" szlabel="64"/>
+  <word label="..." szlabel="1"/>
+  <word label="recv_ipc_w0" szlabel="64"/>
+  <word label="recv_id" szlabel="64"/>
+  <word label="recv_pp" szlabel="64"/>
+</sbox>

@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sbox>
+<sbox>
+  <wbox>
+    <field label="runState" size="8"/>
+    <field label="XM" size="1"/>
+    <field label="SX" size="1"/>
+    <field label="SI" size="1"/>
+    <field label="TC" size="1"/>
+    <field label="TR" size="1"/>
+    <field label="CS" size="1"/>
+    <field label="PC" size="1"/>
+    <field label="reserved" size="17"/>
+  </wbox>
+</sbox>

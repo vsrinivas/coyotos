@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sbox>
+<sbox>
+  <wbox>
+    <field label="c" size="1"/>
+    <field label="000" size="3"/>
+    <field label="j" size="4"/>
+    <field label="hh" size="2"/>
+    <field label="string length" size="22" szlabel="22/54"/>
+  </wbox>
+  <word label="string pointer" szlabel="32/64"/>
+  <word label="..."/>
+</sbox>

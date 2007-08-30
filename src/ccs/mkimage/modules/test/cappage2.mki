@@ -1,0 +1,10 @@
+module cappage2 {
+  def x = make_cappage(PrimeBank);
+  x[5] = Discrim();
+
+  print *x;
+}
+
+// Local Variables:
+// mode:c
+// End:

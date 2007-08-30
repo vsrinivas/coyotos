@@ -1,0 +1,10 @@
+package coyotos;
+
+/// @brief Universal invalid capability.
+///
+/// Capabilities to objects that have been destroyed become null
+/// capabilities.  The null capability implements no operations of its
+/// own. It will respond to the getType() operation (only).
+
+interface Null extends Cap {
+};

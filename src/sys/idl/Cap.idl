@@ -1,0 +1,126 @@
+package coyotos;
+
+/// @brief Operations common to all Coyotos capabilities.
+///
+/// The cap interface defines a set of operations that are common to
+/// all Coyotos capabilities. While some objects do not implement some of
+/// these operations (e@.g@. many kernel capabilities do not honor the
+/// destroy operation), these operations are nonetheless so universal
+/// that they warrant inclusion in the common ancestor of all interfaces.
+abstract interface Cap raises(Cap.InvalidCap, Cap.UnknownRequest, 
+			      Cap.RequestError, 
+			      Cap.NoAccess) {
+  /// @brief No error occurred.
+  ///
+  /// This "exceptional result" supports the process teardown
+  /// protocol, where the exiting process is expected to specify an
+  /// exception code to return, and needs a way to say that no
+  /// exception occurred. This exception code should @em only be used
+  /// when an exception code is explicitly passed as an argument
+  /// value. It should @em not be used to indicate a non-exceptional
+  /// result from a normally returning method.
+  exception OK;
+
+  /// @brief Invoked capability was invalid.
+  ///
+  /// Exceptional result returned when a capability has become invalid
+  /// by virtue of its target object being destroyed.
+  ///
+  /// <b>Open Issue:</b> there is a suggestion on the table that 
+  /// invoking an invalid capability should be viewed as an instruction
+  /// execution exception rather than an invocation exception. I
+  /// am provisionally inclined to the view that we should continue the
+  /// (never implemented) EROS design in which an invocation exception
+  /// can be conditionally propagate to the fault handler.
+  exception InvalidCap;
+
+  /// @brief Requested operation not implemented by this capability.
+  ///
+  /// Exceptional result returned when the operation requested on a
+  /// capability is not recognized by the implementing interface.
+  exception UnknownRequest;
+
+  /// @brief Message was malformed.
+  ///
+  /// Exceptional result returned when the payload of a request does
+  /// not correspond to the expected argument payload, or a provided
+  /// argument falls outside the expected range.
+  ///
+  /// When a operation is requested with insufficient permission using
+  /// a malformed request, it is unspecified whether the RequestError
+  /// or NoAccess exceptions is returned. CapIdl-generated services
+  /// perform early argument demultiplexing, and therefore tend to
+  /// generate the RequestError exception before considering NoAccess
+  /// exception. Correctly written programs should not rely on this
+  /// ordering preference, which may change at any time without notice.
+  exception RequestError;
+
+  /// @brief Insufficient permissions for requested operation.
+  ///
+  /// Exceptional result returned when the operation is recognized but
+  /// the operation requested requires permissions that are not
+  /// conveyed by the invoked capability.
+  exception NoAccess;
+
+  /// @brief Type of address space positions as defined by the
+  /// operating system.
+  ///
+  /// Coyotos defines address space offsets to be 64 bits on all
+  /// platforms.
+  typedef unsigned long long coyaddr_t;
+
+  /// @brief Interface type for native machine addresses.
+  ///
+  /// The archaddr_t type is a 64-bit value, even on implementation
+  /// architectures that use 32-bit addresses. This is done to avoid
+  /// the need to duplicate the coyotos.process.swapSpaceAndPC methods
+  /// and the corresponding field in the Process structure.
+  ///
+  /// Wherever a kernel interface is specified as accepting an
+  /// argument of type archaddr_t, the value passed must fall within
+  /// the user-mode addressable bound of the underlying hardware
+  /// architecture. Where the architecture specific annex specifies
+  /// further constraints on valid user-mode addresses, the value
+  /// passed must also satisfy those constraints.
+  typedef coyaddr_t archaddr_t;
+
+  /// @brief Type declaration for protected payload values.
+  ///
+  /// <b>Issue:</b> Not clear that this should live in the cap
+  /// interface.
+  typedef unsigned long payload_t;
+
+  /// @brief Type to use when exception codes are passed as explicit
+  /// arguments to methods.
+  typedef unsigned long long exception_t;
+
+  /// @brief Destroy the object.
+  ///
+  /// The destroy operation requests that the target object destroy
+  /// itself. This operation is not implemented by most kernel
+  /// capabilities, but is declared as part of the basic capability
+  /// interface because we want to establish a generally shared
+  /// convention about the operation code used for this operation by
+  /// those interfaces that actually implement it.
+  void destroy();
+
+  /// @brief Type declaration for the alleged interface type value.
+  typedef unsigned long long AllegedType;
+
+  /// @brief Get alleged type code.
+  ///
+  /// Returns an integral value indicating the alleged type code of
+  /// the invoked interface.
+  AllegedType getType();
+  
+  // Note: double slashes to keep this OUT of the capdocs for now!
+  //
+  // @brief Get the IDL specification of the interface implemented by
+  // this capability.
+  //
+  // <b>Note:</b> This is a placeholder interface. We are uncertain
+  // what precisely should be returned. Deep copy? Shallow copy?
+  // The answer interacts with some unresolved interface versioning
+  // issues.
+  // string idlSignature();
+};

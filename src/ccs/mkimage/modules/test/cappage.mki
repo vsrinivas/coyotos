@@ -1,0 +1,7 @@
+module cappage {
+  def x = make_cappage(PrimeBank);
+}
+
+// Local Variables:
+// mode:c
+// End:

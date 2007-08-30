@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sbox>
+<sbox>
+  <wbox>
+    <field label="ty" size="2"/>
+    <field label="invoked capability" size="30" szlabel="capitem_t"/>
+  </wbox>
+</sbox>

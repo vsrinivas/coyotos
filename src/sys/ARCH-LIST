@@ -1,0 +1,18 @@
+# Each line of this file is of the form
+#
+#   architecture name
+#   preprocessor symbol
+#   coyotos architecture number
+#   ELF machine identifier
+#   Endian characteristics  (LITTLE, BIG, or PDP)
+#   Word Size (bits)
+#   Worst Float Align (bits)
+#   Worst Int Align (bits)
+#   Long Long Align (bits)
+#
+# It is important that identifiers do not contain whitespace, as awk
+# will trip over entries that do.
+#
+i386     __i386__        1     EM_386        LITTLE      32   32  32  32
+coldfire __coldfire__    2     EM_COLDFIRE   BIG         32   16  16  16
+arm      __arm__         3     EM_ARM        LITTLE      32   32  32  32

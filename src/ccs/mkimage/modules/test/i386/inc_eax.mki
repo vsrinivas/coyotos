@@ -1,0 +1,11 @@
+module i386.inc_eax {
+  import sp = i386.SimpleProc;
+
+  sp.text[0] = 0x40;	// inc %eax
+  sp.text[1] = 0xeb;	// jmp p.txt[0]
+  sp.text[2] = 0xfd;
+}
+
+// Local Variables:
+// mode:c
+// End:

@@ -1,0 +1,9 @@
+package coyotos;
+
+/// @brief Capability to read/write the kernel log data.
+///
+interface KernLog extends Cap {
+  typedef sequence<char, 256> logString;
+
+  void log(logString msg);
+};

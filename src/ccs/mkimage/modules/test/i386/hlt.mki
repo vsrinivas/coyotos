@@ -1,0 +1,9 @@
+module i386.hlt {
+  import sp = i386.SimpleProc;
+
+  sp.text[1] = 0xf4;	// HLT
+}
+
+// Local Variables:
+// mode:c
+// End:

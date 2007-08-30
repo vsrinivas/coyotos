@@ -1,0 +1,9 @@
+module null_sendonly {
+  import sp = SimpleProc;
+
+  sp.setupSpace(sp.proc, "null_sendonly.exe");
+}
+
+// Local Variables:
+// mode:c
+// End:

@@ -1,0 +1,10 @@
+module i386.bpt_midpage {
+  import sp = i386.SimpleProc;
+
+  sp.text[0x10] = 0xcc;   // INT3
+  sp.text[0x11] = 0xf4;   // HLT
+}
+
+// Local Variables:
+// mode:c
+// End:

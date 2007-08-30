@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sbox>
+<sbox>
+  <word label="InvokedCap" szlabel="capitem_t"/>
+  <wbreak/>
+  <word label="ReceiveCap" szlabel="capitem_t"/>
+</sbox>

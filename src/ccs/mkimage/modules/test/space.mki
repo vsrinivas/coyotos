@@ -1,0 +1,56 @@
+module test.space {
+  def zeropg = readonly(make_page(PrimeBank));
+  def zerol1 = make_gpt(PrimeBank);
+  def gpt_setAllSlots(x, y) {
+    x.cap[0] = y;
+    x.cap[1] = y;
+    x.cap[2] = y;
+    x.cap[3] = y;
+    x.cap[4] = y;
+    x.cap[5] = y;
+    x.cap[6] = y;
+    x.cap[7] = y;
+    x.cap[8] = y;
+    x.cap[9] = y;
+    x.cap[10] = y;
+    x.cap[11] = y;
+    x.cap[12] = y;
+    x.cap[13] = y;
+    x.cap[14] = y;
+    x.cap[15] = y;
+  }
+  gpt_setAllSlots(zerol1, zeropg);
+  zerol1.l2v = 12;
+  zerol1 = weaken(guard(zerol1, 0, 16));
+
+  print_space(zerol1);
+  print_tree(zerol1);
+
+  def agpt = make_gpt(PrimeBank);
+  def null = agpt.cap[0];
+
+  def pg = make_page(PrimeBank);
+  def space = insert_subspace(PrimeBank, null, pg, 0x1000);
+
+  print_space(space);
+
+  space = insert_subspace(PrimeBank, space, pg, 0x20000);
+  space = insert_subspace(PrimeBank, space, pg, 0x21000);
+  print_tree(space);
+  print_space(space);
+  space = insert_subspace(PrimeBank, space, pg, 0x20000, 16);
+  print_tree(space);
+  print_space(space);
+
+  pg = guard(pg, 65536);
+  print_space(pg);
+
+  //print "readfile(PrimeBank, \"BUILD/mkimage\")";
+  //def foo = readfile(PrimeBank, "BUILD/mkimage");
+  //print_space(foo);
+  //foo = readfile(PrimeBank, "BUILD/mkimage", 0x80000);
+  //print_space(foo);
+}
+// Local Variables:
+// mode:c
+// End:

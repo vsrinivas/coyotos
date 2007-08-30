@@ -1,0 +1,52 @@
+package coyotos;
+
+/**
+ * @brief Constructor instantiation interface.
+ *
+ * The builder interface enables developers and installers to
+ * populate new constructors with their initial capabilities.
+ * The constructor life cycle begins with a builder capability. When
+ * sealed, the builder interface returns a constructor interface, and
+ * no longer permits inseration of new capabilities.
+ *
+ * As each capability is added to the constructor instance, the
+ * constructor computes whether each added capability satisfies the
+ * confinement requirements. If all capabilities installed in the
+ * constructor satisfy the confinement property, the yield of the
+ * constructor is confined and the constructor will certify this to
+ * its clients.
+ *
+ * The builder capability implements the operations of the constructor
+ * capability, allowing the developer to perform test instantiations
+ * before sealing the constructor.
+ */
+interface Builder extends Constructor {
+
+  /// @brief Raised on insert operations when constructor has been sealed.
+  exception Sealed;
+
+  /// @brief Insert a capability to be used as the yield's external
+  /// fault handler.
+  ///
+  /// If the installed capability is a constructor capability, a new
+  /// address space will be fabricated from this constructor for each
+  /// newly instantiatied process.
+  void insertKeeper(Cap kpr) raises(Sealed);
+
+  /// @brief Insert a capability to be used as the yield's initial
+  /// addres space.
+  ///
+  /// If the installed capability is a constructor capability, a new
+  /// address space will be fabricated from this constructor for each
+  /// newly instantiatied process.
+  void insertSpace(Cap kpr) raises(Sealed);
+
+  /// @brief Set the initial program counter for the yield.
+  boolean setPC(coyaddr_t pc) raises(Sealed);
+
+  /// @brief Insert a constituent capability for the process.
+  void addConstituent(Cap c) raises(Sealed);
+
+  /// @brief Seal the constructor, returning a constructor capability.
+  Constructor seal();
+};

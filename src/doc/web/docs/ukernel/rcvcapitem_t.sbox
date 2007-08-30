@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sbox>
+<sbox>
+  <wbox>
+    <field label="ty" size="2"/>
+    <field label="11" size="2"/>
+    <field label="location" size="28" szlabel="28/60"/>
+  </wbox>
+</sbox>

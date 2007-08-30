@@ -1,0 +1,18 @@
+package coyotos;
+
+/**
+ * @brief Receive queue interface.
+ *
+ * This interface is a place-holder for a future implementation that
+ * may never happen. This interface may be dropped in future
+ * specification revisions.
+ */
+interface RcvQueue extends Cap {
+  /// @brief Dequeue an endpoint from this receive queue if one is present, 
+  /// and return a capability to it via @p ep. Return value is true
+  /// if an endpoint has been returned.
+  boolean dequeue(out Endpoint ep);
+
+  /// @brief Fabricate a sender's capability to this receive queue.
+  Cap makeSendCap(payload_t payload);
+};

@@ -1,0 +1,17 @@
+module bringup_onepageonegpt {
+  def p = make_process(PrimeBank);
+
+  def theGpt = make_gpt(PrimeBank);
+  theGpt.cap[0] = make_page(PrimeBank);
+
+  p.faultCode = 25;		/* startup fault */
+  p.faultInfo = 0;
+  p.addrSpace = theGpt;
+
+  print p;
+  print *p;
+}
+
+// Local Variables:
+// mode:c
+// End:

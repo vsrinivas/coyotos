@@ -1,0 +1,15 @@
+module test.exportEnum {
+  export enum kc {
+    a,
+    b = 3,
+    c
+  };
+
+  print kc.a;
+  print kc.b;
+  print kc.c;
+}
+
+// Local Variables:
+// mode:c
+// End:

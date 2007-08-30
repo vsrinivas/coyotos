@@ -1,0 +1,23 @@
+package coyotos;
+
+/// @brief Checkpoint control capability
+///
+/// The kernel cycles between normal execution and background checkpoint
+/// writeback. When executing normally, a snapshot can be declared,
+/// transitioning the kernel into the checkpoint aging state.
+interface Checkpoint extends Cap {
+  /// @brief An attempt was made to initiate a new snapshot before
+  /// writeback of the previous snapshot was completed.
+  exception CkptIncomplete;
+
+  /// @brief Declare a new checkpoint.
+  void snapshot() raises(CkptIncomplete);
+
+  /// @brief Make some implementation-defined amount of progress
+  /// driving the pageout of the current snapshot. Return true if the
+  /// checkpoint process requires more effort at the end of the
+  /// current request. Return false if no further progress is
+  /// required.
+  boolean processCheckpoint();
+};
+

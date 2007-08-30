@@ -1,0 +1,20 @@
+module test.simple {
+  print 3+3;
+  def a=5;
+  print a;
+
+  def f() { 0; }
+
+  def g(x) {x;}
+
+  print g(3);
+
+  // Not legal: not top level:
+  // doprint(1);
+
+  print doprint(1, "\n");
+}
+
+// Local Variables:
+// mode:c
+// End:

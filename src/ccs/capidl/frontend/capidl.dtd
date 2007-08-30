@@ -1,0 +1,115 @@
+<!--
+     CapIdl '-l xml' format XML DTD
+
+     Formal Public Identifier: "-//EROS Group//DTD CapIdl XML V0.01//EN"
+
+     * TEMPORARY WORKING VERSION *
+
+     Please direct all questions, bug reports, or suggestions for
+     changes to <jwadms@eros-os.com>.
+
+-->
+
+<!-- ======================================================================
+                              ATTRIBUTE GROUPS
+     ====================================================================== -->
+<!ENTITY % common.atts "
+                               id        ID        #IMPLIED
+                               class     CDATA     #IMPLIED
+">
+<!ENTITY % named.atts "
+                               %common.atts
+                               name      CDATA     #REQUIRED
+                               qname      CDATA    #REQUIRED
+">
+
+<!-- ======================================================================
+                              ELEMENT GROUPS
+     ====================================================================== -->
+
+<!ENTITY % interface.content "
+                               capdoc:description,
+			     ( capdoc:const |
+			       capdoc:enum |
+			       capdoc:exception |
+			       capdoc:extends |
+			       capdoc:operation |
+			       capdoc:raises |
+			       capdoc:struct |
+			       capdoc:typedef
+			     )*
+">
+
+<!-- ======================================================================
+                              CONTENT TYPES
+     ====================================================================== -->
+
+<!-- ======================================================================
+                              HIERARCHICAL ELEMENTS
+     ====================================================================== -->
+
+<!ELEMENT obdoc (
+                               capdoc:interface;
+)>
+
+<!ATTLIST obdoc 
+                               %common.atts;
+>
+
+<!ELEMENT capdoc:interface (
+                               %interface.content;
+)>
+
+<!ATTLIST capdoc:interface
+                               %named.atts;
+>
+
+<!ELEMENT capdoc:absinterface (
+                               %interface.content;
+)>
+
+<!ATTLIST capdoc:absinterface
+                               %named.atts;
+>
+
+<!ELEMENT capdoc:description (
+                               capdoc:complete?,
+                               capdoc:brief?,
+                               capdoc:full?
+)>
+
+<!-- ======================================================================
+                              BLOCK ELEMENTS
+     ====================================================================== -->
+
+
+<!ELEMENT p 
+                               (%p.content;)*
+>
+<!ATTLIST p
+                               flag      CDATA     #IMPLIED
+			       indent    (yes|no)  "yes"
+                               %common.atts;
+>
+
+<!-- ======================================================================
+                              LIST ELEMENTS
+     ====================================================================== -->
+
+
+<!-- ======================================================================
+                              TABLE ELEMENTS
+     ====================================================================== -->
+
+<!-- ======================================================================
+                              INLINE ELEMENTS
+     ====================================================================== -->
+
+<!-- ======================================================================
+                              LINK ELEMENTS
+     ====================================================================== -->
+
+<!-- ======================================================================
+                                END OF FILE
+     ====================================================================== -->
+

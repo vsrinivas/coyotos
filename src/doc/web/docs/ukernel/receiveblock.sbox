@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sbox>
+<sbox>
+  <word label="VDR[63]" szlabel="64/32"/>
+  <word label="..." szlabel="1"/>
+  <word label="VDR[0]" szlabel="64/32"/>
+  <word label="rcvPtr" szlabel="64/32"/>
+  <word label="rcvLimit" szlabel="32"/>
+  <word label="rcvCapStrPtr" szlabel="64/32"/>
+  <word label="rcvCapStrLimit" szlabel="32"/>
+  <word label="ProtectedPayload" szlabel="32"/>
+  <word label="cap[3]" szlabel="capitem_t"/>
+  <word label="..." szlabel="1"/>
+  <word label="cap[0]" szlabel="capitem_t"/>
+  <word label="rcvLen" szlabel="32"/>
+  <word label="sndLen" szlabel="32"/>
+  <word label="rcvCapLen" szlabel="32"/>
+  <word label="sndCapLen" szlabel="32"/>
+  <wbox>
+    <field label="ripcw" size="8"/>
+    <field label="rcap" size="8"/>
+    <field label="reserved" size="16"/>
+  </wbox>
+</sbox>

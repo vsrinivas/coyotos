@@ -1,0 +1,18 @@
+package coyotos;
+
+/// @brief System control capability
+///
+/// This capability provides the authority to perform low-level system
+/// control functions, notably halt, shutdown, and reboot.
+interface SysCtl extends Cap {
+  /// @brief Halt the system immediately. This is primarily useful for
+  /// kernel debugging.
+  void halt();
+
+  /// @brief Power the hardware down.
+  void powerdown();
+
+  /// @brief Reboot the hardware.
+  void reboot();
+};
+

@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sbox>
+<sbox>
+  <word label="cap[15]" szlabel="cap_t"/>
+  <word label="..." szlabel="1"/>
+  <word label="cap[0]" szlabel="cap_t"/>
+  <wbox>
+    <field label="l2v" size="6"/>
+    <field label="ha" size="1"/>
+    <field label="bg" size="1"/>
+    <field label="reserved" size="24"/>
+  </wbox>
+</sbox>

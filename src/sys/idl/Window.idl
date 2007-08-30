@@ -1,0 +1,9 @@
+package coyotos;
+
+/**
+ * @brief Address space background window interface
+ */
+interface Window extends Memory {
+  /// @brief Retrieve the offset value stored in this window capability.
+  coyaddr_t getOffset();
+};

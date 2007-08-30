@@ -1,0 +1,9 @@
+module primebank {
+  print PrimeBank;
+
+  print make_page(PrimeBank);
+}
+
+// Local Variables:
+// mode:c
+// End:

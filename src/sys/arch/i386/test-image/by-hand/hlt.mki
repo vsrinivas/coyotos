@@ -1,0 +1,11 @@
+module hlt {
+  import sp = SimpleProc;
+
+  sp.setupSpace(sp.proc, "hlt.exe");
+
+  print *sp.proc.addrSpace;
+}
+
+// Local Variables:
+// mode:c
+// End:

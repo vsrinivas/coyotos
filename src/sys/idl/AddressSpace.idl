@@ -1,0 +1,214 @@
+package coyotos;
+
+/// @brief Operations common to all Coyotos memory-related capabilities.
+///
+/// The memory interface captures constant values and operations that
+/// are common to all memory-related capabilities.
+abstract interface AddressSpace extends Memory {
+  /// @brief Unable to return a capability which is under an 
+  /// <tt>OP</tt> <tt>GPT</tt>.
+  exception OpaqueSpace;
+
+  /// @brief No slot of the requested size was found.
+  ///
+  /// Note that this exception can be raised by the extendedFetch and
+  /// extendedStore operations if the requested slot location is a
+  /// leaf slot and the leaf object is not a capability page.
+  exception NoSuchSlot;
+
+  /// @brief Unable to read capabilities from a Page.
+  exception CapAccessTypeError;
+
+  /// @brief Slot index values.
+  typedef unsigned long slot_t;
+
+  /// @brief Fetch capability from slot @p slot.
+  ///
+  /// If the invoked capability is a weak capability, the returned
+  /// capability will be the weakened form of the capability that was
+  /// found in the target slot.
+  ///
+  /// Raises CapAccessTypeError if the
+  /// invoked capability designates a memory object that does not have
+  /// capability slots.
+  Cap getSlot(slot_t slot);
+
+  /// @brief Store cap @p c into the specified slot.
+  ///
+  /// Inserts a new capability into the GPT or page at @p slot. If the
+  /// specified prefix already exists, the associated capability is
+  /// overwritten.
+  ///
+  /// Raises CapAccessTypeError if the invoked capability designates a
+  /// memory object that does not have capability slots.
+  ///
+  /// Raises NoAccess if the invoked capability is weak or read-only.
+  void setSlot(slot_t slot, Cap c) raises (NoAccess);
+
+  /// @brief Store capabilty @p c into the specified slot, adjusting
+  /// the guard according to @p guard.
+  ///
+  /// Raises NoSuchSlot if the invoked capability designates a memory
+  /// object that does not have capability slots.
+  ///
+  /// Raises RequestError if the argument capability @p c is not a
+  /// memory capability.
+  void guardedSetSlot(slot_t slot, Cap c, guard_t guard)
+    raises(RequestError);
+
+  /// @brief Fetch capability from the specified @p offset in address
+  /// space.
+  ///
+  /// This is the capability invocation form of the load capability
+  /// instruction. The primary difference is that it can be invoked on
+  /// any memory capability.
+  ///
+  /// If the invoked capability is a weak capability, the returned
+  /// capability will be the weakened form of the capability that was
+  /// found in the target slot.
+  Cap fetch(coyaddr_t offset)
+    raises(NoSuchSlot, NoAccess);
+
+  /// @brief Store @p c at the specified @p offset in address space.
+  ///
+  /// This is the capability invocation form of the store capability
+  /// instruction. The primary difference is that it can be invoked on
+  /// any memory capability.
+  ///
+  /// Raises NoAccess if the invoked capability is weak or read-only.
+  void store(coyaddr_t offset, Cap c)
+    raises(NoSuchSlot, NoAccess);
+
+  /// @brief Return capability from @p l2arg sized slot at specified
+  /// @p offset.
+  ///
+  /// Retrieves a capability from an address space from the last GPT
+  /// whose <tt>l2v</tt> is greater than or equal to @p l2arg, subject
+  /// to the following constraints:
+  /// 
+  /// <ul>
+  /// <li>
+  /// no GPT having an l2v less than @p l2arg will be traversed,
+  /// </li>
+  /// <li>
+  /// no capability having an l2g less than @p l2arg will be
+  /// traversed,
+  /// </li>
+  /// <li>
+  /// any slot traversal that would result in a malformed or
+  /// invalid space exception will not be performed -- that is, a slot
+  /// from the containing GPT will be returned.
+  /// </li>
+  /// </ul>
+  ///
+  /// On successful return, @p l2slot contains the <tt>l2v</tt> of the
+  /// GPT containing the returned capability, and @p perms describes
+  /// the cumulative permissions along the path up to and including
+  /// the containing GPT, but @em excluding the permissions of the
+  /// returned capability. If the access path traverses a weak
+  /// capability, the returned capability will be the weakened form of
+  /// the capability that was found in the target slot.
+  ///
+  /// Note that if extendedFetch returns an @p l2slot that does not
+  /// match the requested @p l2arg, and there are GPTs in the tree
+  /// whose <tt>l2v</tt> is greater than their parent's l2v (larger
+  /// space in small hole), a call to <tt>extendedStore(offset,
+  /// l2slot, newCap)</tt> using the returned @p l2slot may replace a
+  /// different slot then the slot <tt>extendedFetch</tt> returned.
+  ///
+  /// If either the invoked capability or the GPT that it names do not
+  /// satisfy the traversal constraints described above, the
+  /// requested slot does not exist. The invoked capability is
+  /// returned, an @p l2slot of zero is reported, and an @p perms of
+  /// zero is reported.
+  ///
+  /// Raises OpaqueSpace if the traversal encounters an opaque
+  /// capability on the path up to, but excluding the returned
+  /// capability.
+  ///
+  /// <b>Note:</b> This method specification is provisional. We are
+  /// attempting to expose existing kernel function for use by memory
+  /// fault handlers, but we probably haven't got the return values
+  /// and termination conditions quite right yet.
+  Cap extendedFetch(coyaddr_t offset, l2value_t l2arg,
+    out l2value_t l2slot, out restrictions perms)
+    raises(OpaqueSpace, RequestError);
+
+  /// @brief Store @p value into a @p l2arg sized slot at offset
+  /// @p offset.
+  ///
+  /// Traverses the address space headed by the invoked GPT to find a slot
+  /// whose size is @p l2arg.  The request will fail if:
+  ///
+  /// <ol>
+  /// <li>
+  ///     The offset presented is not a multiple of @p 2^l2arg, in which
+  ///     case RequestError is raised.
+  /// </li>
+  /// <li>
+  ///     The <tt>l2g</tt> field of a traversed capability is less than
+  ///     @p l2arg;  NoSuchSlot may be raised.
+  /// </li>
+  /// <li>
+  ///     A guard mismatch occurs;  NoSuchSlot may be raised.
+  /// </li>
+  /// <li>
+  ///     An opaque (OP) GPT capability is traversed; OpaqueSpace may be
+  ///     raised.
+  /// </li>
+  /// <li>
+  ///     The slot number we are traversing to in a GPT is out of range.
+  ///     <tt>NoSuchSlot</tt> may be raised.
+  /// </li>
+  /// <li>
+  ///     The <tt>l2v</tt> of a GPT we traverse is less than @p l2arg;
+  ///     NoSuchSlot may be raised.
+  /// </li>
+  /// <li>
+  ///     A <tt>ro</tt> or <tt>wk</tt> capability is traversed;
+  ///     NoAccess may be raised.
+  /// </li>
+  /// <li>
+  ///     An @p l2arg less than COYOTOS_PAGEL2V is given. RequestError
+  ///     will be raised.
+  /// </li>
+  /// </ol>
+  ///
+  /// If the traversal succeeds, the capability slot modified will be
+  /// the first slot encountered by the traversal algorithm such that
+  /// the <tt>l2v</tt> value associated with the slot matches the
+  /// argument @p l2arg. This location will be overwritten by @p
+  /// value.
+  ///
+  /// If the traversal fails, and more than one failure could be
+  /// returned, it is not yet defined which failure is raised.
+  ///
+  /// If the @p l2g component of @p guard is is non-zero, and the
+  /// capability named by @p value is a memory capability, the
+  /// supplied @p guard word replaces the one found in the capability
+  /// named by @p value.
+  void extendedStore(coyaddr_t offset, l2value_t l2arg, 
+		     guard_t guard, Cap value)
+    raises(OpaqueSpace, RequestError, NoSuchSlot, NoAccess, 
+	   CapAccessTypeError);
+
+  /// @brief Rewrite this object to null capabilities and/or zero data.
+  ///
+  /// Raises NoAccess if the invoked capability is not writable.
+  void erase() raises(NoAccess);
+
+  /// @brief Copy this object from another object of the same type,
+  /// returning a capability with a matching guard.
+  ///
+  /// Raises NoAccess if the invoked capability is not writable.
+  /// Raises RequestError if the passed capability type does not match
+  /// the invoked capability type.
+  ///
+  /// The returned capability will be a duplicate of the invoked
+  /// capability, with the guard field copied from the target
+  /// object. Restrictions are @b not copied from the target
+  /// object. If the caller wishes to copy the elements of the target
+  /// object without altering the guard field of the recipient node,
+  /// the returned capability can be discarded.
+  AddressSpace copyFrom(Memory other) raises(NoAccess, RequestError);
+};

@@ -1,0 +1,7 @@
+package coyotos;
+
+/**
+ * @brief Page interface
+ */
+interface Page extends AddressSpace {
+};

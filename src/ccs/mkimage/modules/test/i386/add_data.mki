@@ -1,0 +1,21 @@
+module i386.add_data {
+  import sp = i386.SimpleProc;
+
+  sp.text[ 0] = 0xa1;    // mov 0x3000, %eax
+  sp.text[ 1] = 0x00;
+  sp.text[ 2] = 0x30;
+  sp.text[ 3] = 0x00;
+  sp.text[ 4] = 0x00;
+  sp.text[ 5] = 0x40;	// inc %eax
+  sp.text[ 6] = 0xa3;    // mov %eax, 0x3000
+  sp.text[ 7] = 0x00;
+  sp.text[ 8] = 0x30;
+  sp.text[ 9] = 0x00;
+  sp.text[10] = 0x00;
+  sp.text[11] = 0xeb;	// jmp 0
+  sp.text[12] = 0xf3;
+}
+
+// Local Variables:
+// mode:c
+// End:

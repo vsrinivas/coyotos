@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sbox>
+<sbox>
+  <wbox>
+    <field label="untyped word" size="32" szlabel="32/64"/>
+  </wbox>
+</sbox>

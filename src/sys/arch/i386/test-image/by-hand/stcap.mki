@@ -1,0 +1,11 @@
+module stcap {
+  import sp = SimpleProc;
+
+  sp.setupSpace(sp.proc, "stcap.exe");
+
+  sp.capPage[0] = sp.proc;  // give it something to load
+}
+
+// Local Variables:
+// mode:c
+// End:

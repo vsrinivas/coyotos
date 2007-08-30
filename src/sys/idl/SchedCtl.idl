@@ -1,0 +1,11 @@
+package coyotos;
+
+/// @brief Low-level scheduler control capability.
+///
+/// <b>THIS IS A PLACEHOLDER</b>
+///
+/// This will eventually be the interface that is used by the
+/// application-level admission control agent to introduce new entries
+/// into the kernel schedule table.
+interface SchedCtl extends Cap {
+};

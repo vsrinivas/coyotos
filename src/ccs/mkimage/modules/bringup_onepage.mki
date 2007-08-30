@@ -1,0 +1,14 @@
+module bringup_onepage {
+  def p = make_process(PrimeBank);
+
+  p.faultCode = 25;		/* startup fault */
+  p.faultInfo = 0x0;
+  p.addrSpace = make_page(PrimeBank);
+
+  print p;
+  print *p;
+}
+
+// Local Variables:
+// mode:c
+// End:

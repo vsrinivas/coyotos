@@ -1,0 +1,7 @@
+module base {
+  export def a = 1;
+}
+
+// Local Variables:
+// mode:c
+// End:

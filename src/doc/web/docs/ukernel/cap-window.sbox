@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sbox>
+<sbox>
+  <wbox>
+    <field label="type" size="6"/>
+    <field label="P" size="1"/>
+    <field label="restr" size="5"/>
+    <field label="rootSlot" size="4"/>
+    <field label="reserved" size="16"/>
+  </wbox>
+  <wbox>
+    <field label="l2g" size="7"/>
+    <field label="0" size="1"/>
+    <field label="guard" size="24"/>
+  </wbox>
+  <word label="offset" szlabel="64"/>
+</sbox>

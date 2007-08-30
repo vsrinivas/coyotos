@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sbox>
+<sbox>
+  <wbox>
+    <field label="sh" size="1"/>
+    <field label="sx" size="1"/>
+    <field label="pe" size="1"/>
+    <field label="reserved" size="29"/>
+  </wbox>
+  <word label="(message region)"/>
+  <word label="aEntryPC" szlabel="32/64"/>
+  <word label="aEntrySP" szlabel="32/64"/>
+  <word label="savedPC" szlabel="32/64"/>
+  <word label="savedSP" szlabel="32/64"/>
+  <word label="actCode"/>
+  <word label="actInfo" szlabel="32/64"/>
+  <word label="dispatchPC" szlabel="32/64"/>
+  <word label="dispatchSP" szlabel="32/64"/>
+  <word label="(architecture registers)" szlabel="32/64"/>
+  <word label="(message scratchpad)" szlabel="*"/>
+</sbox>

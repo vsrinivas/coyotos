@@ -1,0 +1,9 @@
+module null_call {
+  import sp = SimpleProc;
+
+  sp.setupSpace(sp.proc, "null_call.exe");
+}
+
+// Local Variables:
+// mode:c
+// End:

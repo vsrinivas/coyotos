@@ -1,0 +1,187 @@
+Following is a list of all HTML tags and entities and doxygen
+tags. The ones that we do not support are marked by leading '-'. The
+ones that are not yet implemented are marked by *
+
+HTML Entities:
+
+* &copy;
+* &quot;
+* &?uml;    ? in {A,E,I,O,U,Y,a,e,i,o,u,y}  diaresis
+* &?acute;  ? in {A,E,I,O,U,Y,a,e,i,o,u,y}  acute accent
+* &?grave;  ? in {A,E,I,O,U,Y,a,e,i,o,u,y}  grave accent
+* &?circ;   ? in {A,E,I,O,U,Y,a,e,i,o,u,y}  circumflex accent
+* &?tilde;  ? in {A,E,I,O,U,Y,a,e,i,o,u,y}  tilde accent
+* &szlig;   s ligature (???)
+* &?cedil;  ? in {C, c}                     cedile accent
+* &?ring;   ? in {A, a}                     ring accent
+* &nbsp;    non-breaking space
+  
+
+HTML tags and meanings (close tags also supported):
+
+  A        (name and href)
+  B        bold font
+- BODY     no output (deprecated)
+  BR       forced line break
+  CAPTION  caption
+  CENTER   centered text
+  CODE     typewriter font
+  DD       description list description
+  DFN      definition (typewriter font)
+  DL       description list
+  DT       description list title
+  EM       emphasized
+- FORM     no output (deprecated)
+  H1       h1 unnumbered section header
+  H2       h1 unnumbered section header
+  H3       h1 unnumbered section header
+  HR       horizontal rule
+  I        Italic text
+  IMG      image cross reference tag
+- INPUT    no output (deprecated)
+  KBD      keyboard font (user input)
+  LI       list item
+- META     no output (deprecated)
+  MULTICOL multicolumn table entry
+  OL       numbered list
+  P        paragraph
+  PRE      preformatted region
+  SMALL    use small text font
+  STRONG   strong emphasis (bold)
+  SUB      subscript
+  SUP      superscript
+  TABLE    table
+  TD       table data element
+  TR       table row
+  TT       typewriter font
+  UL       unnumbered list
+  VAR      italic font (variable name)
+
+Doxygen tags:
+
+* a <word>  ! refer to member argument
+* addindex (text)    ! adds to latex index
+- addtogroup <name> [title]
+* anchor <word>  ! anchor for ref command
+* arg {item-description}  ! argument value descriptions
+* attention {attention text}
+* author {list of authors}
+* b <word>  ! bold font for a single word
+* brief {brief description}
+* bug {bug description}
+* c <word> ! single word  using typewriter font
+- callgraph
+- category <name> [<header-file>] [<header-name>]
+- class <name> [<header-file>] [<header-name>]
+* code ! start block of code
+- copydoc <link-object> ! copy documentation for <link-object> here.
+* date {date description}
+- def <name> ! cmnt block is documentation for a #define
+- defgroup <name> (group title)
+* deprecated {description}
+- dontinclude <file-name>
+* dot ! begin dot graph
+* dotfile <file> ["caption"] ! insert image from dot file
+* e <word>  ! emphasize single word
+* else
+* elseif <section-label>
+* em <word> ! italicize single word
+* endcode ! end block of code
+* enddot ! end dot graph
+* endhtmlonly ! end html only block
+* endif
+* endlatexonly ! end latex only block
+* endlink
+* endmanonly
+* endverbatim
+* endxmlonly
+- enum <name>
+* example <file-name>
+- exception <exception-object> {exception description}
+- f$ ! start in-text formula
+- f[ ! begin long forumla
+- f] ! end long formula
+- file [<name>]
+- fn (function declaration)
+- hideinitializer
+* htmlinclude <file-name>
+* htmlonly ! begin html only region
+* if <section-label>
+* ifnot <section-label>
+* image <formate> <file> ["caption"][<sizeindication>=<size>]
+- include <file-name>
+- includelineno <file-name>
+- ingroup (<groupname> [<groupname> ... <groupname>]
+* internal
+* invariant {description of invariant}
+- interface <name> [<header-file>] [<header-name>]
+* latexonly ! begin latexonly block
+* li {item-description } ! non-nested list item
+- line (pattern)
+* link <link-object>  ! link to doc for link-object
+* mainpage [(title)]
+* manonly ! begin man page only block
+* n ! forced new line (equiv to <br>)
+- name (header)
+- namespace <name>
+- nosubgrouping
+* note {text}
+- overload [(function declaration)]
+* p <word> ! typewriter font for parameter reference.
+- package <name>
+* page <name> (title)
+* par [(paragraph title)] {paragraph}
+* paragraph <paragraph-name> (paragraph title)  ! named paragraph
+- param <parameter-name> { parameter description }
+* post { description of postcondition }
+* pre {description of precondition }
+- private  ! (PHP only)
+- privatesection ! (PHP only)
+- property (qualified property name)
+- protected ! (PHP only) 
+- protectedsection ! (PHP only)
+- protocol <name> [<header-file>] [<header-name>]
+- public ! (PHP only)
+- publicsection ! (PHP only)
+* ref <name> ["(text)"]
+- relates <name>
+- relatesalso <name>
+* remarks {remark text}
+* return {description of return value}
+- retval <return value> {description}  ???
+* sa { references }  ! short for see also
+- section <section-name> (section title)
+* see { references }  ! see also
+- showinitializer
+* since {text}
+- skip (pattern)
+- skipline (pattern)
+- struct <name> [<header-file>] [<header-name>]
+* subsection <subsection-name> (subsection title)
+* subsubsection <subsubsection-name> (subsubsection title)
+* test { paragraph describing a test case }
+- throw <exception-object> { exception description }
+* todo {paragraph describing what is to be done}
+- typedef (typedef declaration)
+- union <name> [<header-file>][<header-name>]
+- until (pattern)
+- var (variable declaration)
+* verbatim ! begin verbatim only section
+* verbinclude <file-name>
+* version {version number}
+* warning {warning message}
+- weakgroup <name> [(title)]
+* xmlonly ! begin xml only section
+- xrefitem <key> "(heading)" "(list title)" {text}
+  $ ! output dollar sign (variable escape prevention)
+  @ ! raw at sign
+  \ ! raw backslash character
+  & ! Output ampersand
+  ~ ! output for all languages
+  ~[LanguageId] ! output only for specified language
+  < ! output less than sign
+  > ! output greater than sign
+  # ! output '#' sign
+  % ! output percent character (prevents auto-linking)
+- {
+- }

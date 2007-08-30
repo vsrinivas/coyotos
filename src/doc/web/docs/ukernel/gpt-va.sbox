@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sbox>
+<sbox>
+  <wbox>
+    <field label="v" szlabel="|v| = l2v &gt;= log2(pgsz)" size="14"/>
+    <field label="u" szlabel="|u| = max(l2g-l2v,0)" size="8"/>
+    <field label="g" szlabel="|g| = 64-l2g" size="10"/>
+  </wbox>
+</sbox>

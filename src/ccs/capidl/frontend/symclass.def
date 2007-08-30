@@ -1,0 +1,44 @@
+/* -*- Mode: c -*- */
+
+  /* The following are all rvalues: */
+SYMCLASS("scope", scope, 1)	/* for scope records */
+SYMCLASS("built in literal", builtin, 0) /* builtin constants */
+SYMCLASS("value", value, 0)	/* computed constant values */ 
+
+  /* The following define new names: */ 
+SYMCLASS("constant symbol", const, 0) /* constant symbols, including enum values */
+
+SYMCLASS("primative type", primtype, 0)	/* primtype names */
+SYMCLASS("enumeration", enum, 1) /* enum type name */
+SYMCLASS("bit set", bitset, 1)		/* enum type name */
+SYMCLASS("structure", struct, 1) /* structure type name */
+SYMCLASS("union", union, 1)		/* union type name */
+SYMCLASS("abstract interface", absinterface, 1)	/* abstract interface name */
+SYMCLASS("interface", interface, 1)		/* interface name */
+SYMCLASS("type definition", typedef, 0)		/* typedef name */
+SYMCLASS("package", package, 1)		/* package name */
+
+SYMCLASS("member", member, 0)		/* member field name */
+SYMCLASS("method", operation, 1)		/* operation name */
+SYMCLASS("oneway method", oneway, 1)		/* oneway function name */
+SYMCLASS("formal parameter", formal, 0)		/* formal parameter name */
+SYMCLASS("formal out parameter", outformal, 0)		/* OUT formal parameter name */
+SYMCLASS("exception", exception, 1)		/* exception name */
+SYMCLASS("switch", switch, 1)		/* switch scope */
+SYMCLASS("case scope", caseScope, 1)		/* implied case discriminator scope */
+SYMCLASS("case tag", caseTag, 0)		/* case discriminator */
+SYMCLASS("sequence type", seqType, 0)		/* variable length sequence type. Null
+				   value implies seq[*] */ 
+SYMCLASS("array type", arrayType, 0)           /* fixed length arrays. */
+SYMCLASS("buffer type", bufType, 0)             /* dynamically sized buffers. */
+
+SYMCLASS("symbol reference", symRef, 0)		/* reference to named symbol */
+SYMCLASS("inherited method", inhOperation, 0)	/* reference to inherited operation */
+SYMCLASS("inherited method", inhOneway, 0)	/* reference to inherited operation */
+
+SYMCLASS("type code", typecode, 0)		/* interface type code */
+
+     /* arithmetic operators. If the expression is a + b then the
+	/value/ field of the sc_arithop symbol points to "a" and the
+	/children/ field points to b. */
+SYMCLASS("arithmetic operator", arithop, 0)

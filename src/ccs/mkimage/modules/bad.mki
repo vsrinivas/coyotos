@@ -1,0 +1,9 @@
+// The purpose of this file is to define a wrong module name so
+// that we can test that diagnostic.
+module base {
+  def a = 1;
+}
+
+// Local Variables:
+// mode:c
+// End:

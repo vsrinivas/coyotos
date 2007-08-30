@@ -1,0 +1,10 @@
+package coyotos;
+
+/// @brief Base scheduling interface.
+///
+/// <b>THIS IS A PLACEHOLDER</b>
+///
+/// This will eventually be the interface that is used by an
+/// application to define its scheduling criteria.
+interface Schedule extends Cap {
+};

@@ -1,0 +1,134 @@
+package coyotos;
+
+/// @brief Kernel interface to object ranges.
+///
+/// The Range interface provides the primitive means for the allocation
+/// and deallocation of object capabilities.
+///
+/// All allocation operations return objects whose data fields are set
+/// to zero and whose capability fields are set to cap.null.
+interface Range extends Cap raises(RangeErr, NotMounted, IoErr) {
+  /// @brief Attempted to allocate object from unbacked/undefined
+  /// range.
+  exception RangeErr;
+
+  /// @brief Attempt was made to allocate an object from a dismounted
+  /// range.
+  exception NotMounted;
+
+  /// @brief An I/O error occurred during object allocation.
+  exception IoErr;
+
+  /// @brief Requested object could not be allocated because the
+  /// allocation count has reached its maximal value.
+  exception AllocCountRollover;
+
+  /// @brief Type of an object ID.
+  typedef unsigned long long oid_t;
+
+  /// @brief Beginning of physical OID frames.
+  ///
+  /// OIDs in the range [0xff00000000000000ull,
+  /// 0xffffffffffffffffull] are reserved for physical object frame
+  /// allocations. Allocating one of these OIDs has the effect of
+  /// allocating the physical object frame whose frame number @em n is
+  /// (oid-0xff00000000000000ull), provided that a corresponding
+  /// object frame of the requested type exists within the appropriate
+  /// kernel object vector.
+  const oid_t physOidStart = 0xff00000000000000;
+
+  /// @brief Object types returned by identify.
+  ///
+  /// This must match the enumaration in obstore/ObFrameType.h
+  ///
+  /// @bug At some point the enumeration here should become
+  /// definitive, and the enumeration in ObFrameType.h should be retired.
+  unsigned long enum obType {
+    otPage = 0,
+    otCapPage = 1,
+    otGPT = 2,
+    otProcess = 3,
+    otEndpoint = 4,
+
+    otNUM_TYPES = 5,
+    otInvalid = max(unsigned long)
+  };
+
+  /// @brief Identify an object.
+  ///
+  /// Determines the OID and type of an object. If the capability @p c
+  /// is a non-object capability, he reported @p type will be
+  /// otInvalid and the reported @p offset will be 0.
+  void identify(Cap c, out obType type, 
+  		out unsigned long long offset);
+
+  /// @brief Rescind an object.
+  ///
+  /// Rescinds the passed capability if it is the ``full powered''
+  /// variant of this capability type. That is: a read-write page,
+  /// cappage, or gpt capability, a process capability, an endpoint
+  /// capability, or a rcvqueue capability, but not a sender's
+  /// capability or any reduced form of page/cappage capability.
+  void rescind(Cap c);
+
+  /// @brief Report next populated subrange.
+  ///
+  /// Returns the offset and length of then next subrange of type @p
+  /// type for which backing objects actually exist, starting the
+  /// search at offset /startOffset/ of the passed range key.
+  ///
+  /// <b>Note</b>: This operation may be obsoleted in future versions
+  /// of the interface, as the idea of OID to location correspondence
+  /// may away.
+  void nextBackedSubrange(oid_t startOffset, obType type,
+			  out oid_t base, out oid_t bound);
+
+
+  /// @brief Create capability to object.
+  ///
+  /// Returns object capability to an object of the specified type
+  /// @p ty having the given @p oid. If the range is dismounted or
+  /// otherwise unavailable, this operation will throw an
+  /// exception.
+  Cap getCap(oid_t oid, obType ty) 
+    raises(RangeErr, NotMounted, AllocCountRollover);
+
+  /// @brief Create capability to object (blocking).
+  ///
+  /// Returns an object capability to an object of the specified type
+  /// @p ty having the given @p oid. If the range is dismounted or
+  /// otherwise unavailable, this operation will block until it
+  /// becomes available.
+  Cap waitCap(oid_t oid, obType ty)
+    raises(AllocCountRollover);
+
+  /// @brief Create capability to process.
+  ///
+  /// Creates a process capability having the specified @p oid. The
+  /// process brand slot will be initialized to the value of @p
+  /// brand. If the range is dismounted or otherwise unavailable, this
+  /// operation will throw the RangeErr exception.
+  Process getProcess(oid_t oid, Cap brand)
+    raises(RangeErr, NotMounted, AllocCountRollover);
+
+  /// @brief Create capability to process (blocking).
+  ///
+  /// Creates a process capability having the specified @p oid. The
+  /// process brand slot will be initialized to the value of @p
+  /// brand. If the range is dismounted or otherwise unavailable, this
+  /// operation will block until it becomes available.
+  Process waitProcess(oid_t oid, Cap brand)
+    raises(AllocCountRollover);
+
+  // Not clear that this is the right approach. Retained as a comment
+  // for future review.
+  //
+  //  /// @brief Re-set object allocation count to zero.
+  //  ///
+  //  /// Re-sets the allocation count of the object to zero. This method
+  //  /// is intended to be used by the disk scavenger after it has
+  //  /// ensured that no outstanding capabilities to the object exist on
+  //  /// the disk.
+  //  Cap clearAllocCount(obType ty, oid_t oid) 
+  //    raises(RangeErr, NotMounted);
+};

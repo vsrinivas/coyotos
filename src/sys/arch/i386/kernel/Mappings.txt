@@ -1,0 +1,72 @@
+Here is what the kernel's view of the virtual address space looks
+like on IA-32:
+
+
+  [0x00000000, 0xC0000000]   User-addressable virtual address range [1]
+
+  [0xC0000000, _etext]       Kernel code
+
+  ... pgsz round up ... 
+
+  [_sycallpg,  _esyscallpg]  Syscall page code
+
+  **** START OF CPU-PRIVATE REGION ****
+
+  [_cpu_private_data_start, _cpu_private_data_end ]
+                             (PERCPU) CPU-private data
+
+  ... pgsz round up ... 
+
+  [_begin_maps, _end_maps]   (PERCPU) Kernel page directory, page
+                             table, transient mapping table page.
+
+  ... round up to stack size ...
+
+  [kstack_lo,   kstack_hi]   (PERCPU) kernel stack
+
+  **** END OF CPU-PRIVATE REGION ****
+
+  [_pagedata,  _epagedata ]  Page-aligned (shared) data
+  [_data,      _ebss      ]  Remaining data and BSS
+
+  _end = .                   Used as base VA of kernel heap.
+
+
+? [0xFEBFE000,0xFEBFF0000]   (PERCPU) Per-CPU fall-back page
+                             directory. On PAE this is the directory
+                             for the kernel's 1G.
+   
+? [0xFEBFF000,0xFEC000000]   (PERCPU) Per-CPU fall-back page table.
+                             In most locations all CPUs share the same
+                             page table. This is the page table that
+                             spans the per-CPU storage.
+
+  [0xFEC00000,0xFF0000000]   (PERCPU) Transient mappings
+                             window. TRANSMAP_WINDOW_KVA set to
+                             0xFEC00000 in target-hal/config.h [3]
+
+  [0xFF000000, <top>     ]   (PERCPU) IPC string source window
+  [0xFF800000, <top>     ]   (PERCPU) IPC string dest window
+
+[1] In the master page diretory ONLY, the range
+    [0x00000000,0x00200000] provides a 1:1 mapping of low 2M(pae) or
+    4M(legacy). These mapping entries are supervisor only, and they
+    are never copied into any page directory that an application might
+    encounter.
+
+[2] For PAE machines, this is the page DIRECTORY, not the PDPT.
+
+[3] With the exception of the transient mappings window, all of the
+    PER-CPU data falls within the low 2M. This means that we can
+    establish a single page table per cpu to span all of these
+    mappings.
+
+    On legacy PTE machines, migrating a page directory from one CPU to
+    another entails updating the PDE corresponding to 0xC000000 (which
+    is at offset 3072) and the PDE corresponding to the transient
+    mappings window (which is at offset 4076)
+
+
+OTHER CONSIDERATIONS
+
+  The local APIC generally appears at PHYSICAL 0xFEE00000/4k

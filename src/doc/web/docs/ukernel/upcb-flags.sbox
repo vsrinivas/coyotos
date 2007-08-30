@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sbox>
+<sbox>
+  <wbox>
+    <field label="a" size="1"/>
+    <field label="xh" size="1"/>
+    <field label="sx" size="1"/>
+    <field label="ai" size="1"/>
+    <field label="reserved" size="28"/>
+  </wbox>
+</sbox>

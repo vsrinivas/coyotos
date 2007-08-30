@@ -1,0 +1,68 @@
+syntax: regexp
+
+^usr/
+^host/
+^lib/
+
+syntax: glob
+
+# Emacs turds:
+*~
+\#*
+
+# vi[m] turds:
+*.swp
+
+*.aux
+*.bak
+*.idlxml
+*.img
+*.log
+*.ltx
+
+*.dvi
+*.eps
+*.exe
+*.gif
+*.pdf
+*.png
+*.ppm
+*.ps
+*.rpm
+*.spec
+*.toc
+*.xmli
+*.xml.normalized
+*.svg
+
+# All output (in theory) goes into BUILD subdirectories.
+BUILD
+
+# These two need to be adjusted to have specific paths, and they
+# apply only to ccs-xenv, which we are separating. Not sure about
+# -src.tgz, but put it here for the moment.
+*-src.tgz
+
+# In the Coyotos tree the majority of HTML files are generated. There
+# are a very few exceptions at the "top" of the doc tree. Those are
+# handled with explicit hg add.
+*.html
+
+# Doxygen output directories:
+doxygen
+
+# OSDoc chunked output directories:
+html-chunk
+
+src/doc/web/docs/dir.dev.gxml
+#dir.dev.xml
+
+# Default name for mkimage.out. These are going to end up all over
+# the place, and we don't want to embalm them.
+mkimage.out
+
+# Grub test images
+# These appear all over, and we haven't got a convention yet. The
+# only one to "manage" is the one in arch/../test-image for now.
+grubdisk
+

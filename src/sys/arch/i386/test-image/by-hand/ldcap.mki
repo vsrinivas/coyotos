@@ -1,0 +1,16 @@
+module ldcap {
+  import sp = SimpleProc;
+
+  sp.setupSpace(sp.proc, "ldcap.exe");
+
+  sp.capPage[0] = sp.proc;  // give it something to load
+
+  // We REALLY want to be able to say something like
+  // the following, but mkimage does not support this.
+  // Should it?
+  // sp.space[sp.addr.cap] = sp.proc;
+}
+
+// Local Variables:
+// mode:c
+// End:

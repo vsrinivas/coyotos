@@ -1,0 +1,63 @@
+package coyotos;
+
+/**
+ * @brief Guarded Page Table
+ *
+ * A guarded page table (GPT) is the mechanism for composing address
+ * spaces. The data structure and basic idea of GPTs is discussed in
+ * the Coyotos Microkernel Specification. The mappable unit depends on
+ * the address space type:
+ *
+ * <table>
+ * <tr><td><b>Address Space Type</b></td><td><b>Mappable Unit</b></td></tr>
+ * <tr><td>Data Space</td><td>bytes</td></tr>
+ * <tr><td>Capability Space</td><td>capabilities</td></tr>
+ * <tr><td>I/O Space</td><td>I/O ports</td></tr>
+ * </table>
+ *
+ */
+interface GPT extends AddressSpace {
+  /// @brief number of slots in a GPT
+  const l2value_t nSlots = 16;
+  /// @brief log(2) of number of slots in a GPT
+  const l2value_t l2slots = 4;
+
+  /// @brief set the l2v field of this GPT to @p l2v, returning the 
+  /// previous l2v value.
+  l2value_t setl2v(l2value_t l2v);
+
+  /// @brief Return the current l2v field value of this GPT.
+  l2value_t getl2v();
+
+  /// @brief Store a new local window capability in slot @p slot.
+  ///
+  /// The @p offset argument specifies the offset <em>relative to the
+  /// windowed space</em> named by the @p localRoot slot. The @p restr
+  /// argument gives the permission restrictions imposed by the local
+  /// window. The @p guard argument specifies the guard value for the
+  /// window capability.
+  ///
+  /// The supplied offset @p offset must be an integral multiple of
+  /// 2<sup>l2v</sup>. If this constraint is violated, the RequestError
+  /// exception is raised.
+  void makeLocalWindow(slot_t slot, unsigned long restr, 
+		       coyaddr_t offset, 
+		       guard_t guard,
+		       slot_t localRoot)
+    raises(NoAccess, RequestError);
+
+  /// @brief Store a new background window capability in slot @p slot.
+  ///
+  /// The @p offset argument specifies the offset <em>relative to the
+  /// background space</em> that this window names. The @p restr
+  /// argument gives the permission restrictions imposed by the
+  /// window. The @p guard argument specifies the guard value for the
+  /// new window capability.
+  ///
+  /// The supplied offset @p offset must be an integral multiple of
+  /// 2<sup>l2v</sup>. If this constraint is violated, the RequestError
+  /// exception is raised.
+  void makeBackgroundWindow(slot_t slot, unsigned long restr,
+			    coyaddr_t offset, guard_t guard)
+    raises(NoAccess, RequestError);
+};

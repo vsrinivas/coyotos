@@ -1,0 +1,59 @@
+module coyotos.SpaceBank {
+   import TargetInfo = coyotos.TargetInfo;
+
+   /* The Spacebank verifier is a PrimeBank endpoint with all restrictions */
+   export def Verifier = enter(PrimeBankEndpoint, 0xffffffff);
+
+   /* The spacebank process itself */
+   def spacebank = make_process(PrimeBank);
+   PrimeBankEndpoint.recipient = spacebank;
+
+   def image = loadimage(PrimeBank, "coyotos/SpaceBank");
+
+   /* add a page for the stack */
+   def aSpace = insert_subspace(PrimeBank, 
+				image.space, 
+				noexec(make_page(PrimeBank)),
+				TargetInfo.small_stack_page_addr);
+   /* print_space(aSpace); */
+
+   spacebank.faultCode = 25;   /* Process startup fault */
+   spacebank.faultInfo = image.pc;
+   spacebank.addrSpace = aSpace;
+
+   def replyEpt = make_endpoint(PrimeBank);
+   replyEpt.recipient = spacebank;
+   replyEpt.endpointID = 0xffffffffffffffff;
+   replyEpt.pm = 1;
+
+   export enum REG {
+     NULL = 0,
+     REPLYEPT = 1,
+     SELF = 2,
+     /* =3 SpaceBank */
+     /* =4 Tools */
+     /* =5 InitEPT */
+     /* =6 Runtime */
+     RANGE = 7,	     /* Range key */
+     INITGPT = 8,    /* initial GPT for bootstrapping */
+     ADDRSPACE = 9,  /* from here on, these are not initialized */
+     TMP1 = 10,
+     TMP2 = 11,
+     TMP3 = 12,
+     TMPPAGE = 13,
+	/* 14-27 */
+     REPLY0 = 24,
+     REPLY1 = 25,
+     REPLY2 = 26,
+     REPLY3 = 27,
+     RETCAP = 28,
+     ARG1 = 29,
+     ARG2 = 30,
+     ARG3 = 31
+   };
+
+   spacebank.capReg[REG.REPLYEPT] = replyEpt;
+   spacebank.capReg[REG.RANGE] = Range();
+   spacebank.capReg[REG.SELF] = spacebank;
+   spacebank.capReg[REG.INITGPT] = make_gpt(PrimeBank);
+}

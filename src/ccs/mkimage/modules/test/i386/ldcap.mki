@@ -1,0 +1,22 @@
+module i386.ldcap {
+  import sp = i386.SimpleProc;
+
+  sp.text[0] = 0xb8;    // mov  $0x402, %eax  # LoadCap into CapReg 1
+  sp.text[1] = 0x02;
+  sp.text[2] = 0x04;
+  sp.text[3] = 0x00;
+  sp.text[4] = 0x00;
+  sp.text[5] = 0xbb;	// mov  $0x500a, %ebx  # Capability address 0x5000
+  sp.text[6] = 0x0a;
+  sp.text[7] = 0x50;
+  sp.text[8] = 0x00;
+  sp.text[9] = 0x00;
+  sp.text[10] = 0xcd;   // int $30            # invoke system call
+  sp.text[11] = 0x30;
+
+  sp.cap[0] = sp.proc;  // give it something to load
+}
+
+// Local Variables:
+// mode:c
+// End:

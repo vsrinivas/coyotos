@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sbox>
+<sbox>
+  <wbox>
+    <field label="NR=0" size="4"/>
+    <field label="CW" size="1"/>
+    <field label="NB" size="1"/>
+    <field label="AS" size="1"/>
+    <field label="AC" size="1"/>
+    <field label="RC" size="1"/>
+    <field label="RP" size="1"/>
+    <field label="u" size="5"/>
+    <field label="t" size="4"/>
+    <field label="reserved" size="13" szlabel="13/45"/>
+  </wbox>
+</sbox>
