@@ -46,5 +46,14 @@ interface Constructor extends Cap {
   ///
   /// The created instance is allocated from the provided space bank
   /// and executes under the provided schedule.
-  Cap create(SpaceBank bank, Schedule sched);
+  ///
+  /// @p bank should be a newly created bank; upon any failure, the
+  /// bank will be destroyed.
+  ///
+  /// @p runtime is passed to the newly created process as its runtime
+  /// information key.
+  Cap create(SpaceBank bank, Schedule sched, Cap runtime);
+
+  /// @brief Verify that @p cons is a constructor
+  boolean verifyConstructor(Constructor cons);
 };
