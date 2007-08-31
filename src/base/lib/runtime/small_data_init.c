@@ -65,6 +65,8 @@ __small_data_init(uintptr_t data, uintptr_t end)
   return;
 
  fail:
-  /** @bug do what? */
+  coyotos_SpaceBank_destroyBankAndReturn(CAP_SPACEBANK, CAP_RETURN,
+                                         RC_coyotos_SpaceBank_limitReached,
+                                         &_IDL_E);
   return;
 }
