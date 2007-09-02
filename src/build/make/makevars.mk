@@ -241,6 +241,12 @@ else
 LIBSHERPA=-lsherpa
 endif
 
+ifneq "" "$(findstring $(COYOTOS_XENV)/host/include/libsherpa,$(wildcard $(COYOTOS_XENV)/host/include/*))"
+INC_SHERPA=-I$(COYOTOS_XENV)/host/include
+else
+INC_SHERPA=
+endif
+
 ## This is a holdover from the EROS tree that we may not want:
 ## DOMLIB= $(COYOTOS_ROOT)/lib/libdomain.a
 ## DOMLIB += $(COYOTOS_ROOT)/lib/libidlstub.a
