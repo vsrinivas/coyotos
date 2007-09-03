@@ -1,7 +1,7 @@
 #ifndef __I386_HW_MAP_H__
 #define __I386_HW_MAP_H__
 /*
- * Copyright (C) 2007, Jonathan S. Shapiro.
+ * Copyright (C) 2007, The EROS Group, LLC.
  *
  * This file is part of the EROS Operating System.
  *
