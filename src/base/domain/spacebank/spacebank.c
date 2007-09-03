@@ -44,11 +44,6 @@ IDL_Environment _IDL_E = {
   .epID = -1ULL,
 };
 
-struct IDL_SERVER_Environment {
-  Bank *bank;
-  uint32_t restr;
-};
-
 /** @brief Process a single request, rewriting @p pb to do the reply.
  * @p limits is the recieve buffer. 
  */
@@ -66,7 +61,7 @@ process_request(InvParameterBlock_t *pb)
   unsigned caps = (opw0 & IPW0_SC) ? IPW0_LSC(opw0) : 0;
   /* number of argument data words, not including OPW0 */
   unsigned data = IPW0_LDW(opw0) - 1;
-  unsigned edata = pb->pw[IPW_SNDLEN];
+  unsigned edata = pb->sndLen;
 
   Bank *bank = bank_fromEPID(pb->epID);
   uint32_t restr = pb->u.pp;
@@ -77,12 +72,12 @@ process_request(InvParameterBlock_t *pb)
   pb->pw[0] = REPLY_IPW0(0); // default to no DW, no caps
 
   // Only reply to RETCAP if one was passed.
-  pb->pw[IPW_INVCAP] = (opw0 & IPW0_SC) ? CAP_RETCAP : CAP_NULL;
-  pb->pw[IPW_SNDLEN] = 0;
-  pb->pw[IPW_SNDCAP+0] = CAP_NULL;
-  pb->pw[IPW_SNDCAP+1] = CAP_NULL;
-  pb->pw[IPW_SNDCAP+2] = CAP_NULL;
-  pb->pw[IPW_SNDCAP+3] = CAP_NULL;
+  pb->u.invCap = (opw0 & IPW0_SC) ? CAP_RETCAP : CAP_NULL;
+  pb->sndLen = 0;
+  pb->sndCap[0] = CAP_NULL;
+  pb->sndCap[1] = CAP_NULL;
+  pb->sndCap[2] = CAP_NULL;
+  pb->sndCap[3] = CAP_NULL;
   
   // don't accept exceptional invocations, or ones without order codes
   if ((opw0 & IPW0_EX) || IPW0_LDW(opw0) == 0)
@@ -114,21 +109,21 @@ process_request(InvParameterBlock_t *pb)
       if ((obj1 = bank_alloc(bank, ty1, CAP_REPLY0)) == 0)
 	goto fail_alloc;
 
-      pb->pw[IPW_SNDCAP+0] = CAP_REPLY0;
+      pb->sndCap[0] = CAP_REPLY0;
     }
 
     if (ty2 != coyotos_Range_obType_otInvalid) {
       if ((obj2 = bank_alloc(bank, ty2, CAP_REPLY1)) == 0)
 	goto fail_alloc;
       
-      pb->pw[IPW_SNDCAP+1] = CAP_REPLY1;
+      pb->sndCap[1] = CAP_REPLY1;
     }
 
     if (ty3 != coyotos_Range_obType_otInvalid) {
       if ((obj3 = bank_alloc(bank, ty3, CAP_REPLY2)) == 0)
 	goto fail_alloc;
       
-      pb->pw[IPW_SNDCAP+2] = CAP_REPLY2;
+      pb->sndCap[2] = CAP_REPLY2;
     }
     return;
     
@@ -180,7 +175,7 @@ process_request(InvParameterBlock_t *pb)
     if (obj == 0)
       goto limit_reached;
     
-    pb->pw[IPW_SNDCAP+0] = CAP_REPLY0;
+    pb->sndCap[0] = CAP_REPLY0;
     return;
 
   case OC_coyotos_SpaceBank_setLimits:
@@ -204,8 +199,8 @@ process_request(InvParameterBlock_t *pb)
       goto bad_request;
     
     bank_getLimits(bank, limits);
-    pb->pw[IPW_SNDPTR] = (uintptr_t)limits;
-    pb->pw[IPW_SNDLEN] = sizeof (*limits);
+    pb->sndPtr = limits;
+    pb->sndLen = sizeof (*limits);
     return;
 
   case OC_coyotos_SpaceBank_getUsage:
@@ -216,8 +211,8 @@ process_request(InvParameterBlock_t *pb)
       goto bad_request;
     
     bank_getUsage(bank, limits);
-    pb->pw[IPW_SNDPTR] = (uintptr_t)limits;
-    pb->pw[IPW_SNDLEN] = sizeof (*limits);
+    pb->sndPtr = limits;
+    pb->sndLen = sizeof (*limits);
     return;
 
   case OC_coyotos_SpaceBank_getEffectiveLimits:
@@ -228,8 +223,8 @@ process_request(InvParameterBlock_t *pb)
       goto bad_request;
     
     bank_getEffLimits(bank, limits);
-    pb->pw[IPW_SNDPTR] = (uintptr_t)limits;
-    pb->pw[IPW_SNDLEN] = sizeof (*limits);
+    pb->sndPtr = limits;
+    pb->sndLen = sizeof (*limits);
     return;
     
   case OC_coyotos_SpaceBank_createChild:
@@ -239,11 +234,11 @@ process_request(InvParameterBlock_t *pb)
     if (data != 0 || edata != 0 || caps != 0)
       goto bad_request;
     
-    if (!bank_create(bank, CAP_ARG1))
+    if (!bank_create(bank, CAP_REPLY0))
       goto limit_reached;
     
     pb->pw[0] = REPLY_IPW0_CAP(0, 0); // one cap
-    pb->pw[IPW_SNDCAP+0] = CAP_ARG1;
+    pb->sndCap[0] = CAP_REPLY0;
     return;
 
   case OC_coyotos_SpaceBank_verifyBank: {
@@ -277,8 +272,8 @@ process_request(InvParameterBlock_t *pb)
     if (newRestr > coyotos_SpaceBank_restrictions_noRemove)
       goto bad_request;
     
-    bank_getEntry(bank, restr | newRestr, CAP_ARG1);
-    pb->pw[IPW_SNDCAP+0] = CAP_ARG1;
+    bank_getEntry(bank, restr | newRestr, CAP_REPLY0);
+    pb->sndCap[0] = CAP_REPLY0;
     pb->pw[0] = REPLY_IPW0_CAP(0, 0); // no payload, 1 cap
     return;
   }
@@ -301,12 +296,14 @@ process_request(InvParameterBlock_t *pb)
 
     bank_destroy(bank, 1);  // destroy objects as well
 
-    /* re-direct the reply to ARG1 */
-    pb->pw[IPW_INVCAP] = CAP_ARG1;
+    /* now that we've succeeded, re-direct the reply to ARG1 */
+    pb->u.invCap = CAP_ARG1;
 
     /* use the passed exception */
-    if (ex != RC_coyotos_Cap_OK)
+    if (ex != RC_coyotos_Cap_OK) {
 	invoke_setErrorReply(pb, ex);
+	pb->pw[0] |= REPLY_IPW0_NOLDW;
+    }
     
     return;
   }
@@ -350,6 +347,7 @@ process_request(InvParameterBlock_t *pb)
     /* Shap hack -- temporary */
     invoke_setErrorReply(pb, IKT_coyotos_SpaceBank);
     pb->pw[0] &= ~IPW0_EX;
+    pb->pw[0] |= REPLY_IPW0_NOLDW;
     return;
 
   default:
@@ -384,14 +382,17 @@ _IDL_IFUNION_coyotos_SpaceBank ipb = {
   ._pb = {
     .pw[0] = INITIAL_IPW0,
     .u.invCap = CAP_NULL,
-    .sndCap[0] = CAP_REPLY0,
-    .sndCap[1] = CAP_REPLY1,
-    .sndCap[2] = CAP_REPLY2,
-    .sndCap[3] = CAP_REPLY3,
+    .sndCap[0] = CAP_NULL,
+    .sndCap[1] = CAP_NULL,
+    .sndCap[2] = CAP_NULL,
+    .sndCap[3] = CAP_NULL,
     .rcvCap[0] = CAP_RETCAP,
     .rcvCap[1] = CAP_ARG1,
     .rcvCap[2] = CAP_ARG2,
     .rcvCap[3] = CAP_ARG3,
+
+    .sndPtr = 0,
+    .sndLen = 0,
 
     /** @bug Is there a better way to do this? */
     .rcvPtr = (char *)&ipb + sizeof (ipb._pb),
@@ -403,29 +404,11 @@ int
 main(int argc, char *argv[])
 {
   InvParameterBlock_t *pb = &ipb._pb;
-  struct IDL_SERVER_Environment ise;
 
   initialize();
 
-  pb->pw[0] = INITIAL_IPW0;
-  pb->pw[IPW_SNDCAP+0] = CAP_NULL;
-  pb->pw[IPW_SNDCAP+1] = CAP_NULL;
-  pb->pw[IPW_SNDCAP+2] = CAP_NULL;
-  pb->pw[IPW_SNDCAP+3] = CAP_NULL;
-
-  pb->pw[IPW_RCVCAP+0] = CAP_RETCAP;
-  pb->pw[IPW_RCVCAP+1] = CAP_ARG1;
-  pb->pw[IPW_RCVCAP+2] = CAP_ARG2;
-  pb->pw[IPW_RCVCAP+3] = CAP_ARG3;
-
-  pb->pw[IPW_SNDLEN] = 0;
-  pb->pw[IPW_SNDPTR] = 0;
-
   for (;;) {
     (void) invoke_capability(pb);
-
-    ise.bank = bank_fromEPID(pb->epID);
-    ise.restr = pb->u.pp;
 
     process_request(pb);
   }

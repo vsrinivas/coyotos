@@ -3,23 +3,45 @@ module coyotos.RunTime {
   import sb = coyotos.SpaceBank;
 
   export enum REG {
-     NULL = 0,
-     REPLYEPT = 1,
-     SELF = 2,
-     SPACEBANK = 3,
-     TOOLS = 4,
-     INITEPT = 5,
-     RUNTIME = 6,
-     APP = 7,
-     LASTAPP = 23,
-     REPLY0 = 24,
-     REPLY1 = 25,
-     REPLY2 = 26,
-     REPLY3 = 27,
-     RETCAP = 28,
-     ARG1 = 29,
-     ARG2 = 30,
-     ARG3 = 31
+    NULL = 0,
+    REPLYEPT = 1,
+    SELF = 2,
+    SPACEBANK = 3,
+    TOOLS = 4,
+    INITEPT = 5,
+    RUNTIME = 6,
+    APP = 7,
+    LASTAPP = 23,
+    REPLY0 = 24,
+    REPLY1 = 25,
+    REPLY2 = 26,
+    REPLY3 = 27,
+    RETCAP = 28,
+    ARG1 = 29,
+    ARG2 = 30,
+    ARG3 = 31
   };
+
+  /* Allocate a bare-bones process, and set up its capRegs.  bank should
+   * be a freshly created bank.
+   */
+  export def make_bare_process(bank) {
+    def proc = make_process(bank);
+
+    def replyept = make_endpoint(bank);
+    replyept.pm = 1;
+    replyept.recipient = proc;
+
+    def initept = make_endpoint(bank);
+    initept.recipient = proc;
+    initept.endpointID = 1;
+
+    proc.capReg[REG.REPLYEPT] = replyept;
+    proc.capReg[REG.SELF] = proc;
+    proc.capReg[REG.SPACEBANK] = bank;
+    proc.capReg[REG.INITEPT] = initept;
+
+    return proc;
+  }
 }
 

@@ -35,6 +35,7 @@
 #define CAP_NEWPAGE	CAP_REG(CAPREG_APP + 1) /* available for new page */
 #define CAP_OLDADDR	CAP_REG(CAPREG_APP + 2) /* old address space */
 #define CAP_OLDPAGE	CAP_REG(CAPREG_APP + 3) /* old page */
+#define CAP_RETURN	CAP_REG(CAPREG_RETURN) /* reply capability */
 
 void
 __small_data_init(uintptr_t data, uintptr_t end)
@@ -65,6 +66,8 @@ __small_data_init(uintptr_t data, uintptr_t end)
   return;
 
  fail:
-  /** @bug do what? */
+  coyotos_SpaceBank_destroyBankAndReturn(CAP_SPACEBANK, CAP_RETURN,
+                                         RC_coyotos_SpaceBank_LimitReached,
+                                         &_IDL_E);
   return;
 }
