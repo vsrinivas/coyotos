@@ -38,13 +38,13 @@ include $(COYOTOS_SRC)/build/make/makerules.mk
 #iplimage:
 #	$(MKIMAGE) -t i386 -I. $(IMGFILE)
 
-BUILD/SimpleProc.h: SimpleProc.mki
-	$(MKIMAGE) -t i386 -H./BUILD -I. -L. $(patsubst %.mki,%,$<)
+$(BUILDDIR)/SimpleProc.h: SimpleProc.mki | $(BUILDDIR)
+	$(MKIMAGE) -t i386 -H./$(BUILDDIR) -I. -L. $(patsubst %.mki,%,$<)
 
 %.img: %.mki %.exe
 	$(MKIMAGE) -t i386 -I. -L. -o $@ $(patsubst %.img,%,$@)
 
-%.exe: %.S BUILD/SimpleProc.h
+%.exe: %.S $(BUILDDIR)/SimpleProc.h
 	$(GCC) -g $(LINKOPTS) $(INC) -nostdlib -o $@ $<
 
 do_ipc.o: do_ipc.S
