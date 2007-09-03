@@ -175,72 +175,7 @@ kpa_t      pmem_AllocBytes(const PmemConstraint *, size_t sz,
 kpsize_t   pmem_Available(const PmemConstraint *, kpsize_t unitSize, 
 			  bool contiguous);
 
-#if 0
-// extern kpa_t physMem_PhysicalPageBound;
-
-PmemInfo * pmem_AddRegion(kpa_t base, kpa_t bound, PmemType type, 
-			  const char *descrip);
-void       pmem_DropRegion(PmemInfo *pmi);
-void       pmem_FreeRegion(PmemInfo *pmi);
-PmemInfo * pmem_FindRegion(kpa_t addr);
-
-#endif
-
 void       pmem_showall();
-
-
-#if 0
-/* Former member functions of PhysMem */
-
-kpsize_t physMem_MemAvailable(PmemConstraint *, unsigned unitSize, 
-			       bool needContiguous);
-
-
-/* FIX: This is called from the x86 code that builds the kernel
- * virtual map, and it is wrong that it should be so. The kernel
- * will soon need to support machines where there are more physical
- * pages than there are virtual pages.  The solution is to adopt a
- * bounded kernel heap, set up virtual mapping space for that, and
- * then use kmem_alloc to populate it.
- */
-kpsize_t physMem_TotalPhysicalPages();
-
-/* This function is machine specific. It typically lives in the same
- * file that builds the kernel map, as the two must agree about the
- * reserved regions.
- */
-void physMem_ReservePhysicalMemory();
-  
-void physMem_PrintStatus();
-#ifdef OPTION_DDB
-void physMem_ddb_dump();
-#endif
-
-INLINE kpsize_t 
-physMem_ContiguousBytes(PmemConstraint *mc)
-{ 
-  return physMem_MemAvailable(mc, sizeof(uint8_t), true); 
-}
-
-INLINE kpsize_t 
-physMem_ContiguousPages(PmemConstraint *mc)
-{ 
-  return physMem_MemAvailable(mc, EROS_PAGE_SIZE, true); 
-}
-
-INLINE kpsize_t 
-physMem_AvailBytes(PmemConstraint *mc)
-{ 
-  return physMem_MemAvailable(mc, sizeof(uint8_t), false); 
-}
-
-INLINE kpsize_t 
-physMem_AvailPages(PmemConstraint *mc)
-{ 
-  return physMem_MemAvailable(mc, EROS_PAGE_SIZE, false); 
-}
-
-#endif
 
 /* Local Variables: */
 /* comment-column:20 */
