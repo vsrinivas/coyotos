@@ -415,37 +415,10 @@ setup_kstack:
 	/* Check if we are using PAE, and if so, record that fact: */
 	mov	%cr4,%edx
 	andl	$CR4_PAE,%edx
-	jz	setup_transmap
+	jz	start_kernel
 
 	movb	$1,EXT(UsingPAE)
 
-	
-setup_transmap:
-	/* Zero the transient mapping page */
-	movl	$EXT(TransientMap),%esi
-	movl	$1024,%ecx	/* Zero the transient metamap */
-1:	movl	$0,(%esi)
-	addl	$4,%esi
-	decl	%ecx
-	jnz	1b
-	
-	/* Map it at 0xff400000. */
-	movl	$EXT(TransientMap)-KVA,%edx
-	orl	$(PTE_V|PTE_W),%edx
-
-	cmpl	$0,EXT(UsingPAE)
-	jz	1f
-	/* Touch the correct entry for PAE: */
-	movl	$EXT(KernPageDir),%esi
-	movl	%edx,(((TRANSMAP_WINDOW_KVA&0x3fffffff)>>21)*8)(%esi)
-	jmp	start_kernel
-
-1:	/* Touch the correct entry for legacy mapping:	 */
-	movl	$EXT(KernPageDir),%esi
-	movl	%edx,((TRANSMAP_WINDOW_KVA>>22)*4)(%esi)
-	
-	/* *((uint32_t *) 0xc00b801c) = 0x07200774u; */
-	
 start_kernel:
 	call	EXT(kernel_main)
 	

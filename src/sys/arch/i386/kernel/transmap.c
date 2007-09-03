@@ -63,7 +63,7 @@ transmap_init()
     uint32_t undx = PAE_PGDIR_NDX(TRANSMAP_WINDOW_KVA);
     IA32_PAE *upper = ((IA32_PAE*) &KernPageDir) + undx;
 
-    upper->value = ((kpa_t)&TransientMap) - KVA;
+    upper->value = ((uint32_t)&TransientMap) - KVA;
     upper->bits.W = 1;
     upper->bits.V = 1;
     upper->bits.ACC = 1;
@@ -74,7 +74,7 @@ transmap_init()
     uint32_t undx = PTE_PGDIR_NDX(TRANSMAP_WINDOW_KVA);
     IA32_PTE *upper = ((IA32_PTE*) &KernPageDir) + undx;
 
-    upper->value = ((kpa_t)&TransientMap) - KVA;
+    upper->value = ((uint32_t)&TransientMap) - KVA;
     upper->bits.W = 1;
     upper->bits.V = 1;
     upper->bits.ACC = 1;

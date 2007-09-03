@@ -32,6 +32,15 @@
  *
  * *****************************************************************/
 
+/** @brief Initialize the transient mapping subsystem.
+ *
+ * Strictly speaking, this is not part of the HAL. It should be called
+ * exclusively by machine-dependent initialization code. It is
+ * included here because we would otherwise need a whole separate
+ * header file just for this procedure.
+ */
+void transmap_init();
+
 /** @brief Establish a temporary mapping on the current CPU for the
  * given physical address.
  *

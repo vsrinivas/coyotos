@@ -29,6 +29,7 @@
 #include <hal/machine.h>
 #include <hal/config.h>
 #include <hal/vm.h>
+#include <hal/transmap.h>
 #include <kerninc/assert.h>
 #include <kerninc/ctype.h>
 #include <kerninc/printf.h>
@@ -621,6 +622,10 @@ process_modules(void)
 void 
 arch_init(void)
 {
+  /* Initialize the transient map, so that later code can access
+     arbitrary parts of memory. */
+  transmap_init();
+
   /** @bug Should be able to turn off low kernel map here. */
 
   // Initialize the console output first, so that we can get
