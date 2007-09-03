@@ -44,7 +44,7 @@ BUILD/SimpleProc.h: SimpleProc.mki
 %.img: %.mki %.exe
 	$(MKIMAGE) -t i386 -I. -L. -o $@ $(patsubst %.img,%,$@)
 
-%.exe: %.S SimpleProc.h
+%.exe: %.S BUILD/SimpleProc.h
 	$(GCC) -g $(LINKOPTS) $(INC) -nostdlib -o $@ $<
 
 do_ipc.o: do_ipc.S
