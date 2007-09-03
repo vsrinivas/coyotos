@@ -70,14 +70,15 @@ enum PmemClass {
   pmc_UNUSED = 0,   /**<! @brief Unused (free) physical memory region 
 		     * record. */
 
-  pmc_HOLE,	   /**<! @brief Undefined region of the legal physical
-		    * memory range.
-		    *
-		    * The initial region is a hole consisting of the
-		    * addressable physical space. Subsequent regions
-		    * are allocated by splitting and defining this
-		    * initial region.
-		    */
+  pmc_ADDRESSABLE,  /**<! @brief Undefined region of the addressable
+		     * physical memory range.
+		     *
+		     * The initial memory region is pmc_ADDRESSABLE
+		     * range consisting of the entire addressable
+		     * physical space. Subsequent regions are
+		     * allocated by splitting and defining this
+		     * initial region.
+		     */
 
   pmc_RAM,	    /**<! @brief Allocatable RAM region. */
   pmc_NVRAM,	    /**<! @brief Non-volatile RAM region. */

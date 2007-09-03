@@ -102,7 +102,7 @@ static PmemInfo *pmem_NewRegion(kpa_t base, kpa_t bound, PmemClass cls,
 void
 pmem_init(kpa_t base, kpa_t bound)
 {
-  (void) pmem_NewRegion(base, bound, pmc_HOLE, pmu_AVAIL, 0);
+  (void) pmem_NewRegion(base, bound, pmc_ADDRESSABLE, pmu_AVAIL, 0);
 
   pmem_need_pages.base = base;
   pmem_need_pages.bound = bound;
@@ -193,8 +193,8 @@ pmc_descrip(PmemClass cls)
   switch(cls) {
   case pmc_UNUSED:
     return "unused";
-  case pmc_HOLE:
-    return "HOLE";
+  case pmc_ADDRESSABLE:
+    return "PADRES";
   case pmc_RAM:
     return "RAM";
   case pmc_NVRAM:
