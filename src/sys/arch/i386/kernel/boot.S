@@ -391,8 +391,37 @@ enable_paging:
 	 * address. Fix that by doing a jump register to the next useful 
 	 * address.
 	 */
-	movl	$setup_kstack,%edx
+	movl	$drop_low_map,%edx
 	jmp	*%edx
+	
+drop_low_map:	
+	/* Drop the mapping alias at VA=0x0. How to do this depends on 
+	 * whether we are running in PAE mode. 
+	 */
+	mov	%cr4,%edx
+	andl	$CR4_PAE,%edx
+	jz	drop_low_legacy_map
+	
+	/* Record the fact that we are using PAE for later use:	 */
+	movb	$1,EXT(UsingPAE)
+	
+	/* Whack the low-memory mapping: */
+	movl	$EXT(cpu0_KernPDPT),%esi
+	movl	$0,(%esi)	/* Kill mapping at VA=0 */
+	movl	$0,4(%esi)
+	jmp	reload_map
+
+drop_low_legacy_map:
+	movl	$EXT(KernPageDir),%esi
+	movl	$0,(%esi)	/* Kill mapping at VA=0 */
+
+
+reload_map:
+	/* Reload the master mapping table pointer to flush the TLB
+	 * of any dangling low mappings: 
+	 */
+	mov	%cr3,%edx
+	mov	%edx,%cr3
 	
 setup_kstack:
 	/* Now set up the stack for the first CPU (CPU0). Stacks for other 
@@ -412,13 +441,6 @@ setup_kstack:
 	movl	$0x07210773,0xc00b8018 /* "s!" */
 #endif
 	
-	/* Check if we are using PAE, and if so, record that fact: */
-	mov	%cr4,%edx
-	andl	$CR4_PAE,%edx
-	jz	start_kernel
-
-	movb	$1,EXT(UsingPAE)
-
 start_kernel:
 	call	EXT(kernel_main)
 	

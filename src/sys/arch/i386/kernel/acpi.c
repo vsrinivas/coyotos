@@ -177,7 +177,7 @@ acpi_find_MADT()
    * still okay to rely on that map.
    */
 
-  kpa_t ebda = ( (* ((uint16_t *) 0x40e)) << 4 );
+  kpa_t ebda = ( (* PTOKV(0x40e, uint16_t *)) << 4 );
 
   kpa_t rsdp = acpi_scan_region(ebda, ebda + 1024);
   if (!rsdp) rsdp = acpi_scan_region(0xe0000, 0xfffff);

@@ -367,7 +367,7 @@ config_physical_memory(void)
      * span will work, and declaring them this way avoids cast
      * complaints.
      */
-    kpa_t ebda_base = (* ((uint16_t *) 0x40e)) << 4;
+    kpa_t ebda_base = (* PTOKV(0x40e, uint16_t *)) << 4;
     kpa_t ebda_bound = (* PTOKV(ebda_base, uint32_t *)) * 1024;
     ebda_bound += ebda_base;
 
