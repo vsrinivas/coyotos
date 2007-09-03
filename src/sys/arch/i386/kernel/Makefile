@@ -24,7 +24,7 @@ CROSS_BUILD=yes
 COYOTOS_SRC=../../../..
 DIRS=
 
-INC=-I../../.. -I. -IBUILD
+INC=-I../../.. -I. -I$(BUILDDIR)
 DEF=-D__KERNEL__ # -DNDEBUG -DHAVE_HUI=0
 DEF+= -DBRING_UP
 DEF+= -DEVT_TRACE
