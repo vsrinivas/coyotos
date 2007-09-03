@@ -21,12 +21,14 @@
 default: package
 COYOTOS_SRC=../..
 
+include $(COYOTOS_SRC)/build/make/makevars.mk
+
 # This needs to change when we fix the install targets
 CXXFLAGS+=-g
 #CXXFLAGS+=-Wuninitialized -O
 #CXXFLAGS+=-finline-limit=8000 --param inline-unit-growth=400 --param max-inline-insns-single=16000 --param large-function-growth=4000
 
-INC=-I. -I.. -I$(COYOTOS_SRC)/sys -I$(COYOTOS_XENV)/host/include
+INC=-I. -I.. -I$(COYOTOS_SRC)/sys $(INC_SHERPA)
 DEF+=-DCROSS_COMPILING -DCOYOTOS_UNIVERSAL_CROSS
 
 include $(COYOTOS_SRC)/build/make/makerules.mk

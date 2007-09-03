@@ -21,9 +21,9 @@
 default: package
 COYOTOS_SRC=../..
 
-INC=-Ifrontend -I.. -I../../sys
-
 include $(COYOTOS_SRC)/build/make/makevars.mk
+
+INC=-Ifrontend -I.. -I../../sys $(INC_SHERPA)
 
 TARGETS=$(BUILDDIR)/capidl
 CLEANLIST=idl.c idl.h idl.output idl.c.h idl.c.output
