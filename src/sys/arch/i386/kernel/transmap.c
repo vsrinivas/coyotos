@@ -55,6 +55,35 @@ extern kva_t TransientMap[];
 #define DEBUG_TRANSMAP if (0)
 
 void
+transmap_init()
+{
+  memset(TransientMap, 0, COYOTOS_PAGE_SIZE);
+
+  if (UsingPAE) {
+    uint32_t undx = PAE_PGDIR_NDX(TRANSMAP_WINDOW_KVA);
+    IA32_PAE *upper = ((IA32_PAE*) &KernPageDir) + undx;
+
+    upper->value = ((kpa_t)&TransientMap) - KVA;
+    upper->bits.W = 1;
+    upper->bits.V = 1;
+    upper->bits.ACC = 1;
+    upper->bits.DIRTY = 1;
+    upper->bits.PGSZ = 0;
+  }
+  else {
+    uint32_t undx = PTE_PGDIR_NDX(TRANSMAP_WINDOW_KVA);
+    IA32_PTE *upper = ((IA32_PTE*) &KernPageDir) + undx;
+
+    upper->value = ((kpa_t)&TransientMap) - KVA;
+    upper->bits.W = 1;
+    upper->bits.V = 1;
+    upper->bits.ACC = 1;
+    upper->bits.DIRTY = 1;
+    upper->bits.PGSZ = 0;
+  }
+}
+
+void
 transmap_flush()
 {
   DEBUG_TRANSMAP printf("Transmap: flushed\n");
