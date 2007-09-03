@@ -163,9 +163,12 @@ general_entry:
 	 * whether the processor supports PAE.
 	 */
 	
-	/* If AC bit cannot be modified, this is 486 or earlier, and
-	 * CPUID is not available. */
-	movl	$kstack_hi-KVA, %esp
+	/* If AC bit cannot be modified, this is 486 or earlier, and *
+	 * CPUID is not available. To check that, we need a stack so that
+	 * we can use PUSHF and POPF. We will later overwrite %esp with
+	 * a more appropriate value.
+	 */
+	movl $kstack_hi-KVA, %esp
 	
 	pushf				/* push flags onto stack */
 	xorl	$EFLAGS_AC,(%esp)
