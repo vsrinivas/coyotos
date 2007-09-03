@@ -23,7 +23,7 @@ COYOTOS_SRC=../..
 
 CXXFLAGS=-g
 
-INC=-I. -I.. -I$(COYOTOS_SRC)/sys -I$(COYOTOS_XENV)/host/include
+INC=-I. -I.. -I$(COYOTOS_SRC)/sys $(INC_SHERPA)
 DEF+=-DCROSS_COMPILING -DCOYOTOS_UNIVERSAL_CROSS
 
 include $(COYOTOS_SRC)/build/make/makerules.mk
