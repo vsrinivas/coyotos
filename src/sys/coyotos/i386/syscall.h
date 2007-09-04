@@ -24,12 +24,32 @@
 
 #if defined(__ASSEMBLER__) && !defined(__KERNEL__)
 
-#define DO_SYSCALL_TRASHESP(pws) \
+/** @brief Do a raw syscall using the invocation structure located at
+ * @p pws.
+ *
+ * This is designed to be used by read-only assembly routines, like those
+ * in ProtoSpace and the small-space initialization code.  All registers,
+ * *including ESP*, are overwritten by this call.  The only state retained
+ * is the PC.
+ */
+#define DO_RO_SYSCALL(pws) \
 	movl $pws, %esp		; \
 	movl 0(%esp), %eax	; \
 	movl 4(%esp), %ebx	; \
 	movl 8(%esp), %esi	; \
 	movl 12(%esp), %edi	; \
+	movl %esp, %ecx		; \
+	movl $1f, %edx		; \
+1:	int $0x30		; 
+
+/** @brief Do a raw system call, but overwrite the third and fourth 
+ * parameters. */
+#define DO_RO_SYSCALL_LD64(pws, low, high) \
+	movl low, %esi		; \
+	movl high, %edi		; \
+	movl $pws, %esp		; \
+	movl 0(%esp), %eax	; \
+	movl 4(%esp), %ebx	; \
 	movl %esp, %ecx		; \
 	movl $1f, %edx		; \
 1:	int $0x30		; 
