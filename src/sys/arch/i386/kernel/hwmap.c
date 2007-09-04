@@ -78,20 +78,6 @@ local_tlb_flushva(kva_t va)
 		 );
 }
 
-void
-hwmap_release_low_map()
-{
-  printf("Releasing low-memory mapping\n");
-  if (UsingPAE) {
-    PAE_CLEAR(cpu0_KernPDPT.entry[0]);
-  }
-  else {
-    PTE_CLEAR(KernPageDir[0]);
-  }
-  local_tlb_flush();
-}
-
-
 static void
 reserve_pgtbls(void)
 {

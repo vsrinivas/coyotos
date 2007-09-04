@@ -90,8 +90,6 @@ typedef struct PDPT {
 
 extern PDPT cpu0_KernPDPT;
 
-void hwmap_release_low_map();
-
 void local_tlb_flush();
 void local_tlb_flushva(kva_t va);
 

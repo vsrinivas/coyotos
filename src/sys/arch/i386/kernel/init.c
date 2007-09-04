@@ -702,8 +702,6 @@ arch_init(void)
     cache_estimate_sizes(PAGES_PER_PROCESS, nPage);
   }
 
-  hwmap_release_low_map();
-
   pagetable_init();
 
   cpu_vector_init();
