@@ -335,10 +335,10 @@ enum_decl: tk_Ident {
   $$ = new AST(at_enum_bind, $1.loc, new AST(at_ident, $1));
 }
 
-enum_decl: tk_Ident '=' tk_Int {
+enum_decl: tk_Ident '=' expr {
   SHOWPARSE("enum_decl -> Ident '=' expr");
   $$ = new AST(at_enum_bind, $1.loc, new AST(at_ident, $1),
-	       AST::makeIntLit($3));
+	       $3);
 }
 
 if_statement : tk_IF '(' expr ')' block {

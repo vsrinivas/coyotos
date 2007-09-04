@@ -1596,34 +1596,34 @@ getBuiltinEnv(GCPtr<CoyImage> ci)
 
     // Arithmetic and comparison operators:
 
-    builtins->addConstant("+", 
-			 new PrimFnValue("+", 1, 0, pf_add));
-    builtins->addConstant("-", 
-			 new PrimFnValue("-", 1, 0, pf_add));
-    builtins->addConstant("*", 
-			 new PrimFnValue("*", 1, 0, pf_mul));
-    builtins->addConstant("/", 
-			 new PrimFnValue("/", 1, 0, pf_div));
-    builtins->addConstant("%", 
-			 new PrimFnValue("%", 1, 0, pf_mod));
-    builtins->addConstant("unary-", 
-			 new PrimFnValue("-", 1, 0, pf_negate));
+    builtins->addPureConstant("+", 
+			      new PrimFnValue("+", 1, 0, pf_add));
+    builtins->addPureConstant("-", 
+			      new PrimFnValue("-", 1, 0, pf_add));
+    builtins->addPureConstant("*", 
+			      new PrimFnValue("*", 1, 0, pf_mul));
+    builtins->addPureConstant("/", 
+			      new PrimFnValue("/", 1, 0, pf_div));
+    builtins->addPureConstant("%", 
+			      new PrimFnValue("%", 1, 0, pf_mod));
+    builtins->addPureConstant("unary-", 
+			      new PrimFnValue("-", 1, 0, pf_negate));
 
-    builtins->addConstant("<", 
-			 new PrimFnValue("<", 1, 0, pf_cmp));
-    builtins->addConstant(">", 
-			 new PrimFnValue(">", 1, 0, pf_cmp));
+    builtins->addPureConstant("<", 
+			      new PrimFnValue("<", 1, 0, pf_cmp));
+    builtins->addPureConstant(">", 
+			      new PrimFnValue(">", 1, 0, pf_cmp));
 
-    builtins->addConstant("<=", 
-			 new PrimFnValue("<=", 1, 0, pf_cmpe));
-    builtins->addConstant(">=", 
-			 new PrimFnValue(">=", 1, 0, pf_cmpe));
-    builtins->addConstant("==", 
-			 new PrimFnValue("==", 1, 0, pf_cmpe));
-    builtins->addConstant("!=", 
-			 new PrimFnValue("!=", 1, 0, pf_cmpe));
-    builtins->addConstant("!", 
-			 new PrimFnValue("!", 1, 0, pf_not));
+    builtins->addPureConstant("<=", 
+			      new PrimFnValue("<=", 1, 0, pf_cmpe));
+    builtins->addPureConstant(">=", 
+			      new PrimFnValue(">=", 1, 0, pf_cmpe));
+    builtins->addPureConstant("==", 
+			      new PrimFnValue("==", 1, 0, pf_cmpe));
+    builtins->addPureConstant("!=", 
+			      new PrimFnValue("!=", 1, 0, pf_cmpe));
+    builtins->addPureConstant("!", 
+			      new PrimFnValue("!", 1, 0, pf_not));
 
   }
 

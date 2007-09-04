@@ -33,6 +33,7 @@ class UocInfo;
 
 #define BF_EXPORTED   0x1u  /* Binding is exported */
 #define BF_CONSTANT   0x2u  /* Binding is immutable */
+#define BF_PURE       0x4u  /* Binding is pure */
 
 template <class T>
 struct Binding : public sherpa::Countable {
@@ -100,6 +101,13 @@ struct Environment : public sherpa::Countable {
   {
     addBinding(name, val);
     setFlags(name, BF_CONSTANT);
+  }
+
+  void
+  addPureConstant(const std::string& name, sherpa::GCPtr<T> val)
+  {
+    addBinding(name, val);
+    setFlags(name, BF_CONSTANT|BF_PURE);
   }
 
   sherpa::GCPtr<Environment<T> >newScope();

@@ -32,6 +32,21 @@ struct InterpState {
   sherpa::GCPtr<Environment<Value> > env;
   sherpa::GCPtr<CoyImage> ci;
 
+  /// @brief Whether we are interpreting in pure mode.
+  ///
+  /// In constant mode, we will only perform enough interpretation to
+  /// establish constant definitions. The effect of this is to limit
+  /// the expression interpreter to prohibit fncall on most procedures
+  /// and to require all identifier resolutions to yield constant
+  /// identifiers. This mode was introduced in order to allow us to
+  /// evaluate expressions on the right hand side of enumerations.
+  ///
+  /// As special cases, fncall on arithmetic procedures and their ilk
+  /// remain enabled.
+  ///
+  /// InterpState initializes to constMode = false;
+  bool pureMode;
+
   InterpState(std::ostream & _errStream, 
 	      sherpa::GCPtr<CoyImage> _ci,
 	      sherpa::GCPtr<AST> _curAST,

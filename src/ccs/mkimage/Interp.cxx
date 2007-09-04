@@ -188,6 +188,9 @@ AST::interp(InterpState& is)
     {
       GCPtr<Value> fn = child(0)->interp(is)->get();
 
+      /* We may be in pure mode if we are on the RHS of an enum
+	 definition. In that case, only pure vk_primfn's are currently
+	 permitted. */
       if (fn->kind == Value::vk_function) {
 	GCPtr<FnValue> fnv = fn.upcast<FnValue>();
 
@@ -256,6 +259,13 @@ AST::interp(InterpState& is)
       }
       else if (fn->kind == Value::vk_primMethod) {
 	GCPtr<PrimMethodValue> pmv = fn.upcast<PrimMethodValue>();
+
+	if (is.pureMode) {
+	  is.errStream << loc << " " 
+		       << "Illegal call to non-pure method \""
+		       << pmv->nm << "\" on RHS of enum definition.\n";
+	  THROW(excpt::BadValue, "Bad interpreter result");
+	}
 
 	size_t nArgs = children->size() - 1;
 	if (nArgs < pmv->minArgs) {
@@ -515,7 +525,9 @@ AST::interp(InterpState& is)
 	}
 
 	if (eBinding->children->size() == 2) {
-	  GCPtr<Value> v = eBinding->child(1)->interp(is)->get();
+	  InterpState exprInterpState = is;
+	  exprInterpState.pureMode = true;
+	  GCPtr<Value> v = eBinding->child(1)->interp(exprInterpState)->get();
 	  if (v->kind != Value::vk_int) {
 	    is.errStream << eBinding->child(1)->loc << " "
 			 << "Enumeration value must be an integer.\n";
@@ -526,6 +538,7 @@ AST::interp(InterpState& is)
 	}
 
 	env->addBinding(ident, new IntValue(curValue));
+	env->setFlags(ident, BF_PURE);
 	if (astType == at_s_export_enum)
 	  env->setFlags(ident, BF_EXPORTED);
 
@@ -599,14 +612,28 @@ AST::interp(InterpState& is)
 	THROW(excpt::BadValue, "Bad interpreter result");
       }
 
+      if (is.pureMode && !(b->flags & BF_PURE)) {
+	is.errStream << loc << " "
+		     << "Reference to impure binding \""
+		     << s << "\" in ENUM definition\n";
+	THROW(excpt::BadValue, "Bad interpreter result");
+      }
+
       return new BoundValue(b);
     }
 
   case at_dot:
     {
+      /* If this appears in context of an ENUM RHS, then we are in
+	 pure mode. Given lhs.rhs, the pure mode identifier restriction
+	 applies only to the 'rhs'. The lhs is processed without
+	 regard to pure mode. */
+      InterpState lhsInterpState = is;
+      lhsInterpState.pureMode = false;
+
       // This case is going to end up being quite a nuisance in due
       // course, but for now..
-      GCPtr<Value> vl = child(0)->interp(is)->get();
+      GCPtr<Value> vl = child(0)->interp(lhsInterpState)->get();
 
       if (child(1)->astType != at_ident) {
 	is.errStream << loc << " "
@@ -628,6 +655,13 @@ AST::interp(InterpState& is)
 	is.errStream << loc << " "
 		  << "Reference to unbound field/member \""
 		     << child(1)->s << "\"\n";
+	THROW(excpt::BadValue, "Bad interpreter result");
+      }
+
+      if (is.pureMode && !(binding->flags & BF_PURE)) {
+	is.errStream << loc << " "
+		     << "Reference to impure binding \""
+		     << child(1)->s << "\" in ENUM definition\n";
 	THROW(excpt::BadValue, "Bad interpreter result");
       }
 
@@ -775,6 +809,7 @@ InterpState::InterpState(std::ostream & _errStream,
   ci = _ci;
   curAST = _curAST;
   env = _env;
+  pureMode = false;
 }
 
 InterpState::InterpState(const InterpState& is)
@@ -783,4 +818,5 @@ InterpState::InterpState(const InterpState& is)
   ci = is.ci;
   curAST = is.curAST;
   env = is.env;
+  pureMode = is.pureMode;
 }
