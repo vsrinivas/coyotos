@@ -85,9 +85,9 @@
  * addresses.
  */
 
-#define HEAP_LIMIT_VA            0xFEBFE000
+#define HEAP_LIMIT_VA            0xFF400000
 
 /** @brief Virtual base address of transient map. MUST be a multiple of 4M */
-#define TRANSMAP_WINDOW_KVA 0xFEC00000
+#define TRANSMAP_WINDOW_KVA 0xFF800000
 
 #endif /* I386_HAL_CONFIG_H */
