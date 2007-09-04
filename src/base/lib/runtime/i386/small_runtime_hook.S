@@ -46,15 +46,15 @@
 	.type __small_runtime_hook,@function
 
 __small_runtime_hook:
-	DO_SYSCALL_TRASHESP(__small_runtime_hook_call_1)
+	DO_RO_SYSCALL(__small_runtime_hook_call_1)
 	CHECK_FAILURE
-	DO_SYSCALL_TRASHESP(__small_runtime_hook_call_2)
+	DO_RO_SYSCALL(__small_runtime_hook_call_2)
 	CHECK_FAILURE
-	DO_SYSCALL_TRASHESP(__small_runtime_hook_call_3)
+	DO_RO_SYSCALL(__small_runtime_hook_call_3)
 	CHECK_FAILURE
-	DO_SYSCALL_TRASHESP(__small_runtime_hook_call_4)
+	DO_RO_SYSCALL(__small_runtime_hook_call_4)
 	CHECK_FAILURE
-	DO_SYSCALL_TRASHESP(__small_runtime_hook_call_5)
+	DO_RO_SYSCALL(__small_runtime_hook_call_5)
 	CHECK_FAILURE
 
 	/* calls completed:	we should now have a stack. */
