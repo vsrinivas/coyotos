@@ -31,13 +31,15 @@ OPTIONAL_DIRS=doc tutorial
 DIRS=$(REQUIRED_DIRS) $(OPTIONAL_DIRS)
 CLEANDIRS=build $(DIRS)
 
-UPDATE_DIRS=build $(REQUIRED_DIRS)
-OPT_UPDATE_DIRS=ccs-xenv $(OPTIONAL_DIRS)
-ALL_UPDATE_DIRS=$(UPDATE_DIRS) $(OPT_UPDATE_DIRS)
-
 TARDIRS=$(DIRS)
 
 include $(COYOTOS_SRC)/build/make/pkgrules.mk
+
+# This needs to follow the include line so that COYOTOS_ROOT is defined:
+HGTREES=coyotos
+OPT_HGTREES=coyotos/src/ccs-xenv coyotos/src/tutorial
+ALL_HGTREES=$(HGTREES) $(OPT_HGTREES)
+HG_TREETOP=$(COYOTOS_ROOT)/..
 
 distclean: targdir-clean clean
 
@@ -84,39 +86,20 @@ CMR=cmr
 endif
 
 status:
-	@for d in `echo $(ALL_UPDATE_DIRS)`; do\
-	    if [ -d $$d ]; then \
-	        echo "Status of $$d:"; \
-		cm -C $$d status; \
+	@for tree in `echo $(ALL_HGTREES)`; do\
+	    if [ -d $(HG_TREETOP)/$${tree}/.hg ]; then \
+	        echo "[$${tree}]"; \
+		hg --cwd $(HG_TREETOP)/$${tree} status; \
 	    fi; \
 	done
 
 update:
-	@for d in `echo $(ALL_UPDATE_DIRS)`; do\
-	    if [ -d $$d ]; then \
-	        echo "Updating $$d"; \
-		(cd $$d; $(CMR) update); \
+	@for tree in `echo $(ALL_HGTREES)`; do\
+	    if [ -d $(HG_TREETOP)/$${tree}/.hg ]; then \
+	        echo "[$${tree}]"; \
+		hg --cwd $(HG_TREETOP)/$${tree} fetch; \
 	    fi; \
 	done
 
-destructive-sync:
-	rsync -avz rsync://www.coyotos.org/src.coyotos/src/Makefile ./Makefile
-	for d in `echo $(UPDATE_DIRS) build`; do\
-	   rsync -avz --delete rsync://www.coyotos.org/src.coyotos/src/$$d/ $$d/; \
-	done
-	for d in `echo $(OPT_UPDATE_DIRS)`; do\
-	    if [ -d $$d ]; then \
-	        rsync -avz --delete rsync://www.coyotos.org/src.coyotos/src/$$d/ $$d/; \
-	    fi; \
-	done
-
-sync:
-	rsync -avz rsync://www.coyotos.org/src.coyotos/src/Makefile ./Makefile
-	for d in `echo $(UPDATE_DIRS) build`; do\
-	    rsync -avz rsync://www.coyotos.org/src.coyotos/src/$$d/ $$d/; \
-	done
-	for d in `echo $(OPT_UPDATE_DIRS)`; do\
-	    if [ -d $$d ]; then \
-	        rsync -avz rsync://www.coyotos.org/src.coyotos/src/$$d/ $$d/; \
-	    fi; \
-	done
+get_trees:
+	build/bin/get-trees.py
