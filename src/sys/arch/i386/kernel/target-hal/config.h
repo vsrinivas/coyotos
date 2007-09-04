@@ -87,20 +87,6 @@
 
 #define HEAP_LIMIT_VA            0xFEBFE000
 
-/** @brief Virtual address at which the CPU0 page directory appears
- * redundantly.
- *
- * This address is referenced when CPUs n>1 reference the heap.
- */
-#define MASTER_PAGE_DIRECTORY_VA 0xFEBFE000
-
-/** @brief Virtual address at which the CPU0 page table appears
- * redundantly.
- *
- * This address is referenced when CPUs n>1 reference the heap.
- */
-#define MASTER_PAGE_TABLE_VA     0xFEBFF000
-
 /** @brief Virtual base address of transient map. MUST be a multiple of 4M */
 #define TRANSMAP_WINDOW_KVA 0xFEC00000
 
