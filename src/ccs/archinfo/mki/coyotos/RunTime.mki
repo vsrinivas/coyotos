@@ -1,0 +1,115 @@
+/*
+ * Copyright (C) 2007, The EROS Group, LLC
+ *
+ * This file is part of the EROS Operating System.
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 2,
+ * or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+ */
+
+/*
+ * mkimage()-compatible runtime constants, as well as utility functions.
+ */
+module coyotos.RunTime {
+  /* These constants match the CAPREG_* macros in <coyotos/runtime.h> */
+  export enum REG {
+    NULL = 0,
+    REPLYEPT = 1,
+    SELF = 2,
+    SPACEBANK = 3,
+    TOOLS = 4,
+    INITEPT = 5,
+    RUNTIME = 6,
+    ADDRHANDLER = 7,
+    FIRSTAPP = 8,
+    LASTAPP = 23,
+    REPLY0 = 24,
+    REPLY1 = 25,
+    REPLY2 = 26,
+    REPLY3 = 27,
+    RETURN = 28,
+    ARG0 = 29,
+    ARG1 = 30,
+    ARG2 = 31
+  };
+
+  /* These constants match the TOOL_* macros in <coyotos/runtime.h> */
+  export enum TOOL {
+    PROTOSPACE = 0,
+    SPACEBANK_VERIFY,
+    CONSTRUCTOR_VERIFY,
+    AUDIT_LOG
+  };
+
+  /* From the coyotos.Process IDL file, this is the initialization fault. */
+  export enum {
+    PROCESS_FC_STARTUP = 25
+  };
+
+  /* Allocate a bare-bones process, and set up its capRegs. 
+   *
+   * bank should be a freshly created bank.
+   *
+   * A bare process consists of:
+   *   1. A process
+   *   2. One reply endpoint, w/ epID 0 and PM set to 1
+   *   3. One initial endpoint, w/ epID 1 and PM cleared.
+   *
+   * The REPLYEPT, SELF, and INITEPT capability registers are set up to link
+   * all of these together.  The SPACEBANK capability register is set to
+   * the passed in bank.
+   *
+   * To make a running process out of the result, you must:
+   *   1. Place an address space in proc.addrSpace
+   *   2. Set proc.faultCode to PROCESS_FC_STARTUP
+   *   3. Set proc.faultInfo to the initial PC
+   *
+   * And optionally set up the other capRegs as desired (REG.TOOLS and 
+   * REG.RUNTIME are obvious candidates), or process fields (handler, etc.)
+   */
+  export def make_bare_process(bank) {
+    def proc = make_process(bank);
+
+    def replyept = make_endpoint(bank);
+    replyept.pm = 1;
+    replyept.recipient = proc;
+    replyept.endpointID = 0;
+
+    def initept = make_endpoint(bank);
+    initept.recipient = proc;
+    initept.endpointID = 1;
+
+    proc.capReg[REG.REPLYEPT] = replyept;
+    proc.capReg[REG.SELF] = proc;
+    proc.capReg[REG.SPACEBANK] = bank;
+    proc.capReg[REG.INITEPT] = initept;
+
+    return proc;
+  }
+
+  /*
+   * Make a process which will be running, using *bank* (which should be a
+   * freshly created bank) for underlying storage.  Set it up to run the
+   * address space *as*, starting at the entry point *pc*.
+   */
+  export def make_running_process(bank, as, pc) {
+    def proc = make_bare_process(bank);
+
+    proc.addrSpace = as;
+    proc.faultCode = PROCESS_FC_STARTUP;
+    proc.faultInfo = pc;
+
+    return proc;
+  }
+}

@@ -366,7 +366,9 @@ CoyImage::AllocBankEndpoint(bankid_t parent)
     InitObjectInVector(theBankID, vec.endpt, ct_Endpoint, new CiEndpoint);
 
   GCPtr<CiEndpoint> ep = GetEndpoint(bankCap);
-  ep->v.endpointID = theBankID;
+
+  // epID 0 is reserved for the Reply endpoint, so offset by 1
+  ep->v.endpointID = theBankID + 1;
 
   vec.bank.push_back(CiBank(ep->oid, parent));
 

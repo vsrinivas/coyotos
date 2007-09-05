@@ -42,7 +42,7 @@ interface Builder extends Constructor {
   void insertSpace(Cap kpr) raises(Sealed);
 
   /// @brief Set the initial program counter for the yield.
-  boolean setPC(coyaddr_t pc) raises(Sealed);
+  void setPC(coyaddr_t pc) raises(Sealed);
 
   /// @brief Insert a constituent capability for the process.
   void addConstituent(Cap c) raises(Sealed);

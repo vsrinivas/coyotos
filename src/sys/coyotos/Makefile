@@ -34,7 +34,6 @@ HEADERS=\
 	capidl.h \
 	coytypes.h \
 	endian.h \
-	runtime.h \
 	syscall.h
 
 #	cap-instr.h \

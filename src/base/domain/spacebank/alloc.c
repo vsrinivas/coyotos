@@ -36,45 +36,45 @@ void alloc_init(void)
 
   // Our mkimage has an initial GPT which we use as the top of our 
   // address space.
-  MUST_SUCCEED(coyotos_Memory_setGuard(CAP_INITGPT, 
+  MUST_SUCCEED(coyotos_Memory_setGuard(CR_INITGPT, 
 				       make_guard(0, COYOTOS_HW_ADDRESS_BITS),
-				       CAP_ADDRSPACE,
+				       CR_ADDRSPACE,
 				       IDL_E));
-  MUST_SUCCEED(coyotos_GPT_setl2v(CAP_ADDRSPACE, 
+  MUST_SUCCEED(coyotos_GPT_setl2v(CR_ADDRSPACE, 
 				  addrspace_l2v, 
 				  &oldl2v, 
 				  IDL_E));
   
   // Put the existing address space in slot 0 of the initial GPT
-  MUST_SUCCEED(coyotos_Process_getSlot(CAP_SELF, 
+  MUST_SUCCEED(coyotos_Process_getSlot(CR_SELF, 
 				       coyotos_Process_cslot_addrSpace,
-				       CAP_TMP1, 
+				       CR_TMP1, 
 				       IDL_E));
 
-  MUST_SUCCEED(coyotos_AddressSpace_setSlot(CAP_ADDRSPACE, 
+  MUST_SUCCEED(coyotos_AddressSpace_setSlot(CR_ADDRSPACE, 
 					    0, 
-					    CAP_TMP1,
+					    CR_TMP1,
 					    IDL_E));
 
   // And install the new address space
-  MUST_SUCCEED(coyotos_Process_setSlot(CAP_SELF, 
+  MUST_SUCCEED(coyotos_Process_setSlot(CR_SELF, 
 				       coyotos_Process_cslot_addrSpace,
-				       CAP_ADDRSPACE, 
+				       CR_ADDRSPACE, 
 				       IDL_E));
 
-  MUST_SUCCEED(coyotos_GPT_getl2v(CAP_ADDRSPACE, &addrspace_l2v, IDL_E));
+  MUST_SUCCEED(coyotos_GPT_getl2v(CR_ADDRSPACE, &addrspace_l2v, IDL_E));
 
   /* Set up a read-only Page zero mapping */
-  get_pagecap(CAP_TMP1, 0);
-  MUST_SUCCEED(coyotos_Memory_reduce(CAP_TMP1, 
+  get_pagecap(CR_TMP1, 0);
+  MUST_SUCCEED(coyotos_Memory_reduce(CR_TMP1, 
 				     coyotos_Memory_restrictions_readOnly,
-				     CAP_TMP1,
+				     CR_TMP1,
 				     IDL_E));
 
   /* And install it as the first page in the break */
-  MUST_SUCCEED(coyotos_AddressSpace_setSlot(CAP_ADDRSPACE, 
+  MUST_SUCCEED(coyotos_AddressSpace_setSlot(CR_ADDRSPACE, 
 					    1,
-					    CAP_TMP1, 
+					    CR_TMP1, 
 					    IDL_E));
 
   /* Now, set up our break state to match. */
@@ -113,12 +113,12 @@ install_Page(cap_t pageCap, uintptr_t addr)
    *  5.  TMP1       TMP2     TMP3     TMP1
    *  ... etc. ...
    */
-  assert(pageCap != CAP_TMP1 && pageCap != CAP_TMP2 && pageCap != CAP_TMP3);
+  assert(pageCap != CR_TMP1 && pageCap != CR_TMP2 && pageCap != CR_TMP3);
 
-  cap_t cap = CAP_ADDRSPACE;
-  cap_t next = CAP_TMP1;
-  cap_t spare = CAP_TMP2;
-  cap_t next_spare = CAP_TMP3;
+  cap_t cap = CR_ADDRSPACE;
+  cap_t next = CR_TMP1;
+  cap_t spare = CR_TMP2;
+  cap_t next_spare = CR_TMP3;
 
   {
     guard_t theGuard = 0;
@@ -230,8 +230,8 @@ allocate_bytes(size_t bytes_arg)
        pos += COYOTOS_PAGE_SIZE) {
     assert3(pos, >=, mybrk);
 
-    require_Page(CAP_TMPPAGE);
-    install_Page(CAP_TMPPAGE, pos);
+    require_Page(CR_TMPPAGE);
+    install_Page(CR_TMPPAGE, pos);
   }
 
   assert3(a_end, >=, mybrk);
@@ -252,8 +252,8 @@ map_pages(oid_t base, oid_t bound)
   size_t idx;
 
   for (idx = 0; idx < nPages; idx++) {
-    get_pagecap(CAP_TMPPAGE, base + idx);
-    install_Page(CAP_TMPPAGE, start + idx * COYOTOS_PAGE_SIZE);
+    get_pagecap(CR_TMPPAGE, base + idx);
+    install_Page(CR_TMPPAGE, start + idx * COYOTOS_PAGE_SIZE);
   }
   mybrk = end;
   return (void *)start;
