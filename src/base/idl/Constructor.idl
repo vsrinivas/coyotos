@@ -36,7 +36,7 @@ package coyotos;
  * operation produces the constructor capability. Once sealed, new
  * capabilities cannot be added to the constructor.
  */
-interface Constructor extends Cap {
+interface Constructor extends Verifier {
 
   /// @brief Return true exactly if the constructor's yield is
   /// confined.
@@ -54,6 +54,6 @@ interface Constructor extends Cap {
   /// information key.
   Cap create(SpaceBank bank, Schedule sched, Cap runtime);
 
-  /// @brief Verify that @p cons is a constructor
-  boolean verifyConstructor(Constructor cons);
+  /// @brief Get a Verifier for this Constructor
+  Verifier getVerifier();
 };

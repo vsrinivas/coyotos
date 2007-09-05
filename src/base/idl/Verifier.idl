@@ -1,0 +1,21 @@
+package coyotos;
+
+/**
+ * @brief Constructor Yield Verification Interface
+ *
+ * Constructors also implement a query to determine whether a process
+ * is its yield. This allows a client to determine whether a process
+ * alleging to be an instance of some binary X was in fact created by
+ * the constructor of X instances.
+ *
+ * In order to verify that a constructor is authentic, there is a
+ * constructor verifier, which is the Verifier for the
+ * Metaconstructor.  In the normal Coyotos configuration, both the
+ * metaconstructor and the space bank verifier are readily available
+ * to applications as part of the standard runtime environment.
+ */
+interface Verifier extends Cap {
+
+  /// @brief Returns true exactly if @p yield is a child of this constructor.
+  boolean verifyYield(Cap yield);
+};
