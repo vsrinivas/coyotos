@@ -181,7 +181,7 @@ mkimage
 	  </li>
 	</defli>
 	<defli>
-	  <label><b>-D</b> <em>headerDir</em></label>
+	  <label><b>-H</b> <em>headerDir</em></label>
 	  <li>
 	    <p>
               Emit header files suitable for C and C++ programs into
@@ -621,7 +621,7 @@ print sb.a;</literallayout>
   | <b>def</b> Ident ({Ident {',' Ident}<sup>*</sup>}<sup>?</sup>')'
       <em>block</em> ';'
   | <b>enum</b> Ident '{' <em>enumDef</em><sup>+</sup> '}'
-<em>enumDef</em> : Ident {'=' Int}<sup>*</sup></literallayout>
+<em>enumDef</em> : Ident {'=' <em>expr</em>}<sup>*</sup></literallayout>
         <p>
           The first <b>def</b> form associates an initial the value with an
           identifier and binds that identifier in the current scope.
@@ -642,6 +642,31 @@ print sb.a;</literallayout>
           <command>mkimage</command> and it's constructed programs must
           agree on. In particular, enumerations are used to define slot
           numbers in the ``tools'' capability page of each process.
+        </p>
+        <p>
+          When an expression appears on the right hand side of an
+          <b>enumDef</b>, it is subject to several constraints:
+        </p>
+        <ul>
+          <li>
+            <p>
+              The only functions that can be called are arithmetic
+              functions and unary negation.
+            </p>
+            <p>
+              The only identifiers that can be referenced are
+              identifiers defined by earlier  <b>enumDef</b> forms.
+            </p>
+          </li>
+        </ul>
+        <p>
+          The combined effect of these constraints is that enumeration
+          definitions may make reference to, and compute values based
+          on, other enumeration definitions, but they do not require
+          general interpretation to occur. This is necessary to
+          support header file generation. At the time header files are
+          generated the corresponding binary programs do not exist, so
+          attempts to execute (e.g.)  <b>loadimage()</b> would fail.
         </p>
         <p>
           The value of a defining statement is <em>unit</em>.
