@@ -1435,6 +1435,46 @@ pf_fillpage(PrimFnValue& pfv,
   return &TheUnitValue;
 }
 
+GCPtr<Value>
+pf_set_page_uint64(PrimFnValue& pfv,
+		   InterpState& is,
+		   sherpa::CVector<GCPtr<Value> >& args)
+{
+  needCapArgType(is, pfv.nm, args, 0, ct_Page);
+  GCPtr<CapValue> pgCap = args[0].upcast<CapValue>();
+  uint32_t addr =
+    needIntArg(is, pfv.nm, args, 1)->bn.as_uint32();
+  uint64_t value =
+    needIntArg(is, pfv.nm, args, 2)->bn.as_uint64();
+
+  size_t slot = addr / sizeof (value);
+
+  if (slot >= (is.ci->target.pageSize / sizeof (value)) ||
+      slot * sizeof (value) != addr) {
+    is.errStream << is.curAST->loc << " "
+		 << pfv.nm << "() addr must be an aligned page address value\n";
+    THROW(excpt::BadValue, "Bad interpreter result");
+  }
+
+  GCPtr<CiPage> pg = is.ci->GetPage(pgCap->cap);
+
+  if (is.ci->target.endian == LITTLE_ENDIAN) {
+    size_t idx;
+    for (idx = 0; idx < sizeof (value); idx++) {
+      pg->data[addr + idx] = (value & (0xff));
+      value >>= 8;
+    }
+  } else {
+    size_t idx;
+    for (idx = 0; idx < sizeof (value); idx++) {
+      pg->data[addr + (sizeof (value) - 1) - idx] = (value & (0xff));
+      value >>= 8;
+    }
+  }
+
+  return &TheUnitValue;
+}
+
 GCPtr<Environment<Value> > 
 getBuiltinEnv(GCPtr<CoyImage> ci)
 {
@@ -1479,7 +1519,8 @@ getBuiltinEnv(GCPtr<CoyImage> ci)
 
     // Endpoint fabrication:
     builtins->addConstant("make_endpoint", 
-			 new PrimFnValue("make_endpoint", 1, 1, pf_mk_endpoint));
+			 new PrimFnValue("make_endpoint", 1, 1, 
+					 pf_mk_endpoint));
 
     // Page fabrication:
     builtins->addConstant("make_page", 
@@ -1497,9 +1538,13 @@ getBuiltinEnv(GCPtr<CoyImage> ci)
     builtins->addConstant("AppInt",
 			 new PrimFnValue("AppInt", 2, 2, pf_mk_appint));
 
-    // Sender fabrication:
+    // Page content manipulation
     builtins->addConstant("fillpage",
 			 new PrimFnValue("fillpage", 2, 2, pf_fillpage));
+
+    builtins->addConstant("set_page_uint64",
+			 new PrimFnValue("set_page_uint64", 3, 3, 
+					 pf_set_page_uint64));
 
 
     builtins->addConstant("NullCap", 
