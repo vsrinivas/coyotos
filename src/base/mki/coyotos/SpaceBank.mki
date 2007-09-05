@@ -1,12 +1,47 @@
+/*
+ * Copyright (C) 2007, The EROS Group, LLC
+ *
+ * This file is part of the EROS Operating System.
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 2,
+ * or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+ */
+
+/*
+ * To create SpaceBanks and allocate storage from them, mkimage provides
+ * built-in functions, (make_bank(), make_page(), etc.), along with a
+ * built-in constant, PrimeBank, the root of the bank hierarchy.
+ *
+ * However, unless this module is imported into an image, any invocation of
+ * a SpaceBank capability will hang.
+ *
+ * coyotos.SpaceBank has only one exported interface for public consumption:
+ *
+ *   Verifier:  The global SpaceBank verifier.
+ * 
+ * The *important* side-effect of including this module is to create
+ * the SpaceBank process, which uses its Range Key to process the 
+ * allocation and bank data mkimage places in the output image.  It then
+ * walks through every bank endpoint created by mkimage, and places itself
+ * as the reciever.  This allows invocations of bank capabilities to succeed.
+ */
 module coyotos.SpaceBank {
    import TargetInfo = coyotos.TargetInfo;
+   import rt = coyotos.RunTime;
 
    /* The Spacebank verifier is a PrimeBank endpoint with all restrictions */
    export def Verifier = enter(PrimeBankEndpoint, 0xffffffff);
-
-   /* The spacebank process itself */
-   def spacebank = make_process(PrimeBank);
-   PrimeBankEndpoint.recipient = spacebank;
 
    def image = loadimage(PrimeBank, "coyotos/SpaceBank");
 
@@ -15,45 +50,23 @@ module coyotos.SpaceBank {
 				image.space, 
 				noexec(make_page(PrimeBank)),
 				TargetInfo.small_stack_page_addr);
-   /* print_space(aSpace); */
 
-   spacebank.faultCode = 25;   /* Process startup fault */
-   spacebank.faultInfo = image.pc;
-   spacebank.addrSpace = aSpace;
+   def spacebank = rt.make_running_process(PrimeBank, aSpace, image.pc);
 
-   def replyEpt = make_endpoint(PrimeBank);
-   replyEpt.recipient = spacebank;
-   replyEpt.endpointID = 0xffffffffffffffff;
-   replyEpt.pm = 1;
-
-   export enum REG {
-     NULL = 0,
-     REPLYEPT = 1,
-     SELF = 2,
-     /* =3 SpaceBank */
-     /* =4 Tools */
-     /* =5 InitEPT */
-     /* =6 Runtime */
-     RANGE = 7,	     /* Range key */
-     INITGPT = 8,    /* initial GPT for bootstrapping */
-     ADDRSPACE = 9,  /* from here on, these are not initialized */
-     TMP1 = 10,
-     TMP2 = 11,
-     TMP3 = 12,
-     TMPPAGE = 13,
-	/* 14-27 */
-     REPLY0 = 24,
-     REPLY1 = 25,
-     REPLY2 = 26,
-     REPLY3 = 27,
-     RETCAP = 28,
-     ARG1 = 29,
-     ARG2 = 30,
-     ARG3 = 31
+   /* Register assignments for SpaceBank; only exported so that they can
+    * be used by spacebank.c.
+    */
+   export enum APP {
+     TMP1 = 0,
+     TMP2,
+     TMP3,
+     TMPPAGE,
+     ADDRSPACE,
+     RANGE,	     /* Range key */
+     INITGPT        /* initial GPT for bootstrapping */
    };
 
-   spacebank.capReg[REG.REPLYEPT] = replyEpt;
-   spacebank.capReg[REG.RANGE] = Range();
-   spacebank.capReg[REG.SELF] = spacebank;
-   spacebank.capReg[REG.INITGPT] = make_gpt(PrimeBank);
+   /* Set up spacebank's application registers */
+   spacebank.capReg[rt.REG.FIRSTAPP + APP.RANGE] = Range();
+   spacebank.capReg[rt.REG.FIRSTAPP + APP.INITGPT] = make_gpt(PrimeBank);
 }

@@ -29,6 +29,7 @@
 #include <stddef.h>
 #include <coyotos/coytypes.h>
 #include <coyotos/syscall.h>
+#include <coyotos/runtime.h>
 #include <idl/coyotos/Memory.h>
 #include <idl/coyotos/GPT.h>
 #include <idl/coyotos/Endpoint.h>
@@ -40,27 +41,13 @@
 
 /* Turn constants defined in .mki file into usable capability registers */
 
-#define CAP_NULL	CAP_REG(coyotos_SpaceBank_REG_NULL)
-#define CAP_REPLYEPT	CAP_REG(coyotos_SpaceBank_REG_REPLYEPT)
-#define CAP_SELF	CAP_REG(coyotos_SpaceBank_REG_SELF)
-#define CAP_RANGE	CAP_REG(coyotos_SpaceBank_REG_RANGE)
-#define CAP_INITGPT	CAP_REG(coyotos_SpaceBank_REG_INITGPT)
-#define CAP_ADDRSPACE	CAP_REG(coyotos_SpaceBank_REG_ADDRSPACE)
-
-#define CAP_TMP1	CAP_REG(coyotos_SpaceBank_REG_TMP1)
-#define CAP_TMP2	CAP_REG(coyotos_SpaceBank_REG_TMP2)
-#define CAP_TMP3	CAP_REG(coyotos_SpaceBank_REG_TMP3)
-#define CAP_TMPPAGE	CAP_REG(coyotos_SpaceBank_REG_TMPPAGE)
-
-#define CAP_REPLY0	CAP_REG(coyotos_SpaceBank_REG_REPLY0)
-#define CAP_REPLY1	CAP_REG(coyotos_SpaceBank_REG_REPLY1)
-#define CAP_REPLY2	CAP_REG(coyotos_SpaceBank_REG_REPLY2)
-#define CAP_REPLY3	CAP_REG(coyotos_SpaceBank_REG_REPLY3)
-
-#define CAP_RETCAP	CAP_REG(coyotos_SpaceBank_REG_RETCAP)
-#define CAP_ARG1	CAP_REG(coyotos_SpaceBank_REG_ARG1)
-#define CAP_ARG2	CAP_REG(coyotos_SpaceBank_REG_ARG2)
-#define CAP_ARG3	CAP_REG(coyotos_SpaceBank_REG_ARG3)
+#define CR_RANGE	CR_APP(coyotos_SpaceBank_APP_RANGE)
+#define CR_INITGPT	CR_APP(coyotos_SpaceBank_APP_INITGPT)
+#define CR_ADDRSPACE	CR_APP(coyotos_SpaceBank_APP_ADDRSPACE)
+#define CR_TMP1	CR_APP(coyotos_SpaceBank_APP_TMP1)
+#define CR_TMP2	CR_APP(coyotos_SpaceBank_APP_TMP2)
+#define CR_TMP3	CR_APP(coyotos_SpaceBank_APP_TMP3)
+#define CR_TMPPAGE	CR_APP(coyotos_SpaceBank_APP_TMPPAGE)
 
 /* Define our basic datastructures. */
 

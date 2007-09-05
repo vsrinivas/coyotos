@@ -40,8 +40,8 @@
   REPLY_IPW0(ldw) | IPW0_SC | IPW0_MAKE_LSC(lastcap)
 
 IDL_Environment _IDL_E = {
-  .replyCap = CAP_REPLYEPT,
-  .epID = -1ULL,
+  .replyCap = CR_REPLYEPT,
+  .epID = 0,
 };
 
 /** @brief Process a single request, rewriting @p pb to do the reply.
@@ -71,13 +71,13 @@ process_request(InvParameterBlock_t *pb)
   // set up the basic reply
   pb->pw[0] = REPLY_IPW0(0); // default to no DW, no caps
 
-  // Only reply to RETCAP if one was passed.
-  pb->u.invCap = (opw0 & IPW0_SC) ? CAP_RETCAP : CAP_NULL;
+  // Only reply to RETURN if one was passed.
+  pb->u.invCap = (opw0 & IPW0_SC) ? CR_RETURN : CR_NULL;
   pb->sndLen = 0;
-  pb->sndCap[0] = CAP_NULL;
-  pb->sndCap[1] = CAP_NULL;
-  pb->sndCap[2] = CAP_NULL;
-  pb->sndCap[3] = CAP_NULL;
+  pb->sndCap[0] = CR_NULL;
+  pb->sndCap[1] = CR_NULL;
+  pb->sndCap[2] = CR_NULL;
+  pb->sndCap[3] = CR_NULL;
   
   // don't accept exceptional invocations, or ones without order codes
   if ((opw0 & IPW0_EX) || IPW0_LDW(opw0) == 0)
@@ -106,24 +106,24 @@ process_request(InvParameterBlock_t *pb)
       goto bad_request;
     
     if (ty1 != coyotos_Range_obType_otInvalid) {
-      if ((obj1 = bank_alloc(bank, ty1, CAP_REPLY0)) == 0)
+      if ((obj1 = bank_alloc(bank, ty1, CR_REPLY0)) == 0)
 	goto fail_alloc;
 
-      pb->sndCap[0] = CAP_REPLY0;
+      pb->sndCap[0] = CR_REPLY0;
     }
 
     if (ty2 != coyotos_Range_obType_otInvalid) {
-      if ((obj2 = bank_alloc(bank, ty2, CAP_REPLY1)) == 0)
+      if ((obj2 = bank_alloc(bank, ty2, CR_REPLY1)) == 0)
 	goto fail_alloc;
       
-      pb->sndCap[1] = CAP_REPLY1;
+      pb->sndCap[1] = CR_REPLY1;
     }
 
     if (ty3 != coyotos_Range_obType_otInvalid) {
-      if ((obj3 = bank_alloc(bank, ty3, CAP_REPLY2)) == 0)
+      if ((obj3 = bank_alloc(bank, ty3, CR_REPLY2)) == 0)
 	goto fail_alloc;
       
-      pb->sndCap[2] = CAP_REPLY2;
+      pb->sndCap[2] = CR_REPLY2;
     }
     return;
     
@@ -145,9 +145,9 @@ process_request(InvParameterBlock_t *pb)
     if (data != 0 || edata != 0 || caps != 3)
       goto bad_request;
     
-    Object *obj1 = object_identify(CAP_ARG1);
-    Object *obj2 = object_identify(CAP_ARG2);
-    Object *obj3 = object_identify(CAP_ARG3);
+    Object *obj1 = object_identify(CR_ARG0);
+    Object *obj2 = object_identify(CR_ARG1);
+    Object *obj3 = object_identify(CR_ARG2);
     
     if ((obj1 != 0 && obj1->bank != bank) ||
 	(obj2 != 0 && obj2->bank != bank) ||
@@ -170,12 +170,12 @@ process_request(InvParameterBlock_t *pb)
     
     pb->pw[0] = REPLY_IPW0_CAP(0, 0); // no data, one
     
-    Object *obj = bank_alloc_proc(bank, CAP_ARG1, CAP_REPLY0);
+    Object *obj = bank_alloc_proc(bank, CR_ARG0, CR_REPLY0);
     
     if (obj == 0)
       goto limit_reached;
     
-    pb->sndCap[0] = CAP_REPLY0;
+    pb->sndCap[0] = CR_REPLY0;
     return;
 
   case OC_coyotos_SpaceBank_setLimits:
@@ -234,11 +234,11 @@ process_request(InvParameterBlock_t *pb)
     if (data != 0 || edata != 0 || caps != 0)
       goto bad_request;
     
-    if (!bank_create(bank, CAP_REPLY0))
+    if (!bank_create(bank, CR_REPLY0))
       goto limit_reached;
     
     pb->pw[0] = REPLY_IPW0_CAP(0, 0); // one cap
-    pb->sndCap[0] = CAP_REPLY0;
+    pb->sndCap[0] = CR_REPLY0;
     return;
 
   case OC_coyotos_SpaceBank_verifyBank: {
@@ -250,7 +250,7 @@ process_request(InvParameterBlock_t *pb)
     if (data != 0 || edata != 0 || caps != 1)
       goto bad_request;
         
-    MUST_SUCCEED(coyotos_Process_identifyEntry(CAP_SELF, CAP_ARG1,
+    MUST_SUCCEED(coyotos_Process_identifyEntry(CR_SELF, CR_ARG0,
 					       &payload, 
 					       &epID, &isMe,
 					       &success, IDL_E));
@@ -272,8 +272,8 @@ process_request(InvParameterBlock_t *pb)
     if (newRestr > coyotos_SpaceBank_restrictions_noRemove)
       goto bad_request;
     
-    bank_getEntry(bank, restr | newRestr, CAP_REPLY0);
-    pb->sndCap[0] = CAP_REPLY0;
+    bank_getEntry(bank, restr | newRestr, CR_REPLY0);
+    pb->sndCap[0] = CR_REPLY0;
     pb->pw[0] = REPLY_IPW0_CAP(0, 0); // no payload, 1 cap
     return;
   }
@@ -296,8 +296,8 @@ process_request(InvParameterBlock_t *pb)
 
     bank_destroy(bank, 1);  // destroy objects as well
 
-    /* now that we've succeeded, re-direct the reply to ARG1 */
-    pb->u.invCap = CAP_ARG1;
+    /* now that we've succeeded, re-direct the reply to ARG0 */
+    pb->u.invCap = CR_ARG0;
 
     /* use the passed exception */
     if (ex != RC_coyotos_Cap_OK) {
@@ -381,15 +381,15 @@ process_request(InvParameterBlock_t *pb)
 _IDL_IFUNION_coyotos_SpaceBank ipb = {
   ._pb = {
     .pw[0] = INITIAL_IPW0,
-    .u.invCap = CAP_NULL,
-    .sndCap[0] = CAP_NULL,
-    .sndCap[1] = CAP_NULL,
-    .sndCap[2] = CAP_NULL,
-    .sndCap[3] = CAP_NULL,
-    .rcvCap[0] = CAP_RETCAP,
-    .rcvCap[1] = CAP_ARG1,
-    .rcvCap[2] = CAP_ARG2,
-    .rcvCap[3] = CAP_ARG3,
+    .u.invCap = CR_NULL,
+    .sndCap[0] = CR_NULL,
+    .sndCap[1] = CR_NULL,
+    .sndCap[2] = CR_NULL,
+    .sndCap[3] = CR_NULL,
+    .rcvCap[0] = CR_RETURN,
+    .rcvCap[1] = CR_ARG0,
+    .rcvCap[2] = CR_ARG1,
+    .rcvCap[3] = CR_ARG2,
 
     .sndPtr = 0,
     .sndLen = 0,

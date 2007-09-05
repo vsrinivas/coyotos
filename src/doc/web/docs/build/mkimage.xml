@@ -600,11 +600,11 @@ StringLit: <em>/* as described above</em>
           <progident>import</progident> gives a local identifier to
           which the public environment of the imported module is
           bound. Thus, if <progident>a</progident> is defined to 1 and
-          exported by module <progident>coyotos.spacebank</progident>,
+          exported by module <progident>coyotos.SpaceBank</progident>,
           then the statements:
         </p>
         <literallayout>
-import sb = coyotos.spacebank;
+import sb = coyotos.SpaceBank;
 print sb.a;</literallayout>
         <p indent="no">
           displays the value "1".
@@ -918,13 +918,12 @@ def a = { def i = 1; i + 3; };</literallayout>
           </li>
         </defli>
         <defli>
-          <label>enter(<em>cap</em>)</label>
+          <label>enter(<em>cap</em>, <em>pp</em>)</label>
           <li>
             <p>
               Fabricates an entry capability to the endpoint named by
               <em>cap</em>. The protected payload value of the
-              fabricated capability will match the protected payload
-              value stored in the target endpoint or receive queue.
+              fabricated capability will be <em>pp</em>.
             </p>
           </li>
         </defli>
@@ -1216,6 +1215,26 @@ def a = { def i = 1; i + 3; };</literallayout>
               recursively prints the objects comprising the address
               space. The output is designed to provide a picture of
               what pages are mapped where and with what permissions.
+            </p>
+          </li>
+        </defli>
+        <defli>
+          <label>fillpage(<em>cap</em>, <em>uint8</em>)</label>
+          <li>
+            <p>
+              Fills the page referenced by <em>cap</em> with the 8-bit
+              value <em>uint8</em>.
+            </p>
+          </li>
+        </defli>
+        <defli>
+          <label>set_page_uint64(<em>cap</em>, <em>addr</em>, <em>uint64</em>)</label>
+          <li>
+            <p>
+              Writes the 64-bit value <em>uint64</em> at offset <em>addr</em>
+              in the page referenced by <em>cap</em>.  <em>addr</em> must be
+              a multiple of 8 less than the target's page size.  The value
+              is written in the target's endianness.
             </p>
           </li>
         </defli>

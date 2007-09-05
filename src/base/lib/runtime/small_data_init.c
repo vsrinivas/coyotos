@@ -28,45 +28,41 @@
 #include <idl/coyotos/Range.h>
 #include <idl/coyotos/SpaceBank.h>
 
-#define CAP_NULL	CAP_REG(CAPREG_NULL)
-#define CAP_REPLYEPT	CAP_REG(CAPREG_REPLYEPT)
-#define CAP_SPACEBANK	CAP_REG(CAPREG_SPACEBANK)
-#define CAP_NEWADDR	CAP_REG(CAPREG_APP + 0) /* new address space */
-#define CAP_NEWPAGE	CAP_REG(CAPREG_APP + 1) /* available for new page */
-#define CAP_OLDADDR	CAP_REG(CAPREG_APP + 2) /* old address space */
-#define CAP_OLDPAGE	CAP_REG(CAPREG_APP + 3) /* old page */
-#define CAP_RETURN	CAP_REG(CAPREG_RETURN) /* reply capability */
+#define CR_NEWADDR	CR_APP(0) /* new address space */
+#define CR_NEWPAGE	CR_APP(1) /* available for new page */
+#define CR_OLDADDR	CR_APP(2) /* old address space */
+#define CR_OLDPAGE	CR_APP(3) /* old page */
 
 void
 __small_data_init(uintptr_t data, uintptr_t end)
 {
   size_t cur;
   IDL_Environment _IDL_E = {
-    .replyCap = CAP_REPLYEPT,
+    .replyCap = CR_REPLYEPT,
     .epID = 0ULL
   };
   size_t first_slot = data / COYOTOS_PAGE_SIZE;
   size_t last_slot = (end + COYOTOS_PAGE_SIZE - 1) / COYOTOS_PAGE_SIZE;
 
   for (cur = first_slot; cur < last_slot; cur++) {
-    if (coyotos_AddressSpace_getSlot(CAP_OLDADDR, cur, CAP_OLDPAGE, &_IDL_E) ||
-	coyotos_SpaceBank_alloc(CAP_SPACEBANK,
+    if (coyotos_AddressSpace_getSlot(CR_OLDADDR, cur, CR_OLDPAGE, &_IDL_E) ||
+	coyotos_SpaceBank_alloc(CR_SPACEBANK,
 				coyotos_Range_obType_otPage,
 				coyotos_Range_obType_otInvalid,
 				coyotos_Range_obType_otInvalid,
-				CAP_NEWPAGE,
-				CAP_NULL,
-				CAP_NULL,
+				CR_NEWPAGE,
+				CR_NULL,
+				CR_NULL,
 				&_IDL_E) ||
-	coyotos_AddressSpace_copyFrom(CAP_NEWPAGE, CAP_OLDPAGE, 
-				      CAP_NEWPAGE, &_IDL_E) ||
-	coyotos_AddressSpace_setSlot(CAP_NEWADDR, cur, CAP_NEWPAGE, &_IDL_E))
+	coyotos_AddressSpace_copyFrom(CR_NEWPAGE, CR_OLDPAGE, 
+				      CR_NEWPAGE, &_IDL_E) ||
+	coyotos_AddressSpace_setSlot(CR_NEWADDR, cur, CR_NEWPAGE, &_IDL_E))
       goto fail;
   }
   return;
 
  fail:
-  coyotos_SpaceBank_destroyBankAndReturn(CAP_SPACEBANK, CAP_RETURN,
+  coyotos_SpaceBank_destroyBankAndReturn(CR_SPACEBANK, CR_RETURN,
                                          RC_coyotos_SpaceBank_LimitReached,
                                          &_IDL_E);
   return;

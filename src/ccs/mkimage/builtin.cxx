@@ -121,10 +121,11 @@ needBankArg(InterpState& is, const std::string& nm,
   // capability:
   GCPtr<CiEndpoint> ep = is.ci->GetEndpoint(cv->cap);
 
-  if (ep->v.endpointID >= is.ci->vec.bank.size())
+  oid_t bankOID = ep->v.endpointID - 1; /* unbias the endpoint ID */
+  if (bankOID >= is.ci->vec.bank.size())
     goto bad;
 
-  if (is.ci->vec.bank[ep->v.endpointID].oid != cv->cap.u2.oid)
+  if (is.ci->vec.bank[bankOID].oid != cv->cap.u2.oid)
     goto bad;
 
   return cv;
@@ -1546,7 +1547,7 @@ getBuiltinEnv(GCPtr<CoyImage> ci)
 			 new PrimFnValue("set_page_uint64", 3, 3, 
 					 pf_set_page_uint64));
 
-
+    // Misc capabilities
     builtins->addConstant("NullCap", 
 			 new PrimFnValue("NullCap", 0, 0, pf_mk_misccap));
     builtins->addConstant("KeyBits", 
