@@ -111,6 +111,8 @@ public:
 
   std::string asString() const;
 
+  bool isPureAST();
+
   void PrettyPrint(INOstream& out) const;
   void PrettyPrint(std::ostream& out) const;
 

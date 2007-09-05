@@ -212,12 +212,6 @@ fndef_stmt: tk_DEF tk_Ident fnparms block {
   $$ = new AST(at_s_fndef, $1.loc, new AST(at_ident, $2), $3, $4);
 };
 
-mod_stmt: tk_EXPORT idlist ';' {
-  SHOWPARSE("mod_stmt -> EXPORT idlist");
-  $$ = new AST(at_s_export, $1.loc);
-  $$->addChildrenFrom($2);
-};
-
 mod_stmt: tk_EXPORT enum_stmt {
   SHOWPARSE("mod_stmt -> EXPORT enum_stmt");
   $$ = $2;

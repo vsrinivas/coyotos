@@ -99,21 +99,23 @@ AST::interp(InterpState& is)
   case at_stringLiteral:
     return litValue;
 
-  case at_s_export:
-    {
-      is.errStream << loc << " "
-		 << "Export <idlist> not yet implemented\n";
-      THROW(excpt::BadValue, "Bad interpreter result");
-
-      /* Temporary -- should tweak the public environment! */
-      return &TheUnitValue;
-    }
-
   case at_uoc:
     {
-      GCPtr<Value> v;
-      for(size_t c = 1; c < children->size(); c++)
-	v = child(c)->interp(is);
+      GCPtr<Value> v = &TheUnitValue;
+
+      // We may be executing in pure mode. If so, the only children we
+      // should process are imports and enum ASTs. The rest should be
+      // skipped. In future we may add puredef, so use an accessor on
+      // the AST to determine what is pure.
+      if (is.pureMode) {
+	for(size_t c = 1; c < children->size(); c++)
+	  if (child(c)->isPureAST())
+	    v = child(c)->interp(is);
+      }
+      else {
+	for(size_t c = 1; c < children->size(); c++)
+	    v = child(c)->interp(is);
+      }
       return v;
     }
 
@@ -632,7 +634,7 @@ AST::interp(InterpState& is)
       lhsInterpState.pureMode = false;
 
       // This case is going to end up being quite a nuisance in due
-      // course, but for now..
+      // course, but for now.
       GCPtr<Value> vl = child(0)->interp(lhsInterpState)->get();
 
       if (child(1)->astType != at_ident) {

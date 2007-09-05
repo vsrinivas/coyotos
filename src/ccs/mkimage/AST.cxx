@@ -1179,3 +1179,12 @@ AST::makeStringLit(const sherpa::LToken &tok)
   return ast;
 }
 
+bool
+AST::isPureAST()
+{
+  return (astType == at_s_import ||
+	  astType == at_s_enum ||
+	  astType == at_s_export_enum);
+}
+
+

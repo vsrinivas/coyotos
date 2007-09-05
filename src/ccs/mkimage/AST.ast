@@ -73,6 +73,8 @@ struct UocInfo;
 
   std::string asString() const;
 
+  bool isPureAST();
+
   void PrettyPrint(INOstream& out) const;
   void PrettyPrint(std::ostream& out) const;
 
@@ -133,6 +135,15 @@ AST::makeStringLit(const sherpa::LToken &tok)
   
   return ast;
 }
+
+bool
+AST::isPureAST()
+{
+  return (astType == at_s_import ||
+	  astType == at_s_enum ||
+	  astType == at_s_export_enum);
+}
+
 }
 
 %construct {

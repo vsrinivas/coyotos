@@ -55,7 +55,7 @@ bool Options::useStdInc = true;
 bool Options::useStdLib = true;
 bool Options::showPasses = false;
 bool Options::ppFQNS = false;
-std::string Options::outputFileName;
+std::string Options::outputFileName = "mkimage.out";
 std::string Options::headerDir;
 CVector< GCPtr<sherpa::Path> > Options::libPath;
 std::string Options::targetArchName;
@@ -254,9 +254,6 @@ main(int argc, char *argv[])
   }
 
   try {
-    if (Options::outputFileName.size() == 0)
-      Options::outputFileName = "mkimage.out";
-
     GCPtr<CoyImage> ci = new CoyImage(Options::targetArchName);
 
     uint32_t compileVariant = 

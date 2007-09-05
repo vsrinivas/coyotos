@@ -40,21 +40,27 @@ using namespace sherpa;
 bool
 UocInfo::pass_defconst(std::ostream& errStream, unsigned long flags)
 {
-  //  if (!isCmdLine)
-  //    return true;
-
-#if 0
-  /* This breaks for coyotos.TargetInfo, and in any case this is not
-   * the appropriate place to perform this check. */
   GCPtr<AST> modName = ast->child(0);
-  if (modName->s != uocName) {
+  if (uocName != "coyotos.TargetInfo" && modName->s != uocName) {
     errStream << modName->loc << " "
 	      << "Defined module name \"" << modName->s 
 	      << "\" does not match file module name \"" << uocName << "\"."
 	      << "\n";
     return false;
   }
-#endif
+
+  env = new Environment<Value>(getBuiltinEnv(ci));
+
+  InterpState is(errStream, ci, ast, env);
+  is.pureMode = true;
+
+  try {
+    ast->interp(is);
+  } catch (...) {
+    // Diagnostic has already been issued.
+    return false;
+  }
+
 
   bool has_enums = false;
 
@@ -88,11 +94,16 @@ UocInfo::pass_defconst(std::ostream& errStream, unsigned long flags)
     if (cast->astType != at_s_export_enum)
       continue;
     
-    BigNum value(0);
+    GCPtr< Environment<Value> > curEnv = env;
 
-    std::string dotEnumIdent = "";
-    if (cast->child(0)->astType == at_ident)
-      dotEnumIdent = "." + cast->child(0)->s;
+    BigNum value(0);
+    std::string dotEnumTag = "";
+
+    if (cast->child(0)->astType == at_ident) {
+      std::string enumTag = cast->child(0)->s;
+      dotEnumTag = "." + enumTag;
+      curEnv = curEnv->getValue(enumTag).upcast<EnvValue>()->env;
+    }
 
     for (size_t nbind = 1; nbind < cast->children->size(); nbind++) {
       value = value + 1;
@@ -101,20 +112,15 @@ UocInfo::pass_defconst(std::ostream& errStream, unsigned long flags)
       std::string ident= binding->child(0)->s;
 
       // FIX: This is completely broken for unicode!
-      std::string fqn = uocName + dotEnumIdent + "." + ident;
+      std::string fqn = uocName + dotEnumTag + "." + ident;
       for (size_t i = 0; i < fqn.size(); i++) {
 	if (fqn[i] == '.' || fqn[i] == '-')
 	  fqn[i] = '_';
       }
       
-      // We know it is an integer value because the interpreter
-      // required this:
-      if ( binding->children->size() == 2) {
-	GCPtr<IntValue> v = binding->child(1)->litValue.upcast<IntValue>();
-	value = v->bn;
-      }
+      GCPtr<IntValue> v = curEnv->getValue(ident).upcast<IntValue>();
 
-      ofs << "#define " << fqn << " " << value << '\n';
+      ofs << "#define " << fqn << " " << v->bn << '\n';
     }
   }
 
