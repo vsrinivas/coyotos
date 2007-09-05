@@ -53,13 +53,13 @@
   <sect1>
     <title>Setting up a Build Environment</title>
     <p>
-      The Coyotos development team runs Fedora Core. At the time of
-      this writing, we use Fedora Core version 4, but our usual
-      practice is to run the latest Fedora release. In practical
-      terms, this means that if Fedora has updated recently you can
-      probably still rely on the cross environment working, but you
-      should probably upgrade soon, because we will only be working on
-      (and therefore testing) the latest release.
+      The Coyotos development team runs Fedora. At the time of this
+      writing, we use Fedora 7, but our usual practice is to run the
+      latest Fedora release. In practical terms, this means that if
+      Fedora has updated recently you can probably still rely on the
+      cross environment working, but you should probably upgrade soon,
+      because we will only be working on (and therefore testing) the
+      latest release.
     </p>
     <p>
       We try to tinker with the cross environment as little as
@@ -151,34 +151,35 @@
     <sect2>
       <title>Setting up on Linux/YUM Systems</title>
       <p>
-	First, import the RPM signing key used by The EROS
-	Group, LLC.<footnote><p>For the paranoid, this key can also be
-	obtained from the pgp.mit.edu key server by searching for
-	<tt>packager@eros-os.org</tt>. If imported, you should find
-	that it is signed using my (Jonathan Shapiro's) offline
-	signing key. The fingerprint of my offline signing key is
-	DFAB6639. If you export this key, you can directly import the
-	ascii armored file using <tt>rpm --import</tt>.
-	  </p>
-	</footnote> This key is used to sign all of our packages. It can be
-	imported by:
+	To make getting going on Linux easy, we have built a package
+	to update your yum configuration. Once this is installed the
+	rest is easy. To install this package:
       </p>
       <literallayout>
-rpm --import http://srl.cs.jhu.edu/YUM/EROS-Group-LLC.rpm-pubkey.asc</literallayout>
+rpm --ivh http://www.eros-os.com/YUM/coyotos/7/i386/Coyotos-Repository-latest.fc7.noarch.rpm</literallayout>
       <p>
-	If you are running FC6, you can add the YUM
-	repository to your <progident>yum</progident> and
-	<progident>up2date</progident> configurations by executing (as
-	root):
-      </p>
-      <literallayout>
-rpm -ivh http://srl.cs.jhu.edu/YUM/coyotos/4/i386/Coyotos-Repository-3.2-2.noarch.rpm</literallayout>
-      <p>
-	Once the repository set up, you can install some helpful tools
-	(and a required library) by running (as root):
+	Once the repository is set up, you can install some helpful
+	tools (and a required library) by running (as root):
       </p>
       <literallayout>
 yum install coyotos-i386-xenv</literallayout>
+      <p indent="no">
+	or possibly <tt>coyotos-arm-xenv</tt> or
+	<tt>coyotos-m68k-xenv</tt>. This will get you all of the tools
+	in the Coyotos cross environment for your target.
+      </p>
+      <p>
+	If you are asked whether to import the signing key, you will
+	need to say "yes".  This key is used to sign all of our
+	packages. If you wish to ensure that the key is authentic, you
+	can check the key fingerprint at pgp.mit.edu key server by
+	searching for <tt>packager@eros-os.org</tt> if you choose to
+	do so. If imported, you should find that it is signed using my
+	(Jonathan Shapiro's) offline signing key. The fingerprint of
+	my offline signing key is DFAB6639. If you export this key,
+	you can directly import the ascii armored file using <tt>rpm
+	--import</tt>.
+      </p>
       <p>
 	The <progident>coyotos-i386-xenv</progident> package is a
 	``virtual'' package &mdash; it simply supplies the necessary
@@ -275,8 +276,10 @@ yum install coyotos-i386-xenv</literallayout>
 yum install qemu</literallayout>
       <p>
 	The <progident>qemu</progident> package is a native tool, so
-	it installs in the customary directories. All of the Coyotos
-	cross environment tools install into
+	it installs in the customary directories.
+      </p>
+      <p>
+	All of the Coyotos cross environment tools install into
 	<progident>/coyotos/</progident>. If you install them with
 	YUM, you can remove them by:
       </p>
@@ -307,7 +310,11 @@ rpm -e qemu libsherpa libsherpa-devel</literallayout>
 	for your system.  If you are building on some other UNIX
 	derivative that has not accepted the Dao of YUM, you may find
 	that nothing will do but to build the cross environment for
-	yourself. First, as root, you should create the directory
+	yourself. If that is the case, you can fetch it from the
+	repository using mercurial.
+      </p>
+      <p>
+	First, as root, you should create the directory
 	<progident>/coyotos</progident> and use the
 	<progident>chown</progident> command to make it writable to
 	you and owned by you:
@@ -319,12 +326,18 @@ chown <em>yourlogin</em>:<em>yourgroup</em> /coytos</literallayout>
       <sect3>
 	<title>If You Have Constrained Space</title>
 	<p>
+	  If your space is not greatly constrained, skip ahead to
+	  "Obtaining the Sources". Fetch the entire tree and then
+	  build the cross environment from inside
+	  <filename>coyotos/src/ccs-xenv</filename>.
+	</p>
+	<p>
 	  Find an empty directory with an unreasonably large amount of
 	  available disk space, <progident>cd</progident> to it, and
 	  proceed as follows:
       </p>
       <literallayout>
-rsync -avz rsync://www.coyotos.org/src.coyotos/src/ccs-xenv/ ./ccs-xenv/
+hg clone http://dev.eros-os.com/hg/ccs-xenv
 (cd ccs-xenv; make -f Makefile.xenv TARGETS="coyotos-i386")</literallayout>
       <p>
 	This will compile and install the complete cross
@@ -334,39 +347,28 @@ rsync -avz rsync://www.coyotos.org/src.coyotos/src/ccs-xenv/ ./ccs-xenv/
 	list them in the TARGETS variable, for example:
       </p>
       <literallayout>
-rsync -avz rsync://www.coyotos.org/src.coyotos/src/ccs-xenv/ ./ccs-xenv/
 (cd ccs-xenv; make -f Makefile.xenv TARGETS="coyotos-m68k coyotos-i386")</literallayout>
-      <p>
-	If you are unable to install the cross tools in
-	<progident>/coyotos</progident>, you can specify another
-	location to the <progident>make</progident> command:
-      </p>
-      <literallayout>
-(cd ccs-xenv; make -f Makefile.xenv TARGETS="coyotos-i386" CROSSROOT=$HOME/coyotos-xenv)</literallayout>
-      <p>
-	This will require some fiddling in the rest of the build
-	environment, and it is not a configuration that we test. If
-	you choose to put your tools someplace unusual, then at build
-	time you will need to set the environment variable
-	<b>COYOTOS_XENV</b> to point to wherever you put it (the same
-	value that you gave for <b>CROSSROOT</b> when you built the
-	cross environment in the command above).
-      </p>
-      <p>
-	Once the cross environment is installed, you can safely delete
-	the source directory. We aren't yet rebuilding this stuff to
-	run natively, and it consumes a very large amount of space.
-      </p>
-      </sect3>
-      <sect3>
-	<title>If You Plan to Track the Entire Tree</title>
 	<p>
-	  If you are planning to download the entire source tree
-	  anyway, you are better off proceeding by:
+	  If you are unable to install the cross tools in
+	  <progident>/coyotos</progident>, you can specify another
+	  location to the <progident>make</progident> command:
 	</p>
 	<literallayout>
-rsync -avz rsync://www.coyotos.org/src.coyotos/ coyotos/
-(cd coyotos/src/ccs-xenv; make -f Makefile.xenv TARGETS="coyotos-i386")</literallayout>
+(cd ccs-xenv; make -f Makefile.xenv TARGETS="coyotos-i386" CROSSROOT=$HOME/coyotos-xenv)</literallayout>
+	<p>
+	  This will require some fiddling in the rest of the build
+	  environment, and it is not a configuration that we test. If
+	  you choose to put your tools someplace unusual, then at build
+	  time you will need to set the environment variable
+	  <b>COYOTOS_XENV</b> to point to wherever you put it (the same
+	  value that you gave for <b>CROSSROOT</b> when you built the
+	  cross environment in the command above).
+	</p>
+	<p>
+	  Once the cross environment is installed, you can safely delete
+	  the source directory. We aren't yet rebuilding this stuff to
+	  run natively, and it consumes a very large amount of space.
+	</p>
       </sect3>
     </sect2>
     <sect2>
@@ -392,64 +394,31 @@ rsync -avz rsync://www.coyotos.org/src.coyotos/ coyotos/
       following instructions, we will assume that you are placing it
       underneath your home directory.
     </p>
-    <sect2>
-      <title>General Public</title>
-      <p>
-	If you have space to burn, the easy way to get the sources is to
-	use <progident>rsync</progident>:
-      </p>
-      <literallayout>
-cd <em>somplace-convenient</em>
-rsync -avz rsync://www.coyotos.org/src.coyotos/ coyotos/
-</literallayout>
-      <p indent="no">
-	Note that this should <em>not</em> be the same
-	<progident>coyotos</progident> directory that you compiled the
-	cross compilation tools into. The idea is that the directory
-	with the cross compilation tools can be shared by multiple
-	users. This one is for your personal build of the Coyotos
-	tree. Placing the two trees in the same directory <em>will not
+    <p>
+      The easiest way to get the sources is to
+      use <progident>mercurial</progident>:
+    </p>
+    <literallayout>
+hg clone http://dev.eros-os.com/hg/coyotos
+(cd coyotos/src;make get_trees)</literallayout>
+    <p indent="no">
+      Note that this should <em>not</em> be the same
+      <progident>coyotos</progident> directory that you compiled the
+      cross compilation tools into. The idea is that the directory
+      with the cross compilation tools can be shared by multiple
+      users. This one is for your personal build of the Coyotos
+      tree. Placing the two trees in the same directory <em>will not
 	work</em> (which is something we should fix at some point).
-      </p>
-      <p>
-	It is likely that you do not want to keep a local copy of the
-	cross environment sources for now. You can safely remove them
-	after the <progident>rsync</progident> has completed by running:
-	by:
-      </p>
-      <literallayout>
-rm -rf coyotos/src/ccs-xenv
-</literallayout>
-      <p>
-	If you are downloading over a slow link, or if you have limited
-	space, it may be better to let the Coyotos makefiles grab only
-	the parts that you need/want. To do this:
-      </p>
-      <literallayout>
-cd <em>somplace-convenient</em>
-mkdir -p coyotos/src
-rsync -avz rsync://www.coyotos.org/src.coyotos/src/Makefile coyotos/src/Makefile
-make -k -C coyotos/src sync
-</literallayout>
-      <p>
-	If you notice a complaint that
-	<progident>pkgrules.mk</progident> is not found, ignore it
-	&mdash; the <progident>make&nbsp;sync</progident> command will
-	correct this. Note that the <progident>-k</progident> argument
-	is important!
-      </p>
-    </sect2>
-    <sect2>
-      <title>SRL Denizens</title>
-      <p>
-	If you are a member of the Systems Research Laboratory, you can
-	use the <progident>make&nbsp;sync</progident> command to check
-	out a copy of the tree. Then talk to a member of the lab to find
-	out how to change your workspace user so that you can commit
-	changes.  At the present time, this repository is not directly
-	available for public connection.
-      </p>
-    </sect2>
+    </p>
+    <p>
+      It is likely that you do not want to keep a local copy of the
+      cross environment subtree unless you need to build it for some
+      reason. Once the
+      cross environment is built you can delete the
+      <filename>coyotos/src/ccs-xenv</filename> subtree. The rest of
+      the build does not rely on this subtree after the binary cross
+      environment tools are built and installed.
+    </p>
   </sect1>
   <sect1>
     <title>Organization of the Source Tree</title>
@@ -463,26 +432,12 @@ make -k -C coyotos/src sync
 coyotos
   src
     build    - makefile fragments for the build system
-    ccs      - coyotos compilation system package
+    ccs      - coyotos compilation system tools package
     ccs-xenv - the cross environment package
     doc      - the documentation tree (including this web site)
     sys      - the coyotos kernel package
-    lib
-      <em>package1</em> - library package
-      <em>package2</em> - ...
-      ...
-      <em>packageN</em>
-    bin
-      <em>package1</em> - application package
-      <em>package2</em> - ...
-      ...
-      <em>packageN</em>
-    examples
-      <em>package1</em> - example package
-      <em>package2</em> - ...
-      ...
-      <em>packageN</em>
-</literallayout>
+    base     - basic domains and libraries package
+    tutorial - package of tutorials for people getting started.</literallayout>
     <p>
       Each package has a top-level makefile supporting a number of
       standard make targets. The procedure for building a given
