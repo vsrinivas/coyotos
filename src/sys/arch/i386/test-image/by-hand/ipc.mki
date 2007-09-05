@@ -1,25 +1,25 @@
 module ipc {
   /* Set up the receive process */
-  def openrcv = make_process(PrimeBank);
+  def openrcv = new Process(PrimeBank);
   def img = loadimage(PrimeBank, "openrcv.exe");
 
   openrcv.faultCode = 25;
   openrcv.faultInfo = img.pc;
   openrcv.addrSpace = img.space;
 
-  def rcvEP = make_endpoint(PrimeBank);
+  def rcvEP = new Endpoint(PrimeBank);
   rcvEP.recipient = openrcv;
 
 
   /* Set up the send process */
-  def ipc = make_process(PrimeBank);
+  def ipc = new Process(PrimeBank);
   img = loadimage(PrimeBank, "ipc.exe");
 
   ipc.faultCode = 25;
   ipc.faultInfo = img.pc;
   ipc.addrSpace = img.space;
 
-  def replyEP = make_endpoint(PrimeBank);
+  def replyEP = new Endpoint(PrimeBank);
   replyEP.recipient = ipc;
   replyEP.pm = 1;
 

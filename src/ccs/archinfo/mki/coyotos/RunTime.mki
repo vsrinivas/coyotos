@@ -79,14 +79,14 @@ module coyotos.RunTime {
    * REG.RUNTIME are obvious candidates), or process fields (handler, etc.)
    */
   export def make_bare_process(bank) {
-    def proc = make_process(bank);
+    def proc = new Process(bank);
 
-    def replyept = make_endpoint(bank);
+    def replyept = new Endpoint(bank);
     replyept.pm = 1;
     replyept.recipient = proc;
     replyept.endpointID = 0;
 
-    def initept = make_endpoint(bank);
+    def initept = new Endpoint(bank);
     initept.recipient = proc;
     initept.endpointID = 1;
 

@@ -1506,6 +1506,7 @@ getBuiltinEnv(GCPtr<CoyImage> ci)
     builtins->addConstant("LocalWindow", 
 			 new PrimFnValue("LocalWindow", 2, 2, pf_mk_window));
 
+#if 0
     // Bank fabrication
     builtins->addConstant("make_bank", 
 			 new PrimFnValue("make_bank", 1, 1, pf_mk_bank));
@@ -1530,6 +1531,7 @@ getBuiltinEnv(GCPtr<CoyImage> ci)
     // Process fabrication:
     builtins->addConstant("make_process", 
 			 new PrimFnValue("make_process", 1, 1, pf_mk_process));
+#endif
 
     // Sender fabrication:
     builtins->addConstant("enter",

@@ -3,7 +3,7 @@ module klog {
   
   sp.setupSpace(sp.proc, "klog.exe");
 
-  def replyEP = make_endpoint(PrimeBank);
+  def replyEP = new Endpoint(PrimeBank);
   replyEP.recipient = sp.proc;
   replyEP.pm = 1;
 

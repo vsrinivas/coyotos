@@ -1,5 +1,5 @@
 module cappage2 {
-  def x = make_cappage(PrimeBank);
+  def x = new CapPage(PrimeBank);
   x[5] = Discrim();
 
   print *x;

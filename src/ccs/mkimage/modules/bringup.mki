@@ -1,11 +1,11 @@
 module bringup {
-  print make_page(PrimeBank);
-  print make_gpt(PrimeBank);
-  print make_endpoint(PrimeBank);
-  print make_cappage(PrimeBank);
-  print make_process(PrimeBank);
+  print new Page(PrimeBank);
+  print new GPT(PrimeBank);
+  print new Endpoint(PrimeBank);
+  print new CapPage(PrimeBank);
+  print new Process(PrimeBank);
 
-  def p = make_process(PrimeBank);
+  def p = new Process(PrimeBank);
 
   p.faultInfo = 0;
   p.faultCode = 25;		/* startup fault */

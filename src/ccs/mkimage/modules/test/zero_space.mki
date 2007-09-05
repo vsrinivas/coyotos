@@ -17,29 +17,29 @@ module test.zero_space {
     x.cap[14] = y;
     x.cap[15] = y;
   }
-  def zeropg = readonly(make_page(PrimeBank));
+  def zeropg = readonly(new Page(PrimeBank));
 
-  def zerol1 = make_gpt(PrimeBank);
+  def zerol1 = new GPT(PrimeBank);
   gpt_setAllSlots(zerol1, zeropg);
   zerol1.l2v = 12;
   zerol1 = weaken(guard(zerol1, 0, 16));
 
-  def zerol2 = make_gpt(PrimeBank);
+  def zerol2 = new GPT(PrimeBank);
   gpt_setAllSlots(zerol2, zerol1);
   zerol2.l2v = 16;
   zerol2 = weaken(guard(zerol2, 0, 20));
 
-  def zerol3 = make_gpt(PrimeBank);
+  def zerol3 = new GPT(PrimeBank);
   gpt_setAllSlots(zerol3, zerol2);
   zerol3.l2v = 20;
   zerol3 = weaken(guard(zerol3, 0, 24));
 
-  def zerol4 = make_gpt(PrimeBank);
+  def zerol4 = new GPT(PrimeBank);
   gpt_setAllSlots(zerol4, zerol3);
   zerol4.l2v = 24;
   zerol4 = weaken(guard(zerol4, 0, 28));
 
-  def zerol5 = make_gpt(PrimeBank);
+  def zerol5 = new GPT(PrimeBank);
   gpt_setAllSlots(zerol5, zerol4);
   zerol5.l2v = 28;
   zerol5 = weaken(guard(zerol5, 0, 32));

@@ -1,8 +1,8 @@
 module bringup_onepageonegpt {
-  def p = make_process(PrimeBank);
+  def p = new Process(PrimeBank);
 
-  def theGpt = make_gpt(PrimeBank);
-  theGpt.cap[0] = make_page(PrimeBank);
+  def theGpt = new GPT(PrimeBank);
+  theGpt.cap[0] = new Page(PrimeBank);
 
   p.faultCode = 25;		/* startup fault */
   p.faultInfo = 0;

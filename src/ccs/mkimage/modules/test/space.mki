@@ -1,6 +1,6 @@
 module test.space {
-  def zeropg = readonly(make_page(PrimeBank));
-  def zerol1 = make_gpt(PrimeBank);
+  def zeropg = readonly(new Page(PrimeBank));
+  def zerol1 = new GPT(PrimeBank);
   def gpt_setAllSlots(x, y) {
     x.cap[0] = y;
     x.cap[1] = y;
@@ -26,10 +26,10 @@ module test.space {
   print_space(zerol1);
   print_tree(zerol1);
 
-  def agpt = make_gpt(PrimeBank);
+  def agpt = new GPT(PrimeBank);
   def null = agpt.cap[0];
 
-  def pg = make_page(PrimeBank);
+  def pg = new Page(PrimeBank);
   def space = insert_subspace(PrimeBank, null, pg, 0x1000);
 
   print_space(space);

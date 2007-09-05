@@ -14,12 +14,12 @@ module SimpleProc {
 
   export enum addr { cap = 0x5000 };
 
-  export def proc = make_process(PrimeBank);
+  export def proc = new Process(PrimeBank);
 
-  export def capPage = make_cappage(PrimeBank);
+  export def capPage = new CapPage(PrimeBank);
 
   // Set up a reply endpoint for this process:
-  def ep = make_endpoint(PrimeBank);
+  def ep = new Endpoint(PrimeBank);
   ep.recipient = proc;
   ep.pm = 1;
 

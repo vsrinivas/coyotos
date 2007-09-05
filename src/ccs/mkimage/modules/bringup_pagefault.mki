@@ -1,5 +1,5 @@
 module bringup_pagefault {
-  def p = make_process(PrimeBank);
+  def p = new Process(PrimeBank);
 
   def image = loadimage(PrimeBank, "BUILD/mkimage");
 

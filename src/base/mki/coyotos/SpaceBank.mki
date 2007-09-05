@@ -20,7 +20,7 @@
 
 /*
  * To create SpaceBanks and allocate storage from them, mkimage provides
- * built-in functions, (make_bank(), make_page(), etc.), along with a
+ * built-in functions, (new Bank(), new Page(), etc.), along with a
  * built-in constant, PrimeBank, the root of the bank hierarchy.
  *
  * However, unless this module is imported into an image, any invocation of
@@ -48,7 +48,7 @@ module coyotos.SpaceBank {
    /* add a page for the stack */
    def aSpace = insert_subspace(PrimeBank, 
 				image.space, 
-				noexec(make_page(PrimeBank)),
+				noexec(new Page(PrimeBank)),
 				TargetInfo.small_stack_page_addr);
 
    def spacebank = rt.make_running_process(PrimeBank, aSpace, image.pc);
@@ -68,5 +68,5 @@ module coyotos.SpaceBank {
 
    /* Set up spacebank's application registers */
    spacebank.capReg[rt.REG.FIRSTAPP + APP.RANGE] = Range();
-   spacebank.capReg[rt.REG.FIRSTAPP + APP.INITGPT] = make_gpt(PrimeBank);
+   spacebank.capReg[rt.REG.FIRSTAPP + APP.INITGPT] = new GPT(PrimeBank);
 }
