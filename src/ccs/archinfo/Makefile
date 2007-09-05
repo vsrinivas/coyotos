@@ -29,7 +29,7 @@ all:
 
 install:
 	for f in $(MKI_FILES); do \
-	  $(INSTALL) -d 0644 `dirname $(COYOTOS_ROOT)/usr/include/$$f`; \
+	  $(INSTALL) -d `dirname $(COYOTOS_ROOT)/usr/include/$$f`; \
 	  $(INSTALL) -m 0644 $$f $(COYOTOS_ROOT)/usr/include/$$f; \
 	done
 
