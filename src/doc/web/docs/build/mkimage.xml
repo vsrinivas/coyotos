@@ -367,8 +367,9 @@ mkimage
 def         else        enum        
 export      <em>external</em>    false       
 if          import      <em>lambda</em>      
-module      not         print       
-return      true        <em>using</em>
+module      new          not         
+print       return      true        
+<em>using</em>
       </literallayout>
       <p indent="no">
         Reserved words shown in italics are not currently implemented,
@@ -794,6 +795,25 @@ print sb.a;</literallayout>
 <em>expr</em>: <em>expr</em> '(' <em>expr</em><sup>*</sup> ')'</literallayout>
       </sect2>
       <sect2>
+        <title>Object Allocation Expressions</title>
+        <p>
+          Processes, GPTs, Endpoints, Pages, CapPages, and Banks are
+          primitive objects. Creating one entails reserving real
+          storage in the output image file. In consequence, allocation
+          of these is supported by syntax:
+        </p>
+        <literallayout>
+<em>expr</em>: new Bank '(' <em>expr</em> ')'
+<em>expr</em>: new CapPage '(' <em>expr</em> ')'
+<em>expr</em>: new GPT '(' <em>expr</em> ')'
+<em>expr</em>: new Endpoint '(' <em>expr</em> ')'
+<em>expr</em>: new Page '(' <em>expr</em> ')'
+<em>expr</em>: new Process '(' <em>expr</em> ')'</literallayout>
+        <p>
+          The <em>expr</em> argument must be a bank capability.
+        </p>
+      </sect2>
+      <sect2>
         <title>Vector and Environment Expressions</title>
         <p>
           If <progident>env</progident> is a environment-valued
@@ -892,56 +912,56 @@ def a = { def i = 1; i + 3; };</literallayout>
             </p>
           </li>
         </defli>
-        <defli>
-          <label>make_process(<em>bank</em>)</label>
-          <li>
-            <p>
-              Given a capability <em>bank</em> to a space bank,
-              allocates a process object within the image and returns
-              a process capability to it.
-            </p>
-          </li>
-        </defli>
-        <defli>
-          <label>make_gpt(<em>bank</em>)</label>
-          <li>
-            <p>
-              Given a capability <em>bank</em> to a space bank,
-              allocates a GPT object within the image and returns a
-              GPT capability to it.
-            </p>
-          </li>
-        </defli>
-        <defli>
-          <label>make_endpoint(<em>bank</em>)</label>
-          <li>
-            <p>
-              Given a capability <em>bank</em> to a space bank,
-              allocates an endpoint object within the image and returns
-              an endpoint capability to it.
-            </p>
-          </li>
-        </defli>
-        <defli>
-          <label>make_page(<em>bank</em>)</label>
-          <li>
-            <p>
-              Given a capability <em>bank</em> to a space bank,
-              allocates a page object within the image and returns
-              a page capability to it.
-            </p>
-          </li>
-        </defli>
-        <defli>
-          <label>make_cappage(<em>bank</em>)</label>
-          <li>
-            <p>
-              Given a capability <em>bank</em> to a space bank,
-              allocates a page object within the image and returns a
-              page capability to it.
-            </p>
-          </li>
-        </defli>
+<!--         <defli> -->
+<!--           <label>make_process(<em>bank</em>)</label> -->
+<!--           <li> -->
+<!--             <p> -->
+<!--               Given a capability <em>bank</em> to a space bank, -->
+<!--               allocates a process object within the image and returns -->
+<!--               a process capability to it. -->
+<!--             </p> -->
+<!--           </li> -->
+<!--         </defli> -->
+<!--         <defli> -->
+<!--           <label>make_gpt(<em>bank</em>)</label> -->
+<!--           <li> -->
+<!--             <p> -->
+<!--               Given a capability <em>bank</em> to a space bank, -->
+<!--               allocates a GPT object within the image and returns a -->
+<!--               GPT capability to it. -->
+<!--             </p> -->
+<!--           </li> -->
+<!--         </defli> -->
+<!--         <defli> -->
+<!--           <label>make_endpoint(<em>bank</em>)</label> -->
+<!--           <li> -->
+<!--             <p> -->
+<!--               Given a capability <em>bank</em> to a space bank, -->
+<!--               allocates an endpoint object within the image and returns -->
+<!--               an endpoint capability to it. -->
+<!--             </p> -->
+<!--           </li> -->
+<!--         </defli> -->
+<!--         <defli> -->
+<!--           <label>make_page(<em>bank</em>)</label> -->
+<!--           <li> -->
+<!--             <p> -->
+<!--               Given a capability <em>bank</em> to a space bank, -->
+<!--               allocates a page object within the image and returns -->
+<!--               a page capability to it. -->
+<!--             </p> -->
+<!--           </li> -->
+<!--         </defli> -->
+<!--         <defli> -->
+<!--           <label>make_cappage(<em>bank</em>)</label> -->
+<!--           <li> -->
+<!--             <p> -->
+<!--               Given a capability <em>bank</em> to a space bank, -->
+<!--               allocates a page object within the image and returns a -->
+<!--               page capability to it. -->
+<!--             </p> -->
+<!--           </li> -->
+<!--         </defli> -->
         <defli>
           <label>enter(<em>cap</em>, <em>pp</em>)</label>
           <li>

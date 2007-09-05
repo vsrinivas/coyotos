@@ -101,6 +101,8 @@ inline int mkilex(YYSTYPE *lvalp, Lexer *lexer)
 %token <tok> tk_EXPORT
 %token <tok> tk_IMPORT
 
+%token <tok> tk_NEW
+
  /* Customary expression operators here. Order of occurrence is
     significant, because it defines precedence. Here is the operator
     precedence in ANSI C, from highest to lowest:
@@ -441,6 +443,21 @@ expr : expr fnargs {
   SHOWPARSE("expr -> expr fnargs");
   $$ = new AST(at_fncall, $1->loc, $1);
   $$->addChildrenFrom($2);
+};
+
+expr : tk_NEW tk_Ident fnargs {
+  SHOWPARSE("expr -> NEW IDENT fnargs");
+  // Hack alert. "new id(args)" turns into "#new.id(args)". This works
+  // because #new is not a legal identifier. We have internally bound "#new"
+  // to a sub-environment of constructors in builtin.cxx, which is how
+  // this will resolve. It's either disgusting or cute, depending on
+  // your mood.
+  GCPtr<AST> dot = 
+    new AST(at_dot, $1.loc, 
+	    new AST(at_ident, LToken($1.loc, "#new")), 
+	    new AST(at_ident, $2));
+  $$ = new AST(at_fncall, $1.loc, dot);
+  $$->addChildrenFrom($3);
 };
 
 expr : expr '.' tk_Ident {

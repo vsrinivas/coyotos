@@ -1510,26 +1510,26 @@ getBuiltinEnv(GCPtr<CoyImage> ci)
     builtins->addConstant("make_bank", 
 			 new PrimFnValue("make_bank", 1, 1, pf_mk_bank));
 
-    // Process fabrication:
-    builtins->addConstant("make_process", 
-			 new PrimFnValue("make_process", 1, 1, pf_mk_process));
-
-    // GPT fabrication:
-    builtins->addConstant("make_gpt", 
-			 new PrimFnValue("make_gpt", 1, 1, pf_mk_gpt));
+    // Cappage fabrication:
+    builtins->addConstant("make_cappage", 
+			 new PrimFnValue("make_cappage", 1, 1, pf_mk_cappage));
 
     // Endpoint fabrication:
     builtins->addConstant("make_endpoint", 
 			 new PrimFnValue("make_endpoint", 1, 1, 
 					 pf_mk_endpoint));
 
+    // GPT fabrication:
+    builtins->addConstant("make_gpt", 
+			 new PrimFnValue("make_gpt", 1, 1, pf_mk_gpt));
+
     // Page fabrication:
     builtins->addConstant("make_page", 
 			 new PrimFnValue("make_page", 1, 1, pf_mk_page));
 
-    // Cappage fabrication:
-    builtins->addConstant("make_cappage", 
-			 new PrimFnValue("make_cappage", 1, 1, pf_mk_cappage));
+    // Process fabrication:
+    builtins->addConstant("make_process", 
+			 new PrimFnValue("make_process", 1, 1, pf_mk_process));
 
     // Sender fabrication:
     builtins->addConstant("enter",
@@ -1538,14 +1538,6 @@ getBuiltinEnv(GCPtr<CoyImage> ci)
     // AppInt Sender fabrication:
     builtins->addConstant("AppInt",
 			 new PrimFnValue("AppInt", 2, 2, pf_mk_appint));
-
-    // Page content manipulation
-    builtins->addConstant("fillpage",
-			 new PrimFnValue("fillpage", 2, 2, pf_fillpage));
-
-    builtins->addConstant("set_page_uint64",
-			 new PrimFnValue("set_page_uint64", 3, 3, 
-					 pf_set_page_uint64));
 
     // Misc capabilities
     builtins->addConstant("NullCap", 
@@ -1619,6 +1611,48 @@ getBuiltinEnv(GCPtr<CoyImage> ci)
     builtins->addConstant("dup", 
 			 new PrimFnValue("dup", 2, 2, pf_dup));
 
+    // Page content manipulation
+    builtins->addConstant("fillpage",
+			 new PrimFnValue("fillpage", 2, 2, pf_fillpage));
+
+    builtins->addConstant("set_page_uint64",
+			 new PrimFnValue("set_page_uint64", 3, 3, 
+					 pf_set_page_uint64));
+
+    {
+      // Environment for storage object constructors capabilities:
+      GCPtr<Environment<Value> > ctors = new Environment<Value>;
+
+      // Bank fabrication
+      ctors->addConstant("Bank", 
+			 new PrimFnValue("make_bank", 1, 1, pf_mk_bank));
+
+      // Cappage fabrication:
+      ctors->addConstant("CapPage", 
+			 new PrimFnValue("make_cappage", 1, 1, pf_mk_cappage));
+
+      // GPT fabrication:
+      ctors->addConstant("GPT", 
+			 new PrimFnValue("make_gpt", 1, 1, pf_mk_gpt));
+
+      // Endpoint fabrication:
+      ctors->addConstant("Endpoint", 
+			 new PrimFnValue("make_endpoint", 1, 1, 
+					 pf_mk_endpoint));
+
+      // Page fabrication:
+      ctors->addConstant("Page", 
+			 new PrimFnValue("make_page", 1, 1, pf_mk_page));
+
+      // Process fabrication:
+      ctors->addConstant("Process", 
+			 new PrimFnValue("make_process", 1, 1, pf_mk_process));
+
+
+
+      builtins->addConstant("#new", new EnvValue(ctors));
+    }
+
 #if 0
     {
       // Environment for miscellaneous capabilities:
@@ -1636,7 +1670,7 @@ getBuiltinEnv(GCPtr<CoyImage> ci)
       caps->addConstant("ioperm", new CapValue(ci, ci->CiCap(ct_IoPerm)));
       caps->addConstant("pinctl", new CapValue(ci, ci->CiCap(ct_PinCtl)));
 
-      caps->addConstant("coyotos", new EnvValue(caps));
+      builtins->addConstant("coyotos", new EnvValue(caps));
     }
 #endif
 

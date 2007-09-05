@@ -167,6 +167,7 @@ struct KeyWord {
   { "import",           tk_IMPORT },
   { "lambda",           tk_Reserved },
   { "module",           tk_MODULE },
+  { "new",              tk_NEW },
   { "print",            tk_PRINT },
   { "return",           tk_RETURN },
   { "true",             tk_TRUE },
