@@ -5,6 +5,6 @@
 	
 	.text
 GEXT(_start)
-	DO_SYSCALL_TRASHESP(ipc_parameter_block)
+	DO_RO_SYSCALL(ipc_parameter_block)
 	hlt
 
