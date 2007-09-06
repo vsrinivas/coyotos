@@ -16,10 +16,12 @@ Model-independent
 		 5  [PS]	Endpoint capability to initial invoke endpt
 	         6  [C]         Creator-provided extra capability,
 		                used for runtime environment.
+		 7  [PS,CONS]	Entry capability to Address Space handler
 
 	         7  [RT]        May be clobbered by low-level startup
 	         8  [RT]        May be clobbered by low-level startup
 	         9  [RT]        May be clobbered by low-level startup
+	         10 [RT]        May be clobbered by low-level startup
 
 	         5-23 registers available to the application
 
@@ -36,8 +38,8 @@ Model-independent
                  Note that in some runtime models, the early startup
                  code requires capability registers for low-level
                  setup. When setting up a process in mkimage, it
-                 should be assumed that capability registers 5 through
-                 8 may be clobbered by the time main() receives control.
+                 should be assumed that capability registers 7 through
+                 10 may be clobbered by the time main() receives control.
 
         Startup Conventions
 
@@ -45,12 +47,22 @@ Model-independent
 		 initial reply endpoint for this program has already
 		 been generated. An endpoint capability to this
 		 endpoint has been placed in CR1. The endpoint has
-		 it's PM bit set, an initial PP value of zero, and its
-		 receiver field contains a process capability to this
+		 it's PM bit set, an initial PP value of zero, an
+		 endpoint ID of zero, and its receiver field contains
+		 a process capability to this process.
+
+		 An initial invokable endpoint has also been generated,
+		 and an Endpoint capability to it is placed in CR5.  Its
+		 endpoint PM bit is *not* set, its endpoint ID is one, and
+		 its receiver field contains a process capability to this
 		 process.
 
-                 ??? Conventions about how storage has been allocated
-                 from space banks???
+		 A Process capability for the process is placed in CR2.
+		 
+		 The Bank for the process is placed in CR3.  All objects
+		 constituting the process should be derived from this
+		 bank.  Upon destruction, the process will destroy the
+		 bank to clean up its storage.  
 
         Tool Space Conventions
 
