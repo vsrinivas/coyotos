@@ -24,7 +24,7 @@
 #include <kerninc/ReadyQueue.h>
 #include <coyotos/syscall.h>
 #include <hal/syscall.h>
-#include <idl/coyotos/AppInt.h>
+#include <idl/coyotos/AppNotice.h>
 
 extern void cap_Cap(InvParam_t* iParam);
 
@@ -39,11 +39,11 @@ void cap_AppInt(InvParam_t *iParam)
 
       sched_commit_point();
 
-      InvTypeMessage(iParam, IKT_coyotos_AppInt);
+      InvTypeMessage(iParam, IKT_coyotos_AppNotice);
       break;
     }
 
-  case OC_coyotos_AppInt_postInterrupt:
+  case OC_coyotos_AppNotice_postNotice:
     {
       INV_REQUIRE_ARGS(iParam, 1);
 

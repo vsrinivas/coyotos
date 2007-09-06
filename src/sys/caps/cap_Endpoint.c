@@ -166,7 +166,7 @@ void cap_Endpoint(InvParam_t *iParam)
     }
 
   case OC_coyotos_Endpoint_makeEntryCap:
-  case OC_coyotos_Endpoint_makeAppInt:
+  case OC_coyotos_Endpoint_makeAppNotifier:
     {
       INV_REQUIRE_ARGS(iParam, 0);
 

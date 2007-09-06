@@ -1,0 +1,16 @@
+package coyotos;
+
+/**
+ * @brief Application-defined interrupt posting interface
+ */
+interface AppNotice extends Cap {
+  /// @brief Post a (set of) application-defined notices @p notices n
+  /// to the application.
+  ///
+  /// Raises NoAccess if this capability does not permit posting of
+  /// the requested notices.
+  ///
+  /// Raises NoAccess if the endpoint directly named by this
+  /// capability contains Null capability in its recipient slot.
+  void postNotice(unsigned long notices) raises(NoAccess);
+};

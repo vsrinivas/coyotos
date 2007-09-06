@@ -29,9 +29,9 @@ interface Endpoint extends Cap {
   /// @brief Fabricate an entry capability to this endpoint.
   Cap makeEntryCap(payload_t payload);
 
-  /// @brief Fabricate an application interrupt issuance capability to
-  /// this endpoint capable of sending application-defined interrupt
-  /// <em>i</em> exactly if bit <em>i</em> of @p allowedInts is
+  /// @brief Fabricate an application notify issuance capability to
+  /// this endpoint capable of sending application-defined notice
+  /// <em>n</em> exactly if bit <em>n</em> of @p allowedNotices is
   /// non-zero.
-  AppInt makeAppInt(unsigned long allowedInts);
+  AppNotice makeAppNotifier(unsigned long allowedNotices);
 };
