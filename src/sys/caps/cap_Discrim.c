@@ -76,6 +76,9 @@ void cap_Discrim(InvParam_t *iParam)
       case ct_Process:
 	result = coyotos_Discrim_capClass_clProcess;
 	break;
+      case ct_AppNotice:
+	result = coyotos_Discrim_capClass_clAppNotice;
+	break;
       default:
 	result = coyotos_Discrim_capClass_clOther;
 	break;

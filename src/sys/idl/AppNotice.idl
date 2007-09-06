@@ -2,15 +2,43 @@ package coyotos;
 
 /**
  * @brief Application-defined interrupt posting interface
+ *
+ * An App capability authorizes up to 32 distinct notices that are
+ * guaranteed to be delivered to the recipient. Notices posted using
+ * the @p postNotice method are guaranteed to be delivered when the
+ * recipient (if any) next enters a receiving state, but invocation of
+ * @p postNotice is also guaranteed not to block. This makes the
+ * AppNotice capability useful to support the implementation of flow
+ * control in bidirectional streams or input notification in
+ * situations where the notifier must not block.
+ *
+ * If a given notice is posted multiple times prior to receipt, the
+ * receiving application will receive it exactly ones.
  */
 interface AppNotice extends Cap {
   /// @brief Post a (set of) application-defined notices @p notices n
   /// to the application.
   ///
-  /// Raises NoAccess if this capability does not permit posting of
-  /// the requested notices.
+  /// The @p postNotice method posts the authorized subset of @p
+  /// notices to the receiving application if one exists.
   ///
-  /// Raises NoAccess if the endpoint directly named by this
-  /// capability contains Null capability in its recipient slot.
-  void postNotice(unsigned long notices) raises(NoAccess);
+  /// There are two ways in which the invocation of @p postNotice can
+  /// fail:
+  /// <ol>
+  /// <li>
+  /// The endpoint directly named by the AppNotice capability may
+  /// contain a Null capability in its recipient slot.
+  /// </li>
+  /// <li>
+  /// The endpoint itself may have been destroyed.
+  /// </li>
+  /// <ol>
+  /// In both cases an error is returned internally, but cannot be
+  /// received because a <b>oneway</b> invocation does not involve a
+  /// receive phase.
+  oneway void postNotice(unsigned long notices);
+
+  /// @brief Return the list of notices whose delivery is authorized
+  /// by this capability.
+  unsigned long getNotices();
 };

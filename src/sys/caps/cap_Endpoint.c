@@ -176,7 +176,7 @@ void cap_Endpoint(InvParam_t *iParam)
 
       cap_set(&iParam->srcCap[0].theCap, iParam->iCap.cap);
       iParam->srcCap[0].theCap.type = 
-	(opCode == OC_coyotos_Endpoint_makeEntryCap) ? ct_Entry : ct_AppInt;
+	(opCode == OC_coyotos_Endpoint_makeEntryCap) ? ct_Entry : ct_AppNotice;
       iParam->srcCap[0].theCap.u1.protPayload = pp;
       
       iParam->opw[0] = InvResult(iParam, 1);

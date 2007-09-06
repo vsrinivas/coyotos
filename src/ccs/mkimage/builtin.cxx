@@ -1327,7 +1327,7 @@ pf_mk_appint(PrimFnValue& pfv,
     GCPtr<CapValue> cv = new CapValue(*cap);
     GCPtr<CiEndpoint> ep = is.ci->GetEndpoint(cv->cap);
 
-    cv->cap.type = ct_AppInt;
+    cv->cap.type = ct_AppNotice;
     cv->cap.u1.protPayload = mask;
 
     return cv;

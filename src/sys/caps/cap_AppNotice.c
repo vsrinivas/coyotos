@@ -28,7 +28,7 @@
 
 extern void cap_Cap(InvParam_t* iParam);
 
-void cap_AppInt(InvParam_t *iParam)
+void cap_AppNotice(InvParam_t *iParam)
 {
   uintptr_t opCode = iParam->opCode;
 
@@ -47,16 +47,11 @@ void cap_AppInt(InvParam_t *iParam)
     {
       INV_REQUIRE_ARGS(iParam, 1);
 
-      coyaddr_t whichInts = get_iparam32(iParam);
+      sched_commit_point();
+      iParam->invokee = 0;	/* method is oneway */
 
-      /* Can only post the authorized interrupts */
-      if ((whichInts & iParam->iCap.cap->u1.protPayload) != whichInts) {
-	sched_commit_point();
-
-	/// @bug Is this the proper exception code?
-	InvErrorMessage(iParam, RC_coyotos_Cap_NoAccess);
-	return;
-      }
+      uint32_t notices = get_iparam32(iParam);
+      notices &= iParam->iCap.cap->u1.protPayload;
 
       Endpoint *ep = (Endpoint *) iParam->iCap.cap->u2.prepObj.target;
       capability *pCap = &ep->state.recipient;
@@ -67,21 +62,14 @@ void cap_AppInt(InvParam_t *iParam)
   
       /* Endpoint may contain Null recipient cap if target process was
 	 destroyed. If we are willing to block, wait for fixup. */
-      if (pCap->type == ct_Null) {
-	sched_commit_point();
-
-	/// @bug Is this the proper exception code?
-	InvErrorMessage(iParam, RC_coyotos_Cap_NoAccess);
+      if (pCap->type == ct_Null)
 	return;
-      }
 
       Process *p = (Process *)pCap->u2.prepObj.target;
 
-      sched_commit_point();
+      p->state.softInts |= notices;
 
-      p->state.softInts |= whichInts;
-
-      /* If process is currently receiving, kick it in the head */
+      /* If notified process is currently receiving, wake it up. */
       if (p->state.runState == PRS_RECEIVING) {
 	uintptr_t icw = get_icw(p);
 	if ((icw & IPW0_CW) == 0) {
@@ -91,6 +79,20 @@ void cap_AppInt(InvParam_t *iParam)
       }
 
       iParam->opw[0] = InvResult(iParam, 0);
+      break;
+    }
+
+  case OC_coyotos_AppNotice_getNotices:
+    {
+      INV_REQUIRE_ARGS(iParam, 0);
+
+      sched_commit_point();
+
+      uint32_t authorizedNotices =  iParam->iCap.cap->u1.protPayload;
+
+      put_oparam32(iParam, authorizedNotices);
+      iParam->opw[0] = InvResult(iParam, 0);
+      break;
     }
 
   default:

@@ -634,7 +634,7 @@ emit_marshall_decl(GCPtr<Symbol> s, INOstream& out, ArgInfo& args)
     out << "} in;\n";
   }
   /* Emit the output argument structure. */
-  {
+  if (s->cls != sc_oneway) {
     out << "struct {\n";
     out.more();
 
@@ -813,8 +813,14 @@ emit_in_marshall(GCPtr<Symbol> s, INOstream& out, UniParams& args)
       << s->QualifiedName('_') << ";\n";
 
   out << "_params.in._invCap = _invCap;\n";
-  out << "_params.in._replyCap = _env->replyCap;\n";
-  out << "_params.in._epID = _env->epID;\n";
+  if (s->cls == sc_oneway) {
+    out << "_params.in._replyCap = CAP_REG(0);\n";
+    out << "_params.in._epID = _env->epID;\n";
+  }
+  else {
+    out << "_params.in._replyCap = _env->replyCap;\n";
+    out << "_params.in._epID = _env->epID;\n";
+  }
 
   for (size_t i = 0; i < args.regs.size(); i++)
     emit_in_param(args.regs[i], out);
@@ -858,6 +864,9 @@ emit_out_param(GCPtr<Symbol> s, INOstream& out)
 static void
 emit_out_marshall(GCPtr<Symbol> s, INOstream& out, UniParams& args)
 {
+  if (s->cls == sc_oneway)
+    return;
+
   for (size_t i = 0; i < args.caps.size(); i++)
     emit_out_param(args.caps[i], out);
 
@@ -884,6 +893,9 @@ emit_out_marshall(GCPtr<Symbol> s, INOstream& out, UniParams& args)
 static void
 emit_out_demarshall_result(GCPtr<Symbol> s, INOstream& out)
 {
+  if (s->cls == sc_oneway)
+    return;
+
   GCPtr<Symbol> argBaseType = s->type->ResolveType();
 
   if (argBaseType->IsFixSequenceType()) {
@@ -937,6 +949,9 @@ static void
 emit_out_demarshall(GCPtr<Symbol> s, INOstream& out, 
 		    UniParams& args, size_t nHardRegs)
 {
+  if (s->cls == sc_oneway)
+    return;
+
   if (! (args.regs.size() || args.strings.size()) )
     return;
 
@@ -1239,22 +1254,31 @@ emit_target_syscall(GCPtr<Symbol> s, INOstream& out, ArgInfo& args)
   // Set up IPW0:
 
   out << "_params.in._icw = ";
-  out << "IPW0_CW|IPW0_RC|IPW0_RP|IPW0_SP|IPW0_CO\n";
-  out.more();
-  out << "| IPW0_MAKE_NR(sc_InvokeCap) | IPW0_MAKE_LDW("
+  out << "IPW0_SP "
+      << "| IPW0_MAKE_NR(sc_InvokeCap) | IPW0_MAKE_LDW("
       << args.in.nReg - 1
       << ")\n";
+  out.more();
+  if (s->cls != sc_oneway)
+    out << "| IPW0_CW|IPW0_RC|IPW0_RP|IPW0_CO\n";
+
   /* Sending caps unconditionally, because need to send reply cap */
   out << "| IPW0_SC | IPW0_MAKE_LSC("
       << args.in.caps.size() 	// add one for reply cap
       << ")\n";
-  if (args.out.caps.size())
+
+  if (args.out.caps.size() && s->cls != sc_oneway)
     out << "| IPW0_AC | IPW0_MAKE_LRC("
 	<< args.out.caps.size() - 1
 	<< ")\n";
   out << ";\n";
   out.less();
   out << "\n";
+
+  if (s->cls == sc_oneway) {
+    out << "invoke_capability(&_params.pb);\n";
+    return;
+  }
 
   out << "if (!invoke_capability(&_params.pb)) {\n";
   out.more();
@@ -1363,10 +1387,13 @@ emit_client_stub(GCPtr<Symbol> s, INOstream& out)
 
   emit_target_syscall(s, out, args);
 
-  size_t nHardReg = MAX_DATA_REG;
-  if (targetArch->archID == COYOTOS_TARGET_i386)
-    nHardReg = 4;
-  emit_out_demarshall(s, out, args.out, nHardReg);
+  if (s->cls != sc_oneway) {
+    size_t nHardReg = MAX_DATA_REG;
+    if (targetArch->archID == COYOTOS_TARGET_i386)
+      nHardReg = 4;
+    emit_out_demarshall(s, out, args.out, nHardReg);
+  }
+
 
   /*  if (!s->type->IsVoidType()) */
   out << "return true;\n";
@@ -1562,6 +1589,9 @@ emit_server_out_prep_result(GCPtr<Symbol> s, INOstream& out)
 static void
 emit_server_op_out_prep(GCPtr<Symbol> s, UniParams& args, INOstream& out)
 {
+  if (s->cls == sc_oneway)
+    return;
+
   if (! (args.indirectBytes) )
     return;
 
@@ -1605,6 +1635,9 @@ emit_server_out_marshall_result(GCPtr<Symbol> s, INOstream& out)
 static void
 emit_server_op_out_marshall(GCPtr<Symbol> s, UniParams& args, INOstream& out)
 {
+  if (s->cls == sc_oneway)
+    return;
+
   if (args.indirectBytes) {
     out << "\n";
     out << "size_t _outIndirNdx = 0;\n";
@@ -1658,7 +1691,14 @@ emit_server_op_out_marshall(GCPtr<Symbol> s, UniParams& args, INOstream& out)
 static void
 emit_server_op_handler_call(GCPtr<Symbol> s, ArgInfo& args, INOstream& out)
 {
-  out << "uint64_t _result = _handler(\n";
+  std::string retType = (s->cls == sc_oneway) ? "void" : "uint64_t";
+
+  if (s->cls == sc_oneway)
+    out << "uint64_t _result = 0;\n"
+	<< "(void) _handler(\n";
+  else
+    out << "uint64_t _result = _handler(\n";
+
   {
     out.more();
 
@@ -1784,6 +1824,7 @@ emit_server_handler_decl(const std::string& nm,
   if (mainDecl)
     out << "IDL_SERVER_HANDLER_PREDECL ";
 
+  std::string retType = (s->cls == sc_oneway) ? "void" : "uint64_t";
   out << "uint64_t " << nm << "(\n";
   out.more();
   for(size_t i = 0; i < s->children.size(); i++) {
@@ -1826,7 +1867,7 @@ emit_server_handler_decl(const std::string& nm,
 static void
 emit_server_op_demarshall_proc(GCPtr<Symbol> s, ArgInfo& args, INOstream& out)
 {
-  /** @bug: What to do about NOSTOP demarshalling? */
+  /** @bug: What to do about NOSTUB demarshalling? */
   if (s->flags & SF_NOSTUB) {
     out << "/* Proc " << s->QualifiedName('.') << " is marked NOSTUB */\n";
     return;
@@ -2213,10 +2254,6 @@ client_header_symdump(GCPtr<Symbol> s, INOstream& out)
       break;
     }
   case sc_oneway:
-    {
-      fprintf(stderr, "Oneway emission not yet implemented\n");
-      exit(1);
-    }
   case sc_operation:
     {
       if (s->flags & SF_NO_OPCODE) {
@@ -2606,11 +2643,6 @@ server_header_symdump(GCPtr<Symbol> s, INOstream& out)
     }
 
   case sc_oneway:
-    {
-      fprintf(stderr, "Oneway emission not yet implemented\n");
-      exit(1);
-    }
-
   case sc_operation:
     {
       if (s->flags & SF_NO_OPCODE) {

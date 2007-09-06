@@ -13,6 +13,7 @@ interface Discrim extends Cap {
     clEndpoint = 4,
     clEntry = 5,
     clProcess = 6,
+    clAppNotice = 7,
     clOther = 255
   };
 
