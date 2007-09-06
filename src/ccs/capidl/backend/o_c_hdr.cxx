@@ -737,7 +737,7 @@ emit_marshall_decl(GCPtr<Symbol> s, INOstream& out, ArgInfo& args)
   }
 
   out.less();
-  out << "} _NEW_INV_" << s->QualifiedName('_') << ";\n";
+  out << "} _INV_" << s->QualifiedName('_') << ";\n";
   out << "\n";
 }
 
@@ -862,17 +862,17 @@ emit_out_marshall(GCPtr<Symbol> s, INOstream& out, UniParams& args)
     emit_out_param(args.caps[i], out);
 
   if (args.strings.size())
-    out << "_params.out._rcvBound = sizeof(_NEW_INV_" 
+    out << "_params.out._rcvBound = sizeof(_INV_" 
 	<< s->QualifiedName('_')
-	<< ") - offsetof(_NEW_INV_"
+	<< ") - offsetof(_INV_"
 	<< s->QualifiedName('_')
 	<< ", out."
 	<< args.strings[0]->name
 	<< ");\n";
   else if (args.indirectBytes)
-    out << "_params.out._rcvBound = sizeof(_NEW_INV_" 
+    out << "_params.out._rcvBound = sizeof(_INV_" 
 	<< s->QualifiedName('_')
-	<< ") - offsetof(_NEW_INV_"
+	<< ") - offsetof(_INV_"
 	<< s->QualifiedName('_')
 	<< ", out._indirect"
 	<< ");\n";
@@ -1354,7 +1354,7 @@ emit_client_stub(GCPtr<Symbol> s, INOstream& out)
      indirect arguments, and few stubs have direct components so large
      that saving the extra stack words is worthwhile. For this reason
      we do without the union here. */
-  out << "_NEW_INV_" << s->QualifiedName('_') << " _params;\n";
+  out << "_INV_" << s->QualifiedName('_') << " _params;\n";
 
   emit_in_marshall(s, out, args.in);
   emit_out_marshall(s, out, args.out);
@@ -1396,7 +1396,7 @@ emit_server_if_union(GCPtr<Symbol> s, INOstream& out)
       if (child->flags & SF_NO_OPCODE)
 	continue;
 
-      out << "_NEW_INV_" << child->QualifiedName('_') 
+      out << "_INV_" << child->QualifiedName('_') 
 	  << " " << child->name << ";\n";
     }
   }
@@ -1850,7 +1850,7 @@ emit_server_op_demarshall_proc(GCPtr<Symbol> s, ArgInfo& args, INOstream& out)
       << "_IDL_DEMARSHALL_" << s->QualifiedName('_') << "(\n";
   {
     out.more();
-    out << "_NEW_INV_" << s->QualifiedName('_') << " *_params,\n";
+    out << "_INV_" << s->QualifiedName('_') << " *_params,\n";
     out << "struct IDL_SERVER_Environment *_env,\n";
 
     /* Emit variant of the actual handler procedure signature: */
