@@ -22,7 +22,7 @@
  * @brief SpaceBank debugging support file
  */
 
-#include "spacebank.h"
+#include "SpaceBank.h"
 
 int
 __assert3_fail(const char *file, int lineno, const char *desc, uint64_t val1, uint64_t val2)

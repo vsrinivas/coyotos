@@ -22,7 +22,7 @@
  * @brief SpaceBank bank manipulation functions
  */
 
-#include "spacebank.h"
+#include "SpaceBank.h"
 #include <obstore/CoyImgHdr.h>
 
 #define MAX_EXTENTS 20

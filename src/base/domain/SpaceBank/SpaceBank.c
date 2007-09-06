@@ -22,7 +22,7 @@
  * @brief SpaceBank implementation
  */
 
-#include "spacebank.h"
+#include "SpaceBank.h"
 #include <idl/coyotos/SpaceBank.server.h>
 
 /** @brief Initially, we just want a recieve phase that accepts 4 caps */

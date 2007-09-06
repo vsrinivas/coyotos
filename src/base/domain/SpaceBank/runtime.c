@@ -25,7 +25,7 @@
  * system, mostly by having the runtime system get out of the way.
  */
 
-#include "spacebank.h"
+#include "SpaceBank.h"
 #include "coyotos.TargetInfo.h"
 
 /** @brief Set up the stack pointer.

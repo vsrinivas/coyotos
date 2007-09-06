@@ -22,7 +22,7 @@
  * @brief SpaceBank alloc-only memory allocation implementation
  */
 
-#include "spacebank.h"
+#include "SpaceBank.h"
 
 uintptr_t mybrk = 0;  /* allocation base */
 uintptr_t myend = 0;  /* after allocations are complete, end of region */
