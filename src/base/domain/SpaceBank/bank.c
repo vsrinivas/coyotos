@@ -117,7 +117,7 @@ object_setAllocatedBank(Object *object, Bank *bank)
 }
 
 void
-object_getCap(Object *obj, cap_t out)
+object_getCap(Object *obj, caploc_t out)
 {
   coyotos_Range_obType type = object_getType(obj);
   oid_t oid = object_getOid(obj);
@@ -142,7 +142,7 @@ object_rescindAndFree(Object *obj)
 }
 
 static inline void
-require_object(coyotos_Range_obType ty, cap_t out)
+require_object(coyotos_Range_obType ty, caploc_t out)
 {
   Extent *ext = extentByType[ty];
 
@@ -156,19 +156,19 @@ require_object(coyotos_Range_obType ty, cap_t out)
 }
 
 void
-require_Page(cap_t out)
+require_Page(caploc_t out)
 {
   require_object(coyotos_Range_obType_otPage, out);
 }
 
 void
-require_GPT(cap_t out)
+require_GPT(caploc_t out)
 {
   require_object(coyotos_Range_obType_otGPT, out);
 }
 
 void
-get_pagecap(cap_t out, oid_t oid)
+get_pagecap(caploc_t out, oid_t oid)
 {
   MUST_SUCCEED(coyotos_Range_getCap(CR_RANGE,
 				    oid,
@@ -233,7 +233,7 @@ bank_getEffLimits(Bank *bank, coyotos_SpaceBank_limits *out)
 }
 
 bool
-bank_create(Bank *parent, cap_t out)
+bank_create(Bank *parent, caploc_t out)
 {
   Object *endpt = bank_alloc(parent, coyotos_Range_obType_otEndpoint, out);
   if (endpt == 0)
@@ -435,7 +435,7 @@ setup_prealloc(coyotos_Range_obType type, size_t count)
 }
 
 Object *
-bank_do_alloc(Bank *bank, coyotos_Range_obType type, cap_t out)
+bank_do_alloc(Bank *bank, coyotos_Range_obType type, caploc_t out)
 {
   bool result = bank_reserveSpace(bank, type);
 
@@ -448,7 +448,7 @@ bank_do_alloc(Bank *bank, coyotos_Range_obType type, cap_t out)
 }
 
 Object *
-bank_alloc(Bank *bank, coyotos_Range_obType type, cap_t out)
+bank_alloc(Bank *bank, coyotos_Range_obType type, caploc_t out)
 {
   Object *obj = bank_do_alloc(bank, type, out);
   if (obj) {
@@ -459,7 +459,7 @@ bank_alloc(Bank *bank, coyotos_Range_obType type, cap_t out)
 }
 
 Object *
-bank_alloc_proc(Bank *bank, cap_t brand, cap_t out)
+bank_alloc_proc(Bank *bank, caploc_t brand, caploc_t out)
 {
   Object *obj = bank_do_alloc(bank, coyotos_Range_obType_otProcess, out);
   if (obj) {
@@ -470,7 +470,7 @@ bank_alloc_proc(Bank *bank, cap_t brand, cap_t out)
 }
 
 void
-bank_getEntry(Bank *bank, coyotos_SpaceBank_restrictions restr, cap_t out)
+bank_getEntry(Bank *bank, coyotos_SpaceBank_restrictions restr, caploc_t out)
 {
   Object *endpt = bank_getEndpoint(bank);
   MUST_SUCCEED(coyotos_Range_getCap(CR_RANGE,
@@ -494,7 +494,7 @@ object_unalloc(Object *obj)
 }
 
 Object *
-object_identify(cap_t cap)
+object_identify(caploc_t cap)
 {
   coyotos_Range_obType type = coyotos_Range_obType_otNUM_TYPES;
   oid_t oid;

@@ -170,9 +170,6 @@
 
 #define COYOTOS_MAX_SNDLEN 65536
 
-#define CAP_REG(r) ((r) << 1)
-#define CAP_ADDR(r) ((r) | 1)
-
 #if defined(COYOTOS_TARGET)
 
 #if (COYOTOS_HW_ADDRESS_BITS == 32)
@@ -186,15 +183,16 @@
 #if !defined(__ASSEMBLER__)
 
 #include <inttypes.h>
+#include <coyotos/coytypes.h>
 
 typedef struct {
   uintptr_t pw[8];
   union {
-    uintptr_t invCap;		/* on entry */
+    caploc_t  invCap;		/* on entry */
     uintptr_t pp;		/* on exit */
   } u;
-  uintptr_t sndCap[4];
-  uintptr_t rcvCap[4];
+  caploc_t  sndCap[4];
+  caploc_t  rcvCap[4];
   uint32_t  sndLen;		/* FIX: Should be 16 bits */
   uint32_t  rcvBound;		/* FIX: Should be 16 bits */
   void     *sndPtr;

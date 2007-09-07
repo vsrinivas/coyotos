@@ -49,6 +49,8 @@ enum AstType {
     at_s_import,
     at_s_enum,
     at_s_export_enum,
+    at_s_capreg,
+    at_s_export_capreg,
     at_enum_bind,
     at_s_bank,
     at_fncall,
@@ -61,11 +63,13 @@ enum AstType {
     agt_stmt,
     agt__AnonGroup0,
     agt__AnonGroup1,
-    agt_expr,
     agt__AnonGroup2,
+    agt__AnonGroup3,
+    agt_expr,
+    agt__AnonGroup4,
 };
 
-enum { at_NUM_ASTTYPE = agt__AnonGroup2};
+enum { at_NUM_ASTTYPE = agt__AnonGroup4};
 class AST : public Countable { 
   bool isOneOf(AstType);
 public:

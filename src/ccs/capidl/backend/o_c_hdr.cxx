@@ -312,7 +312,7 @@ output_c_type(GCPtr<Symbol> s, INOstream& out)
   case sc_interface:
   case sc_absinterface:
     {
-      out << "cap_t";
+      out << "caploc_t";
       break;
     }
   case sc_struct:
@@ -590,25 +590,25 @@ emit_marshall_decl(GCPtr<Symbol> s, INOstream& out, ArgInfo& args)
       out << "uintptr_t  _pw" << regArgWords << ";\n";
 
 
-    out << "cap_t      _invCap;\n";
+    out << "caploc_t   _invCap;\n";
 
     /* Send caps */
-    out << "cap_t      _replyCap; /* _sndCap0 */\n";
+    out << "caploc_t   _replyCap; /* _sndCap0 */\n";
     {
       for (size_t i = 1; i < MAX_CAP_REG; i++) {
 	if (i <= args.in.caps.size()) {
 	  GCPtr<Symbol> child = args.in.caps[i-1];
 
-	  out << "cap_t      " <<  child->name 
+	  out << "caploc_t   " <<  child->name 
 	      << "; /* _sndCap" << i << " */\n";
 	}
 	else
-	  out << "cap_t      _sndCap" <<  i << ";\n";
+	  out << "caploc_t   _sndCap" <<  i << ";\n";
       }
     }
     /* Reply caps */
     for (size_t i = 0; i < MAX_CAP_REG; i++) 
-      out << "cap_t      _rcvCap" <<  i << ";\n";
+      out << "caploc_t   _rcvCap" <<  i << ";\n";
 
     out << "uint32_t   _sndLen;\n";	// FIX: Should be 16 bits
     out << "uint32_t   _rcvBound;\n";	// FIX: Should be 16 bits
@@ -691,18 +691,18 @@ emit_marshall_decl(GCPtr<Symbol> s, INOstream& out, ArgInfo& args)
 
     /* Send caps */
     for (size_t i = 0; i < MAX_CAP_REG; i++) 
-      out << "cap_t      _sndCap" <<  i << ";\n";
+      out << "caploc_t   _sndCap" <<  i << ";\n";
     /* Reply caps */
     {
       for (size_t i = FIRST_CAP_REG; i < MAX_CAP_REG; i++) {
 	if (i < args.out.caps.size()) {
 	  GCPtr<Symbol> child = args.out.caps[i];
 
-	  out << "cap_t      " <<  child->name 
+	  out << "caploc_t   " <<  child->name 
 	      << "; /* _rcvCap" << i << " */\n";
 	}
 	else
-	  out << "cap_t      _rcvCap" <<  i << ";\n";
+	  out << "caploc_t   _rcvCap" <<  i << ";\n";
       }
     }
 
@@ -814,7 +814,7 @@ emit_in_marshall(GCPtr<Symbol> s, INOstream& out, UniParams& args)
 
   out << "_params.in._invCap = _invCap;\n";
   if (s->cls == sc_oneway) {
-    out << "_params.in._replyCap = CAP_REG(0);\n";
+    out << "_params.in._replyCap = REG_CAPLOC(0);\n";
     out << "_params.in._epID = _env->epID;\n";
   }
   else {
@@ -1320,7 +1320,7 @@ emit_client_stub(GCPtr<Symbol> s, INOstream& out)
     out << "static inline bool\n";
 
   out << s->QualifiedName('_')
-      << "(cap_t _invCap";
+      << "(caploc_t _invCap";
 
   for(size_t i = 0; i < s->children.size(); i++) {
     GCPtr<Symbol> child = s->children[i];
@@ -2140,7 +2140,7 @@ client_header_symdump(GCPtr<Symbol> s, INOstream& out)
       }
 
       print_asmifdef(out);
-      out << "typedef cap_t "
+      out << "typedef caploc_t "
 	  << s->QualifiedName('_')
 	  << ";\n";
       print_asmendif(out);

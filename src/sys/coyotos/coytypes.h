@@ -49,8 +49,8 @@ static inline guard_t make_guard(uint32_t match, uint32_t l2g)
 // typedef uint64_t  ipcword_t;
 
 /* Type field definitions for capreg_t and capitem_t */
-#define CAPLOC_REG  0x0
-#define CAPLOC_MEM  0x1
+#define CAPLOC_TY_REG  0x0
+#define CAPLOC_TY_MEM  0x1
 
 #if 0
 typedef uint32_t capitem32_t;
@@ -58,18 +58,27 @@ typedef uint64_t capitem64_t;
 #endif
 
 typedef struct capreg_t {
-  uint8_t   ty  : 1;
-  uint8_t   loc : 7;
+  struct {
+    uint8_t   ty  : 1;
+    uint8_t   loc : 7;
+  } fld;
+  uint8_t raw;
 } capreg_t;
 
 typedef struct caploc32_t {
-  uint32_t  ty  : 1;
-  uint32_t  loc : 31;
+  struct {
+    uint32_t  ty  : 1;
+    uint32_t  loc : 31;
+  } fld;
+  uint32_t raw;
 } caploc32_t;
 
 typedef struct caploc64_t {
-  uint64_t  ty  : 1;
-  uint64_t  loc : 63;
+  struct {
+    uint64_t  ty  : 1;
+    uint64_t  loc : 63;
+  } fld;
+  uint64_t raw;
 } caploc64_t;
 
 typedef struct stringitem32_t {
@@ -109,17 +118,8 @@ typedef stringitem64_t stringitem_t;
 #error "Invalid value for COYOTOS_HW_ADDRESS_BITS"
 #endif
 
-static inline caploc_t to_caploc(uintptr_t t)
-{
-  caploc_t cl = { (t&0x1), t >> 1 };
-  return cl;
-}
-
-static inline capreg_t to_capreg(uintptr_t t)
-{
-  capreg_t cr = { (t&0x1), t >> 1 };
-  return cr;
-}
+#define REG_CAPLOC(t) ((caploc_t) { .fld.ty = CAPLOC_TY_REG, .fld.loc = (t) })
+#define REG_CAPREG(t) ((capreg_t) { .fld.ty = CAPLOC_TY_REG, .fld.loc = (t) })
 
 #endif /* defined(COYOTOS_TARGET) */
 

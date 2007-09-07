@@ -42,7 +42,7 @@ typedef uint64_t errcode_t;
 #define CAPIDL_I64(x) x##ll
 
 typedef struct {
-  cap_t      replyCap;		/* IN: cap to send in reply slot */
+  caploc_t   replyCap;		/* IN: cap to send in reply slot */
   errcode_t  errCode;		/* OUT: exception code, if result not OK */
   uint64_t   epID;		/* IN/OUT: endpoint ID */
   uint32_t   pp;		/* OUT: protected payload */

@@ -101,7 +101,7 @@ static inline uintptr_t lowbits(uintptr_t addr, uint8_t shift)
 }
 
 static void
-install_Page(cap_t pageCap, uintptr_t addr)
+install_Page(caploc_t pageCap, uintptr_t addr)
 {
   /*
    * We will loop as we go down;  the capability registers used looks like:
@@ -113,12 +113,13 @@ install_Page(cap_t pageCap, uintptr_t addr)
    *  5.  TMP1       TMP2     TMP3     TMP1
    *  ... etc. ...
    */
-  assert(pageCap != CR_TMP1 && pageCap != CR_TMP2 && pageCap != CR_TMP3);
+  assert(pageCap.raw != CR_TMP1.raw && pageCap.raw != CR_TMP2.raw
+	 && pageCap.raw != CR_TMP3.raw);
 
-  cap_t cap = CR_ADDRSPACE;
-  cap_t next = CR_TMP1;
-  cap_t spare = CR_TMP2;
-  cap_t next_spare = CR_TMP3;
+  caploc_t cap = CR_ADDRSPACE;
+  caploc_t next = CR_TMP1;
+  caploc_t spare = CR_TMP2;
+  caploc_t next_spare = CR_TMP3;
 
   {
     guard_t theGuard = 0;

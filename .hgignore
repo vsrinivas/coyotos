@@ -66,3 +66,4 @@ mkimage.out
 # only one to "manage" is the one in arch/../test-image for now.
 grubdisk
 
+src/ccs/mkimage/AST.[ch]xx

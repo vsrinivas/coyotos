@@ -23,8 +23,6 @@ COYOTOS_SRC=../..
 
 include $(COYOTOS_SRC)/build/make/makerules.mk
 
-MKI_FILES=$(wildcard mki/coyotos/*.mki mki/coyotos/TargetInfo/*.mki)
-
 RUNTIME_H=$(BUILDDIR)/runtime.h
 TARGETS=$(RUNTIME_H)
 
@@ -35,16 +33,12 @@ all: $(BUILDDIR) $(TARGETS)
 $(RUNTIME_H): $(BUILDDIR)/coyotos.RunTime.h $(GENRUNTIME)
 	bash $(GENRUNTIME) $(RUNTIME_H) $(BUILDDIR)/coyotos.RunTime.h
 
-$(BUILDDIR)/coyotos.RunTime.h: mki/coyotos/RunTime.mki
+$(BUILDDIR)/coyotos.RunTime.h: mki/coyotos/RunTime.mki $(MKIMAGE)
 	$(MKIMAGE) -t $(COYOTOS_TARGET) -H $(BUILDDIR) -I mki coyotos.RunTime
 
 install: all
 	$(INSTALL) -d $(COYOTOS_ROOT)/usr/include/coyotos
 	$(INSTALL) -m 0644 $(BUILDDIR)/runtime.h $(COYOTOS_ROOT)/usr/include/coyotos
-	for f in $(MKI_FILES); do \
-	  $(INSTALL) -d `dirname $(COYOTOS_ROOT)/usr/include/$$f`; \
-	  $(INSTALL) -m 0644 $$f $(COYOTOS_ROOT)/usr/include/$$f; \
-	done
 
 -include $(BUILDDIR)/.*.m
 

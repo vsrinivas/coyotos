@@ -198,6 +198,10 @@ AST::tagName(const AstType at)
     return "at_s_enum";
   case at_s_export_enum:
     return "at_s_export_enum";
+  case at_s_capreg:
+    return "at_s_capreg";
+  case at_s_export_capreg:
+    return "at_s_export_capreg";
   case at_enum_bind:
     return "at_enum_bind";
   case at_s_bank:
@@ -222,10 +226,14 @@ AST::tagName(const AstType at)
     return "agt__AnonGroup0";
   case agt__AnonGroup1:
     return "agt__AnonGroup1";
-  case agt_expr:
-    return "agt_expr";
   case agt__AnonGroup2:
     return "agt__AnonGroup2";
+  case agt__AnonGroup3:
+    return "agt__AnonGroup3";
+  case agt_expr:
+    return "agt_expr";
+  case agt__AnonGroup4:
+    return "agt__AnonGroup4";
   default:
     return "<unknown>";
   }
@@ -293,6 +301,10 @@ AST::astName() const
     return "s_enum";
   case at_s_export_enum:
     return "s_export_enum";
+  case at_s_capreg:
+    return "s_capreg";
+  case at_s_export_capreg:
+    return "s_export_capreg";
   case at_enum_bind:
     return "enum_bind";
   case at_s_bank:
@@ -317,10 +329,14 @@ AST::astName() const
     return "{_AnonGroup0}";
   case agt__AnonGroup1:
     return "{_AnonGroup1}";
-  case agt_expr:
-    return "{expr}";
   case agt__AnonGroup2:
     return "{_AnonGroup2}";
+  case agt__AnonGroup3:
+    return "{_AnonGroup3}";
+  case agt_expr:
+    return "{expr}";
+  case agt__AnonGroup4:
+    return "{_AnonGroup4}";
   default:
     return "<unknown>";
   }
@@ -349,46 +365,50 @@ astChNumError(const AST &myAst, const size_t exp_ch,
 }
 
 static const unsigned char *astMembers[] = {
-  (unsigned char *)"\x01\x00\x00\x00\x00", // at_Null
-  (unsigned char *)"\x02\x00\x00\x00\x00", // at_AnyGroup
-  (unsigned char *)"\x04\x00\x00\x00\x00", // at_ident
-  (unsigned char *)"\x08\x00\x00\x00\x00", // at_string
-  (unsigned char *)"\x10\x00\x00\x00\x00", // at_ifident
-  (unsigned char *)"\x20\x00\x00\x00\x00", // at_usesel
-  (unsigned char *)"\x40\x00\x00\x00\x00", // at_boolLiteral
-  (unsigned char *)"\x80\x00\x00\x00\x00", // at_intLiteral
-  (unsigned char *)"\x00\x01\x00\x00\x00", // at_charLiteral
-  (unsigned char *)"\x00\x02\x00\x00\x00", // at_floatLiteral
-  (unsigned char *)"\x00\x04\x00\x00\x00", // at_stringLiteral
-  (unsigned char *)"\x00\x08\x00\x00\x00", // at_uoc
-  (unsigned char *)"\x00\x10\x00\x00\x00", // at_block
-  (unsigned char *)"\x00\x20\x00\x00\x00", // at_s_print
-  (unsigned char *)"\x00\x40\x00\x00\x00", // at_s_printstar
-  (unsigned char *)"\x00\x80\x00\x00\x00", // at_s_assign
-  (unsigned char *)"\x00\x00\x01\x00\x00", // at_s_return
-  (unsigned char *)"\x00\x00\x02\x00\x00", // at_s_def
-  (unsigned char *)"\x00\x00\x04\x00\x00", // at_s_export_def
-  (unsigned char *)"\x00\x00\x08\x00\x00", // at_s_fndef
-  (unsigned char *)"\x00\x00\x10\x00\x00", // at_s_export_fndef
-  (unsigned char *)"\x00\x00\x20\x00\x00", // at_idlist
-  (unsigned char *)"\x00\x00\x40\x00\x00", // at_s_export
-  (unsigned char *)"\x00\x00\x80\x00\x00", // at_s_import
-  (unsigned char *)"\x00\x00\x00\x01\x00", // at_s_enum
-  (unsigned char *)"\x00\x00\x00\x02\x00", // at_s_export_enum
-  (unsigned char *)"\x00\x00\x00\x04\x00", // at_enum_bind
-  (unsigned char *)"\x00\x00\x00\x08\x00", // at_s_bank
-  (unsigned char *)"\x00\x00\x00\x10\x00", // at_fncall
-  (unsigned char *)"\x00\x00\x00\x20\x00", // at_ifelse
-  (unsigned char *)"\x00\x00\x00\x40\x00", // at_dot
-  (unsigned char *)"\x00\x00\x00\x80\x00", // at_vecref
-  (unsigned char *)"\x00\x00\x00\x00\x01", // at_docString
-  (unsigned char *)"\x24\x00\x00\x00\x02", // agt_var
-  (unsigned char *)"\x80\x06\x00\x00\x04", // agt_literal
-  (unsigned char *)"\x84\xf4\xdf\xf3\x48", // agt_stmt
-  (unsigned char *)"\x05\x00\x00\x00\x10", // agt__AnonGroup0
-  (unsigned char *)"\x05\x00\x00\x00\x20", // agt__AnonGroup1
-  (unsigned char *)"\x84\x14\x00\xf0\x40", // agt_expr
-  (unsigned char *)"\x00\x10\x00\x20\x80"  // agt__AnonGroup2
+  (unsigned char *)"\x01\x00\x00\x00\x00\x00", // at_Null
+  (unsigned char *)"\x02\x00\x00\x00\x00\x00", // at_AnyGroup
+  (unsigned char *)"\x04\x00\x00\x00\x00\x00", // at_ident
+  (unsigned char *)"\x08\x00\x00\x00\x00\x00", // at_string
+  (unsigned char *)"\x10\x00\x00\x00\x00\x00", // at_ifident
+  (unsigned char *)"\x20\x00\x00\x00\x00\x00", // at_usesel
+  (unsigned char *)"\x40\x00\x00\x00\x00\x00", // at_boolLiteral
+  (unsigned char *)"\x80\x00\x00\x00\x00\x00", // at_intLiteral
+  (unsigned char *)"\x00\x01\x00\x00\x00\x00", // at_charLiteral
+  (unsigned char *)"\x00\x02\x00\x00\x00\x00", // at_floatLiteral
+  (unsigned char *)"\x00\x04\x00\x00\x00\x00", // at_stringLiteral
+  (unsigned char *)"\x00\x08\x00\x00\x00\x00", // at_uoc
+  (unsigned char *)"\x00\x10\x00\x00\x00\x00", // at_block
+  (unsigned char *)"\x00\x20\x00\x00\x00\x00", // at_s_print
+  (unsigned char *)"\x00\x40\x00\x00\x00\x00", // at_s_printstar
+  (unsigned char *)"\x00\x80\x00\x00\x00\x00", // at_s_assign
+  (unsigned char *)"\x00\x00\x01\x00\x00\x00", // at_s_return
+  (unsigned char *)"\x00\x00\x02\x00\x00\x00", // at_s_def
+  (unsigned char *)"\x00\x00\x04\x00\x00\x00", // at_s_export_def
+  (unsigned char *)"\x00\x00\x08\x00\x00\x00", // at_s_fndef
+  (unsigned char *)"\x00\x00\x10\x00\x00\x00", // at_s_export_fndef
+  (unsigned char *)"\x00\x00\x20\x00\x00\x00", // at_idlist
+  (unsigned char *)"\x00\x00\x40\x00\x00\x00", // at_s_export
+  (unsigned char *)"\x00\x00\x80\x00\x00\x00", // at_s_import
+  (unsigned char *)"\x00\x00\x00\x01\x00\x00", // at_s_enum
+  (unsigned char *)"\x00\x00\x00\x02\x00\x00", // at_s_export_enum
+  (unsigned char *)"\x00\x00\x00\x04\x00\x00", // at_s_capreg
+  (unsigned char *)"\x00\x00\x00\x08\x00\x00", // at_s_export_capreg
+  (unsigned char *)"\x00\x00\x00\x10\x00\x00", // at_enum_bind
+  (unsigned char *)"\x00\x00\x00\x20\x00\x00", // at_s_bank
+  (unsigned char *)"\x00\x00\x00\x40\x00\x00", // at_fncall
+  (unsigned char *)"\x00\x00\x00\x80\x00\x00", // at_ifelse
+  (unsigned char *)"\x00\x00\x00\x00\x01\x00", // at_dot
+  (unsigned char *)"\x00\x00\x00\x00\x02\x00", // at_vecref
+  (unsigned char *)"\x00\x00\x00\x00\x04\x00", // at_docString
+  (unsigned char *)"\x24\x00\x00\x00\x08\x00", // agt_var
+  (unsigned char *)"\x80\x06\x00\x00\x10\x00", // agt_literal
+  (unsigned char *)"\x84\xf4\xdf\xcf\x23\x04", // agt_stmt
+  (unsigned char *)"\x05\x00\x00\x00\x40\x00", // agt__AnonGroup0
+  (unsigned char *)"\x05\x00\x00\x00\x80\x00", // agt__AnonGroup1
+  (unsigned char *)"\x05\x00\x00\x00\x00\x01", // agt__AnonGroup2
+  (unsigned char *)"\x05\x00\x00\x00\x00\x02", // agt__AnonGroup3
+  (unsigned char *)"\x84\x14\x00\xc0\x03\x04", // agt_expr
+  (unsigned char *)"\x00\x10\x00\x80\x00\x08"  // agt__AnonGroup4
 };
 
 bool
@@ -918,6 +938,58 @@ AST::isValid() const
     }
     break;
 
+  case at_s_capreg: // normal AST:
+    // match agt__AnonGroup2
+    if(c >= children->size()) {
+      astChNumError(*this, c+1, children->size());
+      errorsPresent = true;
+      break;
+    }
+    if (!ISSET(astMembers[agt__AnonGroup2], child(c)->astType)) {
+      astChTypeError(*this, agt__AnonGroup2, child(c)->astType, c);
+      errorsPresent = true;
+    }
+    c++;
+
+    // match at_enum_bind*
+    while (c < children->size()) {
+      if (!ISSET(astMembers[at_enum_bind], child(c)->astType))
+        astChTypeError(*this, at_enum_bind, child(c)->astType, c);
+      c++;
+    }
+
+    if(c != children->size()) {
+      astChNumError(*this, c, children->size());
+      errorsPresent = true;
+    }
+    break;
+
+  case at_s_export_capreg: // normal AST:
+    // match agt__AnonGroup3
+    if(c >= children->size()) {
+      astChNumError(*this, c+1, children->size());
+      errorsPresent = true;
+      break;
+    }
+    if (!ISSET(astMembers[agt__AnonGroup3], child(c)->astType)) {
+      astChTypeError(*this, agt__AnonGroup3, child(c)->astType, c);
+      errorsPresent = true;
+    }
+    c++;
+
+    // match at_enum_bind*
+    while (c < children->size()) {
+      if (!ISSET(astMembers[at_enum_bind], child(c)->astType))
+        astChTypeError(*this, at_enum_bind, child(c)->astType, c);
+      c++;
+    }
+
+    if(c != children->size()) {
+      astChNumError(*this, c, children->size());
+      errorsPresent = true;
+    }
+    break;
+
   case at_enum_bind: // normal AST:
     // match at_ident
     if(c >= children->size()) {
@@ -1023,8 +1095,8 @@ AST::isValid() const
     }
     c++;
 
-    // match agt__AnonGroup2?
-    if ((c < children->size()) && ISSET(astMembers[agt__AnonGroup2], child(c)->astType))
+    // match agt__AnonGroup4?
+    if ((c < children->size()) && ISSET(astMembers[agt__AnonGroup4], child(c)->astType))
       c++;
 
     if(c != children->size()) {
@@ -1121,10 +1193,16 @@ AST::isValid() const
   // group ASTagt__AnonGroup1 gets default
     break;
 
+  // group ASTagt__AnonGroup2 gets default
+    break;
+
+  // group ASTagt__AnonGroup3 gets default
+    break;
+
   // group ASTagt_expr gets default
     break;
 
-  // group ASTagt__AnonGroup2 gets default
+  // group ASTagt__AnonGroup4 gets default
     break;
 
   default:
@@ -1184,7 +1262,9 @@ AST::isPureAST()
 {
   return (astType == at_s_import ||
 	  astType == at_s_enum ||
-	  astType == at_s_export_enum);
+	  astType == at_s_export_enum ||
+	  astType == at_s_capreg ||
+	  astType == at_s_export_capreg);
 }
 
 

@@ -550,19 +550,19 @@ proc_load_cap(Process *p, capreg_t reg, caploc_t from)
    * This test is correct in all cases. A null reg should have a 0
    * location field, and the reserved types shouldn't be present at
    * all. */
-  if (reg.ty != CAPLOC_REG || reg.loc >= NUM_CAP_REGS)
+  if (reg.fld.ty != CAPLOC_TY_REG || reg.fld.loc >= NUM_CAP_REGS)
     proc_TakeFault(p, coyotos_Process_FC_MalformedSyscall, 0);
 
   capability *dest = 0;
 
-  if (reg.loc)
-    dest = &p->state.capReg[reg.loc];
+  if (reg.fld.loc)
+    dest = &p->state.capReg[reg.fld.loc];
 
 
-  switch(from.ty) {
-  case CAPLOC_REG:	/* register source */
+  switch(from.fld.ty) {
+  case CAPLOC_TY_REG:	/* register source */
     {
-      uint8_t reg = from.loc;
+      uint8_t reg = from.fld.loc;
       if (reg >= NUM_CAP_REGS)
 	proc_TakeFault(p, coyotos_Process_FC_MalformedSyscall, 0);
 
@@ -573,11 +573,11 @@ proc_load_cap(Process *p, capreg_t reg, caploc_t from)
       return;
     }
 
-  case CAPLOC_MEM:	/* memory source */
+  case CAPLOC_TY_MEM:	/* memory source */
     {
       struct FoundPage cps;
 
-      uintptr_t addr = from.loc << 1;
+      uintptr_t addr = from.fld.loc << 1;
 
       coyotos_Process_FC fc = 
 	proc_findCapPageSlot(p, addr, false, false, &cps);
@@ -613,20 +613,20 @@ proc_store_cap(Process *p, capreg_t reg, caploc_t to)
    * This test is correct in all cases. A null reg should have a 0
    * location field, and the reserved types shouldn't be present at
    * all. */
-  if (reg.ty != CAPLOC_REG || reg.loc >= NUM_CAP_REGS)
+  if (reg.fld.ty != CAPLOC_TY_REG || reg.fld.loc >= NUM_CAP_REGS)
     proc_TakeFault(p, coyotos_Process_FC_MalformedSyscall, 0);
 
   capability *src = &TheNullCapability;
 
   /* If reg.ty == CAPLOC_NULL, the cap_init() has already done what we
      need to do. */
-  if (reg.ty == CAPLOC_REG)
-    src = &p->state.capReg[reg.loc];
+  if (reg.fld.ty == CAPLOC_TY_REG)
+    src = &p->state.capReg[reg.fld.loc];
 
-  switch(to.ty) {
-  case CAPLOC_REG:	/* register dest */
+  switch(to.fld.ty) {
+  case CAPLOC_TY_REG:	/* register dest */
     {
-      uint8_t reg = to.loc;
+      uint8_t reg = to.fld.loc;
       if (reg >= NUM_CAP_REGS)
 	proc_TakeFault(p, coyotos_Process_FC_MalformedSyscall, 0);
 
@@ -637,11 +637,11 @@ proc_store_cap(Process *p, capreg_t reg, caploc_t to)
       return;
     }
 
-  case CAPLOC_MEM:	/* memory dest */
+  case CAPLOC_TY_MEM:	/* memory dest */
     {
       struct FoundPage cps;
 
-      uintptr_t addr = to.loc << 1;
+      uintptr_t addr = to.fld.loc << 1;
 
       coyotos_Process_FC fc = 
 	proc_findCapPageSlot(p, addr, true, false, &cps);
@@ -690,10 +690,10 @@ static void
 proc_marshall_src_cap(Process *p, caploc_t from, SrcCap *sc, 
 		      bool andPrepare)
 {
-  switch(from.ty) {
-  case CAPLOC_REG:		/* register source */
+  switch(from.fld.ty) {
+  case CAPLOC_TY_REG:		/* register source */
     {
-      uint8_t reg = from.loc;
+      uint8_t reg = from.fld.loc;
       if (reg >= NUM_CAP_REGS)
 	proc_TakeFault(p, coyotos_Process_FC_MalformedSyscall, 0);
 
@@ -703,11 +703,11 @@ proc_marshall_src_cap(Process *p, caploc_t from, SrcCap *sc,
 
       return;
     }
-  case CAPLOC_MEM:		/* memory source */
+  case CAPLOC_TY_MEM:		/* memory source */
     {
       struct FoundPage cps;
 
-      uintptr_t addr = from.loc << 1;
+      uintptr_t addr = from.fld.loc << 1;
 
       if (! (vm_valid_uva(p, addr) && 
 	     vm_valid_uva(p, addr+sizeof(capability)-1)) )
@@ -759,10 +759,10 @@ proc_marshall_dest_cap(Process *invokee, caploc_t to,
      checked that on input to the invoke system call. What we need to
      do here is ensure that if it is a memory location that memory
      location is well defined. */
-  switch(to.ty) {
-  case CAPLOC_REG:	/* register dest */
+  switch(to.fld.ty) {
+  case CAPLOC_TY_REG:	/* register dest */
     {
-      uint8_t reg = to.loc;
+      uint8_t reg = to.fld.loc;
       if (reg >= NUM_CAP_REGS)
 	proc_TakeFault(invokee, coyotos_Process_FC_MalformedSyscall, 0);
 
@@ -774,11 +774,11 @@ proc_marshall_dest_cap(Process *invokee, caploc_t to,
       break;
     }
 
-  case CAPLOC_MEM:	/* memory dest */
+  case CAPLOC_TY_MEM:	/* memory dest */
     {
       struct FoundPage cps;
 
-      uintptr_t addr = to.loc << 1;
+      uintptr_t addr = to.fld.loc << 1;
 
       coyotos_Process_FC fc = 
 	proc_findCapPageSlot(invokee, addr, true, nonBlock, &cps);
@@ -1320,17 +1320,17 @@ proc_syscall(void)
 
   case sc_LoadCap:
     {
-      capreg_t reg = to_capreg(IPW0_CAPREG(ipw0));
+      capreg_t reg = ((capreg_t) { .raw = IPW0_CAPREG(ipw0) } );
       uintptr_t ipw1 = get_pw(p, 1);
-      caploc_t where = to_caploc(ipw1);
+      caploc_t where = ((caploc_t) { .raw = ipw1 });
       proc_load_cap(p, reg, where);
       return;
     }
   case sc_StoreCap:
     {
-      capreg_t reg = to_capreg(IPW0_CAPREG(ipw0));
+      capreg_t reg = ((capreg_t) { .raw = IPW0_CAPREG(ipw0) } );
       uintptr_t ipw1 = get_pw(p, 1);
-      caploc_t where = to_caploc(ipw1);
+      caploc_t where = ((caploc_t) { .raw = ipw1 });
       proc_store_cap(p, reg, where);
       return;
     }

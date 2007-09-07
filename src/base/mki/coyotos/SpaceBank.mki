@@ -56,8 +56,8 @@ module coyotos.SpaceBank {
    /* Register assignments for SpaceBank; only exported so that they can
     * be used by spacebank.c.
     */
-   export enum APP {
-     TMP1 = 0,
+   export capreg APP {
+     TMP1 = rt.REG.APP0,
      TMP2,
      TMP3,
      TMPPAGE,

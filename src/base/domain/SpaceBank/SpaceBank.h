@@ -41,13 +41,13 @@
 
 /* Turn constants defined in .mki file into usable capability registers */
 
-#define CR_RANGE	CR_APP(coyotos_SpaceBank_APP_RANGE)
-#define CR_INITGPT	CR_APP(coyotos_SpaceBank_APP_INITGPT)
-#define CR_ADDRSPACE	CR_APP(coyotos_SpaceBank_APP_ADDRSPACE)
-#define CR_TMP1	CR_APP(coyotos_SpaceBank_APP_TMP1)
-#define CR_TMP2	CR_APP(coyotos_SpaceBank_APP_TMP2)
-#define CR_TMP3	CR_APP(coyotos_SpaceBank_APP_TMP3)
-#define CR_TMPPAGE	CR_APP(coyotos_SpaceBank_APP_TMPPAGE)
+#define CR_RANGE	coyotos_SpaceBank_APP_RANGE
+#define CR_INITGPT	coyotos_SpaceBank_APP_INITGPT
+#define CR_ADDRSPACE	coyotos_SpaceBank_APP_ADDRSPACE
+#define CR_TMP1		coyotos_SpaceBank_APP_TMP1
+#define CR_TMP2		coyotos_SpaceBank_APP_TMP2
+#define CR_TMP3		coyotos_SpaceBank_APP_TMP3
+#define CR_TMPPAGE	coyotos_SpaceBank_APP_TMPPAGE
 
 /* Define our basic datastructures. */
 
@@ -139,10 +139,10 @@ object_getOid(Object *obj)
   do { bool __r = (x); assert(__r); } while(0)
 
 /** @brief A cannot-fail bootstrap allocation of a GPT */
-void require_GPT(cap_t out);
+void require_GPT(caploc_t out);
 
 /** @brief A cannot-fail bootstrap allocation of a Page */
-void require_Page(cap_t out);
+void require_Page(caploc_t out);
 
 extern const struct CoyImgHdr *image_header;
 
@@ -172,19 +172,19 @@ void *allocate_bytes(size_t bytes_arg);
 void *map_pages(oid_t start, oid_t end);
 
 /** @brief Get a capability to a particular page; cannot fail */
-void get_pagecap(cap_t out, oid_t oid);
+void get_pagecap(caploc_t out, oid_t oid);
 
 /** @brief Allocate an object of type @p ty from @p bank, placing the
  * cap in @p out.  Returns the Object structure for the new object, or
  * null if the limit was reached..
  */
-Object *bank_alloc(Bank *bank, coyotos_Range_obType ty, cap_t out);
+Object *bank_alloc(Bank *bank, coyotos_Range_obType ty, caploc_t out);
 
 /** @brief Allocate a Process from @p bank, placing @p brand in its
  * brand slot, and placing the cap in @p out.  Returns the Object
  * structure for the new object, or NULL if the limit was reached.
  */
-Object *bank_alloc_proc(Bank *bank, cap_t brand, cap_t out);
+Object *bank_alloc_proc(Bank *bank, caploc_t brand, caploc_t out);
 
 /** @brief lookup a Bank structure for an endpoint ID */
 Bank *bank_fromEPID(oid_t oid);
@@ -193,11 +193,11 @@ Bank *bank_fromEPID(oid_t oid);
  * it in @p out. */
 void bank_getEntry(Bank *bank, 
 		   coyotos_SpaceBank_restrictions restr, 
-		   cap_t out);
+		   caploc_t out);
 
 /** @brief Create a new child bank.  Fails if limits preclude the creation.
  */
-bool bank_create(Bank *parent, cap_t out);
+bool bank_create(Bank *parent, caploc_t out);
 
 /** @brief Destroy the bank @p bank, and either:
  *   <ol>
@@ -233,10 +233,10 @@ void object_unalloc(Object *obj);
 void object_rescindAndFree(Object *obj);
 
 /** @brief Identify an object from a strong capability to it. */
-Object *object_identify(cap_t cap);
+Object *object_identify(caploc_t cap);
 
 /** @brief Get a strong capability to a particular object */
-void object_getCap(Object *obj, cap_t out);
+void object_getCap(Object *obj, caploc_t out);
 
 extern int __assert3_fail(const char *file, int lineno, const char *desc, uint64_t val1, uint64_t val2);
 extern int __assert_fail(const char *file, int lineno, const char *desc);

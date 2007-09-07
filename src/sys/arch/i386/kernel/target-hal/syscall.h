@@ -214,7 +214,7 @@ get_invoke_cap(Process *p)
 {
   InvParameterBlock_t *pb = (InvParameterBlock_t *) p->state.fixregs.ECX;
 
-  return to_caploc(pb->u.invCap);
+  return pb->u.invCap;
 }
 
 static inline caploc_t
@@ -222,12 +222,12 @@ get_snd_cap(Process *p, size_t cap)
 {
   InvParameterBlock_t *pb = (InvParameterBlock_t *) p->state.fixregs.ECX;
 
-  return to_caploc(pb->sndCap[cap]);
+  return pb->sndCap[cap];
 }
 
 static inline caploc_t
 get_rcv_cap(Process *p, size_t cap)
 {
-  return to_caploc(p->state.softregs.cdest[cap]);
+  return p->state.softregs.cdest[cap];
 }
 #endif /* I386_HAL_SYSCALL_H */

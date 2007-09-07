@@ -364,12 +364,12 @@ mkimage
 	constants, and may not be rebound:
       </p>
       <literallayout indent="no">
-def         else        enum        
-export      <em>external</em>    false       
-if          import      <em>lambda</em>      
-module      new          not         
-print       return      true        
-<em>using</em>
+capreg      def         else        
+enum        export      <em>external</em>    
+false       if          import      
+<em>lambda</em>      module      new          
+not         print       return      
+true        <em>using</em>
       </literallayout>
       <p indent="no">
         Reserved words shown in italics are not currently implemented,
@@ -621,7 +621,10 @@ print sb.a;</literallayout>
 <em>def_stmt</em>: <b>def</b> Ident '=' <em>expr</em> ';'
   | <b>def</b> Ident ({Ident {',' Ident}<sup>*</sup>}<sup>?</sup>')'
       <em>block</em> ';'
+  | <b>enum</b> '{' <em>enumDef</em><sup>+</sup> '}'
   | <b>enum</b> Ident '{' <em>enumDef</em><sup>+</sup> '}'
+  | <b>capreg</b> '{' <em>enumDef</em><sup>+</sup> '}'
+  | <b>capreg</b> Ident '{' <em>enumDef</em><sup>+</sup> '}'
 <em>enumDef</em> : Ident {'=' <em>expr</em>}<sup>*</sup></literallayout>
         <p>
           The first <b>def</b> form associates an initial the value with an
@@ -643,6 +646,18 @@ print sb.a;</literallayout>
           <command>mkimage</command> and it's constructed programs must
           agree on. In particular, enumerations are used to define slot
           numbers in the ``tools'' capability page of each process.
+        </p>
+        <p>
+          The <b>capreg</b> form introduces enumerated constant values
+          that are to be used as capability register numbers. For
+          purposes of use inside a mkimage file, there is no
+          difference between a <b>capreg</b> enumeration and an
+          <b>enum</b>. When C header files are generated, however,
+          constants defined in an <b>enum</b> enumeration will be
+          emitted as integer literals, while constants defined in a
+          <b>capreg</b> enumeration will be emitted as constant
+          structure declarators
+          of type <tt>capreg_t</tt>.
         </p>
         <p>
           When an expression appears on the right hand side of an

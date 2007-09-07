@@ -66,7 +66,8 @@ UocInfo::pass_defconst(std::ostream& errStream, unsigned long flags)
 
   for (size_t i = 1; i < ast->children->size(); i++) {
     GCPtr<AST> cast = ast->child(i);
-    if (cast->astType == at_s_export_enum) {
+    if (cast->astType == at_s_export_enum || 
+	cast->astType == at_s_export_capreg) {
       has_enums = true;
       break;
     }
@@ -91,7 +92,8 @@ UocInfo::pass_defconst(std::ostream& errStream, unsigned long flags)
   for (size_t i = 1; i < ast->children->size(); i++) {
     GCPtr<AST> cast = ast->child(i);
 
-    if (cast->astType != at_s_export_enum)
+    if (cast->astType != at_s_export_enum &&
+	cast->astType != at_s_export_capreg)
       continue;
     
     GCPtr< Environment<Value> > curEnv = env;
@@ -120,7 +122,10 @@ UocInfo::pass_defconst(std::ostream& errStream, unsigned long flags)
       
       GCPtr<IntValue> v = curEnv->getValue(ident).upcast<IntValue>();
 
-      ofs << "#define " << fqn << " " << v->bn << '\n';
+      if (cast->astType == at_s_export_enum)
+	ofs << "#define " << fqn << ' ' << v->bn << '\n';
+      else
+	ofs << "#define " << fqn << " REG_CAPLOC(" << v->bn << ")\n";
     }
   }
 

@@ -108,7 +108,7 @@ typedef struct i386_softregs_t {
   uint32_t        rcvBound;	/* RCV - saved on entry */
   uint32_t        rcvPtr;	/* RCV - saved on entry */
 
-  uint32_t        cdest[4];	/* RCV - saved on entry */
+  caploc32_t      cdest[4];	/* RCV - saved on entry */
 
   uint64_t        epID;		/* RCV/OUT - saved on entry */
 } i386_softregs_t;

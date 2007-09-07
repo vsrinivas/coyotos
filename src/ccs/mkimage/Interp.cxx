@@ -490,6 +490,8 @@ AST::interp(InterpState& is)
 
   case at_s_export_enum:
   case at_s_enum:
+  case at_s_export_capreg:
+  case at_s_capreg:
     {
       BigNum curValue = 0;
 
@@ -507,7 +509,7 @@ AST::interp(InterpState& is)
 	}
 
 	is.env->addBinding(ident, new EnvValue(env));
-	if (astType == at_s_export_enum)
+	if (astType == at_s_export_enum || astType == at_s_export_capreg)
 	  is.env->setFlags(ident, BF_EXPORTED);
       }
       else
@@ -532,7 +534,7 @@ AST::interp(InterpState& is)
 	  GCPtr<Value> v = eBinding->child(1)->interp(exprInterpState)->get();
 	  if (v->kind != Value::vk_int) {
 	    is.errStream << eBinding->child(1)->loc << " "
-			 << "Enumeration value must be an integer.\n";
+			 << "Enum/capreg value must be an integer.\n";
 	    THROW(excpt::BadValue, "Bad interpreter result");
 	  }
 
@@ -541,7 +543,7 @@ AST::interp(InterpState& is)
 
 	env->addBinding(ident, new IntValue(curValue));
 	env->setFlags(ident, BF_PURE);
-	if (astType == at_s_export_enum)
+	if (astType == at_s_export_enum || astType == at_s_export_capreg)
 	  env->setFlags(ident, BF_EXPORTED);
 
 	curValue = curValue + 1;

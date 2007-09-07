@@ -157,6 +157,7 @@ struct KeyWord {
   const char *nm;
   int  tokValue;
 } keywords[] = {
+  { "capreg",           tk_CAPREG },
   { "def",              tk_DEF },
   { "else",             tk_ELSE },
   { "enum",             tk_ENUM },

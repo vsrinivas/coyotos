@@ -89,7 +89,7 @@ inline int mkilex(YYSTYPE *lvalp, Lexer *lexer)
 
 %token <tok> tk_RETURN
 
-%token <tok> tk_ENUM
+%token <tok> tk_ENUM tk_CAPREG
 %token <tok> tk_IF
 %token <tok> tk_ELSE
 
@@ -138,7 +138,7 @@ inline int mkilex(YYSTYPE *lvalp, Lexer *lexer)
 
 %type <ast> start
 %type <ast> block block_stmt block_stmt_seq statement if_statement
-%type <ast> enum_stmt fndef_stmt def_stmt
+%type <ast> enum_stmt capreg_stmt fndef_stmt def_stmt
 %type <tok> modname
 %type <ast> mod_stmt_seq mod_stmt
 %type <ast> fnparms idlist
@@ -218,6 +218,12 @@ mod_stmt: tk_EXPORT enum_stmt {
   SHOWPARSE("mod_stmt -> EXPORT enum_stmt");
   $$ = $2;
   $$->astType = at_s_export_enum;
+};
+
+mod_stmt: tk_EXPORT capreg_stmt {
+  SHOWPARSE("mod_stmt -> EXPORT capreg_stmt");
+  $$ = $2;
+  $$->astType = at_s_export_capreg;
 };
 
 mod_stmt: tk_EXPORT def_stmt {
@@ -301,6 +307,23 @@ def_stmt: tk_DEF tk_Ident '=' expr ';' {
 statement: enum_stmt {
   SHOWPARSE("statement -> enum_stmt");
   $$ = $1;
+};
+
+statement: capreg_stmt {
+  SHOWPARSE("statement -> capreg_stmt");
+  $$ = $1;
+};
+
+capreg_stmt: tk_CAPREG tk_Ident '{' enum_decls '}' ';' {
+  SHOWPARSE("capreg_stmt -> CAPREG Ident '{' enumerations '}' ';'");
+  $$ = new AST(at_s_capreg, $1.loc, new AST(at_ident, $2));
+  $$->addChildrenFrom($4);
+};
+
+capreg_stmt: tk_CAPREG '{' enum_decls '}' ';' {
+  SHOWPARSE("capreg_stmt -> CAPREG '{' enumerations '}' ';'");
+  $$ = new AST(at_s_capreg, $1.loc, new AST(at_Null, $1.loc));
+  $$->addChildrenFrom($3);
 };
 
 enum_stmt: tk_ENUM tk_Ident '{' enum_decls '}' ';' {

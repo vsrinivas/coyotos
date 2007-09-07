@@ -1,0 +1,11 @@
+module coyotos.TargetInfo.i386 {
+  export enum {
+    large_stack_pointer   = 0x08000000,
+    small_stack_pointer   = 0x2000,
+    small_stack_page_addr = 0x1000
+  };
+}
+
+// Local Variables:
+// mode:c
+// End:

@@ -22,6 +22,8 @@ default: package
 COYOTOS_SRC=../../..
 CROSS_BUILD=yes
 
+include $(COYOTOS_SRC)/build/make/makevars.mk
+
 CFLAGS+=-g -Os
 
 INC=-I. -I$(BUILDDIR) -I$(COYOTOS_ROOT)/usr/include
@@ -38,6 +40,12 @@ LARGE_OBJECTS+=$(patsubst %.S,$(BUILDDIR)/%.o,$(notdir $(wildcard $(COYOTOS_TARG
 COYOTOS_OBJECTS=$(patsubst %.c,$(BUILDDIR)/%.o,$(wildcard coyotos_*.c))
 COYOTOS_OBJECTS+=$(patsubst %.S,$(BUILDDIR)/%.o,$(wildcard coyotos_*.S))
 OBJECTS=$(C_OBJECTS)
+
+GENRUNTIME=genruntime.sh
+PKG_MKIDIR=$(COYOTOS_SRC)/$(PACKAGE)/mki
+RUNTIME_MKI=$(PKG_MKIDIR)/coyotos/RunTime.mki
+RUNTIME_H=$(BUILDDIR)/coyotos/runtime.h
+INC_TARGETS=$(RUNTIME_H)
 
 TARGETS=$(BUILDDIR)/libc-coyotos.a 
 TARGETS+=$(BUILDDIR)/libsmall-space.a 
@@ -59,11 +67,20 @@ install all: $(TARGETS)
 install: all
 	$(INSTALL) -d $(COYOTOS_ROOT)/lib
 	$(INSTALL) -m 0644 $(TARGETS) $(COYOTOS_ROOT)/lib
+	$(INSTALL) -d $(COYOTOS_ROOT)/usr/include/coyotos
+	$(INSTALL) -m 0644 $(RUNTIME_H) $(COYOTOS_ROOT)/usr/include/coyotos
+
+$(RUNTIME_H): $(BUILDDIR)/coyotos.RunTime.h $(GENRUNTIME)
+	mkdir -p $(BUILDDIR)/coyotos
+	bash $(GENRUNTIME) $(RUNTIME_H) $(BUILDDIR)/coyotos.RunTime.h
+
+$(BUILDDIR)/coyotos.RunTime.h: $(RUNTIME_MKI) $(MKIMAGE)
+	$(MKIMAGE) -t $(COYOTOS_TARGET) -H $(BUILDDIR) -I $(PKG_MKIDIR) coyotos.RunTime
 
 $(BUILDDIR)/coyotos.TargetInfo.h: $(COMMON_MKI_DIR)/coyotos/TargetInfo/$(COYOTOS_TARGET).mki $(MKIMAGE)
 	$(MKIMAGE) -t $(COYOTOS_TARGET) -H $(BUILDDIR) coyotos.TargetInfo
 
-$(OBJECTS): $(ENUM_HDRS)
+$(OBJECTS): $(ENUM_HDRS) $(RUNTIME_H)
 
 $(BUILDDIR)/libc-coyotos.a: $(C_OBJECTS)
 	$(AR) -crv $@ $(C_OBJECTS)

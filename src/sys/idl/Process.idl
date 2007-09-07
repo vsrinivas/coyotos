@@ -47,7 +47,7 @@ abstract interface Process extends Cap {
     MalformedSyscall = 1,
 
     /// @brief An application-defined interrupt is being delivered.
-    SoftInt = 2,
+    SoftNotice = 2,
 
     /// @brief Slice expiration occurred.
     SliceExpired = 3,

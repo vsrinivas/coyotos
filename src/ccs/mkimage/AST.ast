@@ -141,7 +141,9 @@ AST::isPureAST()
 {
   return (astType == at_s_import ||
 	  astType == at_s_enum ||
-	  astType == at_s_export_enum);
+	  astType == at_s_export_enum ||
+	  astType == at_s_capreg ||
+	  astType == at_s_export_capreg);
 }
 
 }
@@ -190,6 +192,8 @@ GROUP stmt = s_print
            | s_export
            | s_enum
            | s_export_enum
+           | s_capreg
+           | s_export_capreg
            | s_import
            | block
            | expr;
@@ -209,6 +213,8 @@ AST s_export = ident*;
 AST s_import = ident ident;
 AST s_enum = (ident|Null) enum_bind*;
 AST s_export_enum = (ident|Null) enum_bind*;
+AST s_capreg = (ident|Null) enum_bind*;
+AST s_export_capreg = (ident|Null) enum_bind*;
 AST enum_bind = ident expr?;
 AST s_bank = expr block;
 
