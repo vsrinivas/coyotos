@@ -1615,16 +1615,16 @@
 		</td>
 	      </tr>
 	      <tr>
-		<td><term>SI</term></td>
+		<td><term>SN</term></td>
 		<td>
 		  <p>
-		    <leadin>Soft Interrupt</leadin>
+		    <leadin>Soft Notice</leadin>
 		    This bit is set by the kernel whenever a
 		    new bit is set in the pending
-		    application-defined interrupts field.  It
+		    application-defined notices field.  It
 		    signals that the handler should be
 		    dispatched in the activated state with an
-		    <progident>AppInt</progident> exception if
+		    <progident>AppNotice</progident> exception if
 		    no exceptions are pending when it is next
 		    dispatched.
 		  </p>
@@ -1877,7 +1877,7 @@
 		    <progident>faultInfo</progident>, and
 		    <progident>softInts</progident> fields are copied
 		    to the activation save area. The
-		    <progident>SI</progident> and
+		    <progident>SN</progident> and
 		    <progident>SX</progident> bit values are copied
 		    from the process flags to the activation save area
 		    flags. The <progident>a</progident> bit of the
@@ -1897,7 +1897,7 @@
 		<li>
 		  <p>
 		    The <progident>softInts</progident>,
-		    <progident>SI</progident>,
+		    <progident>SN</progident>,
 		    <progident>SX</progident>,
 		    <progident>faultCode</progident>, and
 		    <progident>faultInfo</progident>, fields of the

@@ -11,7 +11,7 @@
   <wbox>
     <field label="a" size="1"/>
     <field label="sx" size="1"/>
-    <field label="si" size="1"/>
+    <field label="sn" size="1"/>
     <field label="reserved" size="29"/>
   </wbox>
 </sbox>
