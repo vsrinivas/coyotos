@@ -1283,8 +1283,10 @@ Symbol::DoComputeDependencies(SymVec& depVec)
   if (!uoc)
     return;
 
-  if (!depVec.contains(uoc))
+  if (!depVec.contains(uoc)) {
+    std::cerr << QualifiedName('.') << " depends on " << uoc->QualifiedName('.') << '\n';
     depVec.append(uoc);
+  }
 
   if (sym->baseType)
     sym->baseType->DoComputeDependencies(depVec);

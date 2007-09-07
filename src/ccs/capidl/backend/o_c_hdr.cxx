@@ -2763,6 +2763,41 @@ output_c_server_hdr(GCPtr<Symbol> s)
 }
 
 static void
+server_hdr_pkgwalker(GCPtr<Symbol> scope, SymVec& vec)
+{
+  /* Export subordinate packages first! */
+  for (size_t i = 0; i < scope->children.size(); i++) {
+    GCPtr<Symbol> child = scope->children[i];
+    if (child->cls != sc_package && child->isActiveUOC)
+      child->ComputeDependencies(vec);
+
+    if (child->cls == sc_package)
+      server_hdr_pkgwalker(child, vec);
+  }
+}
+
+void
+output_server_dependent_headers(GCPtr<Symbol> scope, BackEndFn outfn)
+{
+  SymVec vec;
+
+  server_hdr_pkgwalker(scope, vec);
+
+  vec.qsort(Symbol::CompareByQualifiedName);
+
+  /* Use the clearing of isActiveUOC to avoid duplicate processing. */
+  for(size_t i = 0; i < vec.size(); i++)
+    vec[i]->isActiveUOC = true;
+
+  for(size_t i = 0; i < vec.size(); i++) {
+    std::cerr << vec[i]->QualifiedName('.') << "\n";
+    output_c_server_hdr(vec[i]);
+    vec[i]->isActiveUOC = false;
+  }
+}
+
+
+static void
 server_template_symdump(GCPtr<Symbol> s, INOstream& out,
 			void (*f)(GCPtr<Symbol>, INOstream& out))
 {
