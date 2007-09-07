@@ -23,10 +23,9 @@ COYOTOS_SRC=..
 
 
 # Important that astmaker come first, since later tools use it.
-DIRS=mki
 DIRS+=libcoyimage
 DIRS+=capidl
 DIRS+=mkimage
-#DIRS+=archinfo
+DIRS+=archinfo
 
 include $(COYOTOS_SRC)/build/make/pkgrules.mk

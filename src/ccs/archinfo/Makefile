@@ -21,24 +21,17 @@
 default: package
 COYOTOS_SRC=../..
 
+MKIPKG=coyotos.TargetInfo
+MKIDIR=mki/$(subst .,/,$(MKIPKG))
+MKISRC=$(wildcard $(MKIDIR)/[A-Za-z]*.mki)
+
 include $(COYOTOS_SRC)/build/make/makerules.mk
 
-RUNTIME_H=$(BUILDDIR)/runtime.h
-TARGETS=$(RUNTIME_H)
+all:
 
-GENRUNTIME=genruntime.sh
-
-all: $(BUILDDIR) $(TARGETS)
-
-$(RUNTIME_H): $(BUILDDIR)/coyotos.RunTime.h $(GENRUNTIME)
-	bash $(GENRUNTIME) $(RUNTIME_H) $(BUILDDIR)/coyotos.RunTime.h
-
-$(BUILDDIR)/coyotos.RunTime.h: mki/coyotos/RunTime.mki $(MKIMAGE)
-	$(MKIMAGE) -t $(COYOTOS_TARGET) -H $(BUILDDIR) -I mki coyotos.RunTime
-
-install: all
-	$(INSTALL) -d $(COYOTOS_ROOT)/usr/include/coyotos
-	$(INSTALL) -m 0644 $(BUILDDIR)/runtime.h $(COYOTOS_ROOT)/usr/include/coyotos
+install: $(MKISRC)
+	$(INSTALL) -d $(COYOTOS_ROOT)/usr/include/$(MKIDIR)
+	$(INSTALL) -m 0644 $(MKISRC) $(COYOTOS_ROOT)/usr/include/$(MKIDIR)/
 
 -include $(BUILDDIR)/.*.m
 

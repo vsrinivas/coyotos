@@ -21,10 +21,6 @@ default: package
 
 COYOTOS_SRC=../..
 
-MKIPKG=coyotos.TargetInfo
-MKIDIR=$(subst .,/,$(MKIPKG))
-MKISRC=$(wildcard $(MKIDIR)/[A-Za-z]*.mki)
-
 include $(COYOTOS_SRC)/build/make/makerules.mk
 
 install: $(MKISRC)
