@@ -144,7 +144,8 @@ AST::interp(InterpState& is)
       // import records for that purpose if we decided that we need
       // to, and that is what I have actually done.
       GCPtr<UocInfo> uoc = 
-	UocInfo::importModule(is.errStream, loc, is.ci, modName, CV_INTERP);
+	UocInfo::importModule(is.errStream, loc, is.ci, modName, 
+			      is.pureMode ? CV_CONSTDEF : CV_INTERP);
 
       is.env->addBinding(ident, new EnvValue(uoc->getExportedEnvironment()));
 
