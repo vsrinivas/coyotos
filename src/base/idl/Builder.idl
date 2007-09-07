@@ -31,7 +31,7 @@ interface Builder extends Constructor {
   /// If the installed capability is a constructor capability, a new
   /// address space will be fabricated from this constructor for each
   /// newly instantiatied process.
-  void insertKeeper(Cap kpr) raises(Sealed);
+  void setHandler(Cap handler) raises(Sealed);
 
   /// @brief Insert a capability to be used as the yield's initial
   /// addres space.
@@ -39,13 +39,13 @@ interface Builder extends Constructor {
   /// If the installed capability is a constructor capability, a new
   /// address space will be fabricated from this constructor for each
   /// newly instantiatied process.
-  void insertSpace(Cap kpr) raises(Sealed);
+  void setSpace(Cap space) raises(Sealed);
 
   /// @brief Set the initial program counter for the yield.
   void setPC(coyaddr_t pc) raises(Sealed);
 
-  /// @brief Insert a constituent capability for the process.
-  void addConstituent(Cap c) raises(Sealed);
+  /// @brief Insert a tool capability for the process.
+  void setTool(unsigned<32> slot, Cap c) raises(Sealed);
 
   /// @brief Seal the constructor, returning a constructor capability.
   Constructor seal();

@@ -468,8 +468,6 @@ proc_dispatch_current()
   proc_resume();
 }
 
-static capability TheNullCapability;
-
 coyotos_Process_FC
 proc_findCapPageSlot(Process *p, uintptr_t addr, bool forWriting,
 		     bool nonBlock,
@@ -542,135 +540,6 @@ proc_findDataPage(Process *p, uintptr_t addr, bool forWriting,
   results->restr = mwr.cum_restr;
 
   return (0);
-}
-
-static void
-proc_load_cap(Process *p, capreg_t reg, caploc_t from)
-{
-  /* Validate target register number before side-effecting memory.
-   * This test is correct in all cases. A null reg should have a 0
-   * location field, and the reserved types shouldn't be present at
-   * all. */
-  if (reg.fld.ty != CAPLOC_TY_REG || reg.fld.loc >= NUM_CAP_REGS)
-    proc_TakeFault(p, coyotos_Process_FC_MalformedSyscall, 0);
-
-  capability *dest = 0;
-
-  if (reg.fld.loc)
-    dest = &p->state.capReg[reg.fld.loc];
-
-
-  switch(from.fld.ty) {
-  case CAPLOC_TY_REG:	/* register source */
-    {
-      uint8_t reg = from.fld.loc;
-      if (reg >= NUM_CAP_REGS)
-	proc_TakeFault(p, coyotos_Process_FC_MalformedSyscall, 0);
-
-      sched_commit_point();
-
-      if (dest)
-	cap_set(dest, &p->state.capReg[reg]);
-      return;
-    }
-
-  case CAPLOC_TY_MEM:	/* memory source */
-    {
-      struct FoundPage cps;
-
-      uintptr_t addr = from.fld.loc << 1;
-
-      coyotos_Process_FC fc = 
-	proc_findCapPageSlot(p, addr, false, false, &cps);
-
-      assert(fc == 0);
-
-      /* We have a valid address and a capability page, so we can
-       * perform a read, but we need to honor any WEAK restriction */
-
-      sched_commit_point();
-
-      /* Ready to read from the cap page. */
-      capability *capPg = TRANSMAP_MAP(cps.pgHdr->pa, capability *);
-
-      if (dest) {
-	cap_set(dest, &capPg[cps.slot]);
-
-	if (cps.restr & CAP_RESTR_WK)
-	  cap_weaken(dest);
-      }
-
-      TRANSMAP_UNMAP(capPg);
-
-      return;
-    }
-  }
-}
-
-static void
-proc_store_cap(Process *p, capreg_t reg, caploc_t to)
-{
-  /* Validate target register number before side-effecting memory.
-   * This test is correct in all cases. A null reg should have a 0
-   * location field, and the reserved types shouldn't be present at
-   * all. */
-  if (reg.fld.ty != CAPLOC_TY_REG || reg.fld.loc >= NUM_CAP_REGS)
-    proc_TakeFault(p, coyotos_Process_FC_MalformedSyscall, 0);
-
-  capability *src = &TheNullCapability;
-
-  /* If reg.ty == CAPLOC_NULL, the cap_init() has already done what we
-     need to do. */
-  if (reg.fld.ty == CAPLOC_TY_REG)
-    src = &p->state.capReg[reg.fld.loc];
-
-  switch(to.fld.ty) {
-  case CAPLOC_TY_REG:	/* register dest */
-    {
-      uint8_t reg = to.fld.loc;
-      if (reg >= NUM_CAP_REGS)
-	proc_TakeFault(p, coyotos_Process_FC_MalformedSyscall, 0);
-
-      sched_commit_point();
-
-      if (reg)
-	cap_set(&p->state.capReg[reg], src);
-      return;
-    }
-
-  case CAPLOC_TY_MEM:	/* memory dest */
-    {
-      struct FoundPage cps;
-
-      uintptr_t addr = to.fld.loc << 1;
-
-      coyotos_Process_FC fc = 
-	proc_findCapPageSlot(p, addr, true, false, &cps);
-
-      assert(fc == 0);
-
-      /* If the walk completed, we hold the lock on the target CapPage
-       * because we prepared a capability to it on the way down. It is
-       * safe to read/write the target slot. */
-
-      /* We have a valid address and a capability page.  If the
-       * path is RO or WK, we cannot modify the page.
-       */
-
-      obhdr_dirty(&cps.pgHdr->mhdr.hdr);
-
-      sched_commit_point();
-
-      /* Ready to write to the cap page. */
-      capability *capPg = TRANSMAP_MAP(cps.pgHdr->pa, capability *);
-
-      cap_set(&capPg[cps.slot], src);
-
-      TRANSMAP_UNMAP(capPg);
-
-      return;
-    }
-  }
 }
 
 void
@@ -802,6 +671,29 @@ proc_marshall_dest_cap(Process *invokee, caploc_t to,
   }
 
   return true;
+}
+
+static void
+proc_copy_cap(Process *p, caploc_t source, caploc_t dest)
+{
+  SrcCap srcCap;
+  DestCap destCap;
+
+  proc_marshall_src_cap(p, source, &srcCap, false);
+  proc_marshall_dest_cap(p, dest, &destCap, false);
+
+  sched_commit_point();
+
+  /* we don't have to worry about partial overlaps, since capabilities must
+   * be properly aligned.
+   */
+  cap_set(destCap.cap, srcCap.cap);
+
+  /** @bug clean up destCap? */
+
+  p->issues |= pi_SysCallDone;
+
+  return;
 }
 
 static void
@@ -1316,23 +1208,25 @@ proc_syscall(void)
 
   switch(syscall_nr) {
   case sc_Yield:
+    if (ipw0 != IPW0_MAKE_NR(syscall_nr)) {
+      proc_SetFault(p, coyotos_Process_FC_MalformedSyscall, 0);
+      return;
+    }
     sched_abandon_transaction();
     /* Not reached */
 
-  case sc_LoadCap:
+  case sc_CopyCap:
     {
-      capreg_t reg = ((capreg_t) { .raw = IPW0_CAPREG(ipw0) } );
+      if (ipw0 != IPW0_MAKE_NR(syscall_nr)) {
+	proc_SetFault(p, coyotos_Process_FC_MalformedSyscall, 0);
+	return;
+      }
+
       uintptr_t ipw1 = get_pw(p, 1);
-      caploc_t where = ((caploc_t) { .raw = ipw1 });
-      proc_load_cap(p, reg, where);
-      return;
-    }
-  case sc_StoreCap:
-    {
-      capreg_t reg = ((capreg_t) { .raw = IPW0_CAPREG(ipw0) } );
-      uintptr_t ipw1 = get_pw(p, 1);
-      caploc_t where = ((caploc_t) { .raw = ipw1 });
-      proc_store_cap(p, reg, where);
+      uintptr_t ipw2 = get_pw(p, 2);
+      caploc_t source = ((caploc_t) { .raw = ipw1 });
+      caploc_t dest = ((caploc_t) { .raw = ipw2 });
+      proc_copy_cap(p, source, dest);
       return;
     }
 

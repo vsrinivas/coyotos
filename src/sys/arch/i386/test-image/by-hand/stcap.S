@@ -4,7 +4,9 @@
 	
 	.text
 GEXT(_start)
-	mov	$(IPW0_MAKE_CAPREG(1)+sc_StoreCap),%eax
-	mov	$(SimpleProc_addr_cap + 1),%ebx
-	int	$0x30
+	mov	$(sc_CopyCap),%eax
+	mov	$(1 << 1),%ebx                   /* copy from reg 1 */
+	mov	$(SimpleProc_addr_cap + 1),%esi  /* to first cap in capPage */
+	mov	$1f, %ecx
+1:	int	$0x30
 	hlt

@@ -1,0 +1,219 @@
+/*
+ * Copyright (C) 2007, The EROS Group, LLC
+ *
+ * This file is part of the EROS Operating System.
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 2,
+ * or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+ */
+
+/*
+ * coyotos.Constructor exports the following interfaces:
+ *
+ *   MetaConstructor:
+ *     A Constructor that creates Builders, which are used to create new
+ *     Constructors.
+ *
+ *   Verifier:  The global Constructor verifier.
+ *
+ *   create_small(src_bank, file, handler):
+ *     Creates a new, pre-Sealed constructor which creates processes based
+ *     on *file*, which must have been linked with the -small-space GCC 
+ *     option.  *handler* should either be NullCap(), or a constructor for
+ *     the desired error handler.
+ * 
+ *     The constructor will be created in a new child bank of *src_bank*.
+ *     
+ *     The returned value is a Constructor capability to the new constructor.
+ *
+ *   create(src_bank, as, pc, handler):
+ *     Creates a new, pre-Sealed constructor.  *as* should be a constructor
+ *     for the address space needed, and *pc* is the initial PC for the 
+ *     program.  *handler* is as in create_small().
+ * 
+ *     The constructor will be created in a new child bank of *src_bank*.
+ *     
+ *     The returned value is a Constructor capability to the new constructor.
+ *
+ *   set_tool(con, addr, value):
+ *     Sets up a tool for the Yield of a *con*, a constructor created with
+ *     create() or create_small().  The tool at address *addr* is set to 
+ *     *value*.
+ */
+module coyotos.Constructor {
+  /* import the modules we'll need */
+  import rt = coyotos.RunTime;
+  import sb = coyotos.SpaceBank;
+  
+  /* Our protected payload values */
+  export enum PP {
+    Builder = 0,
+    Constructor = 1,
+    Verifier = 2,
+    BRAND = 0xffff  /* used to brand processes */
+  };  
+  
+  /* Our application registers.  The first four are smashed by the runtime,
+   * so we use them for temporaries.  The rest are set up for pre-constructed
+   * Constructors.
+   */
+  export capreg APP {
+    NEW_PROC = rt.REG.APP0,
+    NEW_ENDPT,
+    NEW_RENDPT,
+    VERIFIER,
+
+    YIELD_BRAND,
+    YIELD_TOOLS,
+    YIELD_PROTOSPACE,
+    YIELD_ADDRSPACE,
+    YIELD_HANDLER,
+
+    BUILD_TOOLS,	/* writable Tools capPage cap, NULL when sealed */
+    BUILD_PROTOSPACE,   /* writable ProtoSpace Page cap, NULL when sealed */
+
+    DISCRIM,
+
+    TMP
+  };
+  
+  /* The initial app registers as seen by ProtoSpace. */
+  export capreg PROTOAPP {
+    ADDRSPACE = rt.REG.APP0,
+    HANDLER,
+    SCHEDULE
+  };
+
+  /* Protospace is the primordial address space for a process.  It fits
+   * exactly in a single page.  The target initial PC is stored as a 64-bit
+   * integer at the beginning of the page, and the ProtoSpace entry point
+   * is immediately afterwards, at offset 8.
+   *
+   * To set up a protospace for use, a new page is allocated, the
+   * original protospace is copied into it, and the needed start PC
+   * is written into it at offset 0.
+   */
+  def protospace_image = loadimage(PrimeBank, "coyotos/ProtoSpace");
+  def protospace = weaken(protospace_image.space);
+  
+  def cons_image = loadimage(PrimeBank, "coyotos/Constructor");
+
+  def cons_space = weaken(cons_image.space);
+  def cons_pc = cons_image.pc;
+
+  /* There's a chicken-and-egg problem with the metaconstructor;  we allocate
+   * its process early, and set it up late, to get around the issue.
+   */
+  def metacon_proc = rt.make_running_process(PrimeBank, cons_space, cons_pc);
+  
+  def constructor_brand = enter(metacon_proc.capReg[rt.REG.INITEPT],
+				PP.BRAND);
+  
+  export def Verifier = enter(metacon_proc.capReg[rt.REG.INITEPT], 
+			      PP.Verifier);
+  
+  def primordial_tools = readonly(make_cappage(PrimeBank));
+  primordial_tools[rt.TOOL.DISCRIM] = Discrim();
+  primordial_tools[rt.TOOL.PROTOSPACE] = protospace;
+  primordial_tools[rt.TOOL.SPACEBANK_VERIFY] = sb.Verifier;
+  primordial_tools[rt.TOOL.CONSTRUCTOR_VERIFY] = Verifier;
+  primordial_tools[rt.TOOL.AUDIT_LOG] = KernLog();
+  
+  /*
+   * Internal function which sets up *proc* (a running process with the
+   * constructor image) to be a sealed constructor of image *as*, with
+   * start PC *pc*, handler *handler*, all using storage from *bank*.
+   * *proc* must have been allocated from *bank*.
+   *
+   * set_tool() can be used to set up its tool page.
+   */
+  def setup(bank, proc, as, pc, handler) {
+    def my_tools = dup(bank, primordial_tools);
+    def my_protospace = dup(bank, protospace);
+    
+    def initEpt = proc.capReg[rt.REG.INITEPT];
+    
+    set_page_uint64(my_protospace, 0, pc);
+    
+    proc.brand = constructor_brand;
+    
+    /* Set up the base capability registers not initialized by 
+     * rt.make_bare_process()
+     */
+    proc.capReg[rt.REG.TOOLS] = primordial_tools;
+    proc.capReg[rt.REG.RUNTIME] = NullCap();
+
+    /* Set up the YIELD app registers for the Constructor so that it
+     * can initialize as Sealed.
+     */
+    proc.capReg[APP.YIELD_TOOLS] = readonly(my_tools);
+    proc.capReg[APP.YIELD_PROTOSPACE] = weaken(my_protospace);
+    proc.capReg[APP.YIELD_ADDRSPACE] = as;
+    proc.capReg[APP.YIELD_HANDLER] = handler;
+    proc.capReg[APP.YIELD_BRAND] = enter(initEpt, PP.BRAND);
+    
+    /* Return the Constructor facet */
+    return enter(initEpt, PP.Constructor);
+  }
+  
+  /* Creates a small-space constructor based on *file*, 
+   * with handler *handler*, using a new child of *src_bank*.
+   *
+   * set_tool() can be used to set up the yield's tool page.
+   */
+  export def create_small(src_bank, file, handler) {
+    def bank = make_bank(src_bank);
+    def proc = rt.make_running_process(src_bank, cons_space, cons_pc);
+    
+    def image = loadimage(bank, file);
+    
+    return setup(bank, proc, weaken(image.space), image.pc, handler);
+  }
+  
+  /* Creates a constructor using a new child of *src_bank*.  The constructor
+   * will have an address space made from *as*, with an initial PC of *pc*,
+   * and a handler of *handler*.
+   *
+   * Both *as* and *handler* can be constructors; in this case, when the
+   * program is constructed, a new Address Space or Handler will be 
+   * constructed using *as* and *handler*.
+   *
+   * set_tool() can be used to set up the yield's tool page.
+   */
+  export def create(src_bank, as, pc, handler) {
+    def bank = make_bank(src_bank);
+    def proc = rt.make_running_process(src_bank, cons_space, cons_pc);
+    
+    return setup(bank, proc, as, pc, handler);
+  }
+  
+  /* Sets the tool at offset *offset* in the tools space for the yield of
+   * *con* to *value*.
+   */
+  export def set_tool(con, offset, value) {
+    con.recipient.capReg[rt.REG.APP + APP.YIELD_TOOLS][offset] = value;
+  }
+  
+  /* Now we can set up the metaconstructor;  It's just a constructor whose
+   * yield runs the constructor program.
+   */
+  export def MetaConstructor = 
+    setup(PrimeBank, metacon_proc, cons_space, cons_pc, NullCap());
+  
+  /* So that metaconstructor is identified as a constructor, we hand-overwrite
+   * its brand.
+   */
+  metacon_proc.brand = constructor_brand;
+  metacon_proc.capReg[rt.REG.APP + APP.YIELD_BRAND] = constructor_brand;
+}

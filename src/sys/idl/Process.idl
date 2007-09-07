@@ -260,6 +260,20 @@ abstract interface Process extends Cap {
   /// unsuitable for the slot, the RequestError exception is raised.
   void setSlot(cslot slot, Cap c) raises(RequestError);
 
+  typedef unsigned long capreg_t;
+
+  /// @brief Retrieve the capability stored in the specified
+  /// capability register.
+  ///
+  /// If @p reg is out of bounds (@>= 32), the RequestError exception is raised.
+  Cap getReg(capreg_t reg) raises (RequestError);
+
+  /// @brief Store the supplied capability stored to the specified
+  /// capability register.
+  ///
+  /// If @p reg is out of bounds (@>= 32), the RequestError exception is raised.
+  void setReg(capreg_t reg, Cap c) raises(RequestError);
+
   /// @brief Identify whether the passed entry capability @p ent is an
   /// entry capability to a process whose brand matches ours.
   /// 

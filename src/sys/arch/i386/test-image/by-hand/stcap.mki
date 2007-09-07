@@ -3,7 +3,7 @@ module stcap {
 
   sp.setupSpace(sp.proc, "stcap.exe");
 
-  sp.capPage[0] = sp.proc;  // give it something to load
+  sp.capPage[0] = sp.proc;  // give it something to overwrite
 }
 
 // Local Variables:
