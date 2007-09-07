@@ -66,11 +66,12 @@ Model-independent
 
         Tool Space Conventions
 
-                 Offset   Use
-		 0	  Sensory capability to ProtoSpace address space.
-		 16	  Space bank verifier [provisional]
-		 32	  Constructor verifier
-		 48	  Audit log capability [if present]
+                 Slot     Use
+		 0	  Discrim capability
+		 1	  Sensory capability to ProtoSpace address space. 
+		 2	  Space bank verifier [provisional]
+		 3	  Constructor verifier
+		 4	  Audit log capability [if present]
 
         C Runtime Environment Space Conventions
 
