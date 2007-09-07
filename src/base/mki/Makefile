@@ -29,4 +29,4 @@ include $(COYOTOS_SRC)/build/make/makerules.mk
 
 install: $(MKISRC)
 	$(INSTALL) -d $(COYOTOS_ROOT)/usr/include/mki/$(MKIDIR)
-	$(INSTALL) -m 0644 $(MKISRC) $(COYOTOS_ROOT)/usr/idl/$(MKIDIR)
+	$(INSTALL) -m 0644 $(MKISRC) $(COYOTOS_ROOT)/usr/include/mki/$(MKIDIR)
