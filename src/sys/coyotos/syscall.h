@@ -27,10 +27,9 @@
 
 #define sc_InvokeCap 0
                   /* 1 reserved */
-#define sc_LoadCap   2
-#define sc_StoreCap  3
-#define sc_Yield     4
-                  /* 5..15 reserved */
+#define sc_CopyCap   2
+#define sc_Yield     3
+                  /* 4..15 reserved */
 
 /* Bit layout of IPW0 for sc_InvokeCap:
  *
@@ -86,30 +85,20 @@
  *    PW[20]     rcv string ptr              NONE
  *    PW[21]     matched epID                rcv epID
  *
- * Bit layout of IPW0 for sc_LoadCap:
+ * Bit layout of IPW0 for sc_CopyCap:
  *
- *  !                                16 15     8 7  4 3  0  
- * +-----------------------------------+--------+----+----+
- * |           reserved (0)            |capreg_t|0000|nr=2|
- * +-----------------------------------+--------+----+----+
+ *  !                                               4 3  0  
+ * +-------------------------------------------------+----+
+ * |                  reserved (0)                   |nr=2|
+ * +-------------------------------------------------+----+
  *
- *    IPW1 holds capitem_t.
- *
- *
- * Bit layout of IPW0 for sc_StoreCap:
- *
- *  !                                16 15     8 7  4 3  0  
- * +-----------------------------------+--------+----+----+
- * |           reserved (0)            |capreg_t|0000|nr=2|
- * +-----------------------------------+--------+----+----+
- *
- *    IPW1 holds capitem_t.
+ *    IPW1 holds source caploc_t, IPW2 hold destination caploc_t.
  *
  * Bit layout of IPW0 for sc_Yield:
  *
  *  !                                               4 3  0  
  * +-------------------------------------------------+----+
- * |                  reserved (0)                   |nr=4|
+ * |                  reserved (0)                   |nr=3|
  * +-------------------------------------------------+----+
  *
  */
@@ -133,9 +122,6 @@
 #define IPW0_LRC(ipw0) (((ipw0) & IPW0_LRC_MASK) >> 9)
 #define IPW0_MAKE_LRC(lrc) (((lrc) & 0x3) << 9)
 #define IPW0_WITH_LRC(ipw0,lrc) (((ipw0) & ~IPW0_LRC_MASK) | IPW0_MAKE_LRC(lrc))
-
-#define IPW0_MAKE_CAPREG(r) (((r)&0x1f) << 9)
-#define IPW0_CAPREG(ipw0)   ((ipw0 >> 8) & 0xff)
 
 #define IPW0_SG        0x0000800
 #define IPW0_AS        0x0001000
@@ -211,8 +197,7 @@ typedef struct {
 #include <assert.h>
 
 static inline bool invoke_capability(InvParameterBlock_t *);
-static inline void store_cap(uint8_t source, uintptr_t dest);
-static inline void load_cap(uintptr_t source, uint8_t dest);
+static inline void cap_copy(caploc_t dest, caploc_t source);
 static inline void yield(void);
 
 /** @brief Set up @p pb for an error reply with @p errCode.  

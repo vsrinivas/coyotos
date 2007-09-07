@@ -48,7 +48,7 @@ static inline guard_t make_guard(uint32_t match, uint32_t l2g)
 
 // typedef uint64_t  ipcword_t;
 
-/* Type field definitions for capreg_t and capitem_t */
+/* Type field definitions for capitem_t */
 #define CAPLOC_TY_REG  0x0
 #define CAPLOC_TY_MEM  0x1
 
@@ -57,15 +57,7 @@ typedef uint32_t capitem32_t;
 typedef uint64_t capitem64_t;
 #endif
 
-typedef struct capreg_t {
-  struct {
-    uint8_t   ty  : 1;
-    uint8_t   loc : 7;
-  } fld;
-  uint8_t raw;
-} capreg_t;
-
-typedef struct caploc32_t {
+typedef union caploc32_t {
   struct {
     uint32_t  ty  : 1;
     uint32_t  loc : 31;
@@ -73,7 +65,7 @@ typedef struct caploc32_t {
   uint32_t raw;
 } caploc32_t;
 
-typedef struct caploc64_t {
+typedef union caploc64_t {
   struct {
     uint64_t  ty  : 1;
     uint64_t  loc : 63;

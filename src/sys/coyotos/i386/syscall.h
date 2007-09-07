@@ -109,9 +109,9 @@ static inline bool invoke_capability(InvParameterBlock_t *ipb)
   return true;
 }
 
-static inline void store_cap(uint8_t source, uintptr_t dest)
+static inline void cap_copy(caploc_t dest, caploc_t source)
 {
-  uintptr_t pw0 = IPW0_MAKE_CAPREG(source) | IPW0_MAKE_NR(sc_StoreCap);
+  uintptr_t pw0 = IPW0_MAKE_NR(sc_CopyCap);
 
   __asm__ __volatile__ (
     "movl %%esp, %%ecx\n "
@@ -119,28 +119,12 @@ static inline void store_cap(uint8_t source, uintptr_t dest)
     "1:int $0x30\n"
     : /* outputs */
       [pw0] "=a" (pw0),
-      [pw1] "=b" (dest)
+      [pw1] "=b" (source.raw),
+      [pw2] "=S" (dest.raw)
     : /* inputs */
       "[pw0]" (pw0),
-      "[pw1]" (dest)
-    : "dx", "cx", "memory"
-  );
-}
-
-static inline void load_cap(uintptr_t source, uint8_t dest)
-{
-  uintptr_t pw0 = IPW0_MAKE_CAPREG(dest) | IPW0_MAKE_NR(sc_LoadCap);
-
-  __asm__ __volatile__ (
-    "movl %%esp, %%ecx\n "
-    "movl $1f,%%edx\n	"
-    "1:int $0x30\n"
-    : /* outputs */
-      [pw0] "=a" (pw0),
-      [pw1] "=b" (dest)
-    : /* inputs */
-      "[pw0]" (pw0),
-      "[pw1]" (dest)
+      "[pw1]" (source.raw),
+      "[pw2]" (dest.raw)
     : "dx", "cx", "memory"
   );
 }

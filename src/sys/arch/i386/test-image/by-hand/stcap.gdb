@@ -10,8 +10,8 @@ commands
   b halt
   b IdleThisProcessor
 
-  echo \ \ Adding breakpoint on proc_store_cap\n
-  b proc_store_cap
+  echo \ \ Adding breakpoint on proc_copy_cap\n
+  b proc_copy_cap
 end
 
 continue
