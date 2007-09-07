@@ -28,7 +28,7 @@ COYOTOS_SRC=.
 # Nothing depends on legal.
 REQUIRED_DIRS=ccs sys base
 OPTIONAL_DIRS=doc tutorial
-VAR_ADDED_DIRS=$(wildcard var.*)
+VAR_ADDED_DIRS=$(sort $(wildcard var.*))
 DIRS=$(REQUIRED_DIRS) $(OPTIONAL_DIRS) $(VAR_ADDED_DIRS)
 CLEANDIRS=build $(DIRS)
 
