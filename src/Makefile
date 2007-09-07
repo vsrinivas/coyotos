@@ -39,7 +39,8 @@ include $(COYOTOS_SRC)/build/make/pkgrules.mk
 # This needs to follow the include line so that COYOTOS_ROOT is defined:
 HGTREES=coyotos
 OPT_HGTREES=coyotos/src/ccs-xenv coyotos/src/tutorial
-ALL_HGTREES=$(HGTREES) $(OPT_HGTREES)
+VAR_HGTREES=$(patsubst %,coyotos/src/%,$(VAR_ADDED_DIRS))
+ALL_HGTREES=$(HGTREES) $(OPT_HGTREES) $(VAR_HGTREES)
 HG_TREETOP=$(COYOTOS_ROOT)/..
 
 distclean: targdir-clean clean
