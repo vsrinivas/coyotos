@@ -42,6 +42,7 @@
 #include <coyotos/machine/pagesize.h>
 #include <idl/coyotos/ProcessHandler.h>
 #include <idl/coyotos/MemoryHandler.h>
+#include <idl/coyotos/AppNotice.h>
 
 // Temporary:
 #include <hal/machine.h>
@@ -150,7 +151,7 @@ proc_do_upcall(InvParam_t *iParam)
  * because we do not have an entry capability to use here.
  */
 static void
-proc_DeliverSoftInts(Process *p)
+proc_DeliverSoftNotices(Process *p)
 {
   assert (p->state.faultCode == coyotos_Process_FC_NoFault);
 
@@ -169,12 +170,12 @@ proc_DeliverSoftInts(Process *p)
   /* No send caps, so LSC should be zero. */
   icw |= IPW0_MAKE_LDW(2)|IPW0_MAKE_LSC(0);
 
-  set_epID(p, -1ll);
+  set_epID(p, ~0ull);		/* epID = ~0ull */
   set_pw(p, OPW_PP, 0);
   set_pw(p, OPW_SNDLEN, 0);	/* no string */
 
   set_icw(p, icw);
-  set_pw(p, IPW_DW0+1, /* SOME_OPCODE */0);
+  set_pw(p, IPW_DW0+1, OC_coyotos_AppNotice_postNotice);
   set_pw(p, IPW_DW0+2, p->state.notices);
 
   p->state.notices = 0;
@@ -1278,7 +1279,7 @@ proc_invoke_cap(void)
     invParam.invoker->state.runState = PRS_RECEIVING;
 
     if (((ipw0 & IPW0_CW) == 0) && invParam.invoker->state.notices)
-      proc_DeliverSoftInts(invParam.invoker);
+      proc_DeliverSoftNotices(invParam.invoker);
 
     sq_WakeAll(&invParam.invoker->rcvWaitQ, false);
 
