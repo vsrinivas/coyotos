@@ -67,11 +67,11 @@ ProcessSet(PrimFieldValue& pfv,
     return;
   }
 
-  if (pfv.ident == "softInts") {
+  if (pfv.ident == "notices") {
     if (val->kind != Value::vk_int)
       throw excpt::BadValue;
 
-    ob->v.softInts = val.upcast<IntValue>()->bn.as_uint32();
+    ob->v.notices = val.upcast<IntValue>()->bn.as_uint32();
     return;
   }
 
@@ -168,8 +168,8 @@ ProcessGet(PrimFieldValue& pfv)
     return new IntValue(ob->v.flags);
   if (pfv.ident == "runState")
     return new IntValue(ob->v.runState);
-  if (pfv.ident == "softInts")
-    return new IntValue(ob->v.softInts);
+  if (pfv.ident == "notices")
+    return new IntValue(ob->v.notices);
   if (pfv.ident == "faultCode")
     return new IntValue(ob->v.faultCode);
   if (pfv.ident == "faultInfo")

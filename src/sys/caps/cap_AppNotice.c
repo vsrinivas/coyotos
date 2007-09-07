@@ -67,7 +67,7 @@ void cap_AppNotice(InvParam_t *iParam)
 
       Process *p = (Process *)pCap->u2.prepObj.target;
 
-      p->state.softInts |= notices;
+      p->state.notices |= notices;
 
       /* If notified process is currently receiving, wake it up. */
       if (p->state.runState == PRS_RECEIVING) {

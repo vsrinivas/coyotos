@@ -1017,11 +1017,11 @@
 	  </tr>
 	  <tr>
 	    <td>39</td>
-	    <td>AppInt</td>
+	    <td>AppNotice</td>
 	    <td>
 	      <p>
-		Capability that permits posting of application-defined
-		software interrupts.
+		Capability that permits posting of non-blocking,
+		application-defined software notices.
 	      </p>
 	    </td>
 	  </tr>
@@ -2126,35 +2126,37 @@ j *tls.savedPC
 	</sect2>
       </sect1>
       <sect1>
-	<title>Application-Defined Interrupts</title>
+	<title>Application-Defined Notifications</title>
 	<p>
-	  Coyotos supports application-defined software interrupts via
-	  the <link
-	  href="#coyotos.appint"><progident>appint</progident></link>
-	  capability type. An interrupt is posted by invoking the
-	  <progident>appint</progident> capability with an authorized
-	  interrupt number. The set of authorized interrupts is
-	  determined at the time the <progident>appint</progident>
-	  capability is fabricated. The effect of posting an
-	  application-defined interrupts is to set the corresponding
-	  bit of the target process <progident>appIntVec</progident>
-	  word, and to set the 
-	  <progident>si</progident> bit of the target process if the
-	  value of <progident>appIntVec</progident> has changed as a
+	  Coyotos supports application-defined non-blocking
+	  notifications via the <link
+	  href="#coyotos.AppNotice"><progident>AppNotice</progident></link>
+	  capability type. A notification is posted by invoking the
+	  <progident>AppNotice</progident> capability with 32-bit mask
+	  indicating the notifications (in the range 0..31) to be
+	  posted.  The set of authorized notifications is determined
+	  at the time the <progident>AppNotice</progident> capability
+	  is fabricated. The effect of posting a set of
+	  application-defined notices is to set the corresponding bits
+	  of the target process <progident>softNotices</progident>
+	  word, and to set the <progident>sn</progident> bit of the
+	  target process flags if the value of
+	  <progident>appNotices</progident> has changed as a
 	  consequence of this posting (i.e. if the interrupt was not
-	  already pending).
+	  already pending). Of the set of notices posted, only the
+	  authorized subset is delivered.
 	</p>
 	<p>
-	  Application-defined interrupts have lower delivery priority
-	  than hardware exceptions. Delivery is suppressed during a
-	  closed wait, and also when the application is running in the
-	  <em>activated</em> state. If the
+	  Application-defined notifications have lower delivery
+	  priority than hardware exceptions. Delivery is suppressed
+	  during a closed wait, and also when the application is
+	  running in the <em>activated</em> state. If the
 	  <progident>upcb.ai</progident> bit is set, no other
-	  exception is pending, and the application
-	  is running in the <em>normal</em> state or is in an open
-	  <em>receive</em> state, the
-	  kernel will deliver the <progident>AppInt</progident> fault
-	  code to the activation handler.
+	  exception is pending, and the application is running in the
+	  <em>normal</em> state or is in an open <em>receive</em>
+	  state, the kernel will deliver the
+	  <progident>SoftNotice</progident> fault code to the
+	  activation handler.
 	</p>
       </sect1>
     </chapter>
@@ -5135,7 +5137,7 @@ C := gpt-&gt;cap[<em>u</em>]</literallayout>
   <part>
     <title>Microkernel Interfaces</title>
     <xi:include href="AddressSpace.xmli"/>
-    <xi:include href="AppInt.xmli"/>
+    <xi:include href="AppNotice.xmli"/>
     <xi:include href="Cap.xmli"/>
     <xi:include href="CapPage.xmli"/>
     <xi:include href="Checkpoint.xmli"/>

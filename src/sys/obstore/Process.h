@@ -33,7 +33,7 @@ enum { CAP_REG_INDEX_BITS = 5,
  *
  *  31              15 14 13 12 11 10 9  8  7        0  
  * +------------------+--+--+--+--+--+--+--+----------+
- * |    reserved      |PC|CS|TR|TC|SI|SX|XM| runState |
+ * |    reserved      |PC|CS|TR|TC|SN|SX|XM| runState |
  * +------------------+--+--+--+--+--+--+--+----------+
  *
  * Note that runState is implemented as a separate bit-field.
@@ -41,7 +41,7 @@ enum { CAP_REG_INDEX_BITS = 5,
 
 #define PFLAGS_XM  0x01
 #define PFLAGS_SX  0x02
-#define PFLAGS_SI  0x04
+#define PFLAGS_SN  0x04
 #define PFLAGS_TC  0x08
 #define PFLAGS_TR  0x10
 #define PFLAGS_CS  0x20
@@ -69,7 +69,7 @@ typedef struct ExProcess {
   uint8_t           runState;
   /* 8-bit hole available */
   uint16_t          flags;
-  uint32_t          softInts;
+  uint32_t          notices;
 
   /** @brief Current fault code, or zero. */
   uint32_t          faultCode;

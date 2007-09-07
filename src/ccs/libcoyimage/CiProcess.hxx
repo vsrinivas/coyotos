@@ -42,7 +42,7 @@ operator<<(sherpa::oBinaryStream& obs, const CiProcess& proc)
 {
   obs << proc.v.runState;
   obs << proc.v.flags;
-  obs << proc.v.softInts;
+  obs << proc.v.notices;
   obs << proc.v.faultCode;
   obs << (uint32_t) 0;		// PAD
   obs << proc.v.faultInfo;
@@ -66,7 +66,7 @@ operator>>(sherpa::iBinaryStream& ibs, CiProcess& proc)
 
   ibs >> proc.v.runState;
   ibs >> proc.v.flags;
-  ibs >> proc.v.softInts;
+  ibs >> proc.v.notices;
   ibs >> proc.v.faultCode;
   ibs >> u;			// PAD
   ibs >> proc.v.faultInfo;
@@ -93,8 +93,8 @@ operator <<(std::ostream& strm, CiProcess& proc)
        << "       runState=" << proc.v.runState << '\n'
        << "       flags=" << std::hex 
        << proc.v.flags << std::dec << '\n'
-       << "       softInts=" << std::hex 
-       << proc.v.softInts << std::dec << '\n'
+       << "       notices=" << std::hex 
+       << proc.v.notices << std::dec << '\n'
        << "       fltCode=" << proc.v.faultCode
        << "       fltInfo=" << std::hex 
        << proc.v.faultInfo << std::dec << '\n'

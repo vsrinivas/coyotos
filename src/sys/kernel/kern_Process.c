@@ -175,9 +175,9 @@ proc_DeliverSoftInts(Process *p)
 
   set_icw(p, icw);
   set_pw(p, IPW_DW0+1, /* SOME_OPCODE */0);
-  set_pw(p, IPW_DW0+2, p->state.softInts);
+  set_pw(p, IPW_DW0+2, p->state.notices);
 
-  p->state.softInts = 0;
+  p->state.notices = 0;
 
   /* Invocation is complete. Set invokee running and donate our slice. */
   p->state.runState = PRS_RUNNING;
@@ -1277,7 +1277,7 @@ proc_invoke_cap(void)
   if (ipw0 & IPW0_RP) {
     invParam.invoker->state.runState = PRS_RECEIVING;
 
-    if (((ipw0 & IPW0_CW) == 0) && invParam.invoker->state.softInts)
+    if (((ipw0 & IPW0_CW) == 0) && invParam.invoker->state.notices)
       proc_DeliverSoftInts(invParam.invoker);
 
     sq_WakeAll(&invParam.invoker->rcvWaitQ, false);
