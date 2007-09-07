@@ -2790,7 +2790,6 @@ output_server_dependent_headers(GCPtr<Symbol> scope, BackEndFn outfn)
     vec[i]->isActiveUOC = true;
 
   for(size_t i = 0; i < vec.size(); i++) {
-    std::cerr << vec[i]->QualifiedName('.') << "\n";
     output_c_server_hdr(vec[i]);
     vec[i]->isActiveUOC = false;
   }
