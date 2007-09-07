@@ -24,7 +24,7 @@ module ipc {
   replyEP.pm = 1;
 
   ipc.capReg[1] = replyEP;
-  ipc.capReg[2] = enter(rcvEP);
+  ipc.capReg[2] = enter(rcvEP, 0);
 }
 
 // Local Variables:

@@ -41,22 +41,22 @@ include $(COYOTOS_SRC)/build/make/makerules.mk
 $(BUILDDIR)/SimpleProc.h: SimpleProc.mki | $(BUILDDIR)
 	$(MKIMAGE) -t i386 -H./$(BUILDDIR) -I. -L. $(patsubst %.mki,%,$<)
 
-%.img: %.mki %.exe
-	$(MKIMAGE) -t i386 -I. -L. -o $@ $(patsubst %.img,%,$@)
+$(BUILDDIR)/%.img: %.mki $(BUILDDIR)/%.exe
+	$(MKIMAGE) -t i386 -I. -L$(BUILDDIR) -o $@ $(patsubst $(BUILDDIR)/%.img,%,$@)
 
-%.exe: %.S $(BUILDDIR)/SimpleProc.h
+$(BUILDDIR)/%.exe: %.S $(BUILDDIR)/SimpleProc.h
 	$(GCC) -g $(LINKOPTS) $(INC) -nostdlib -o $@ $<
 
-do_ipc.o: do_ipc.S
+$(BUILDDIR)/do_ipc.o: do_ipc.S | $(BUILDDIR)
 	$(GCC) -g $(INC) -c -o $@ $<
 
-%.exe: %-data.c BUILD/SimpleProc.h do_ipc.o
-	$(GCC) -g $(LINKOPTS) $(INC) -nostdlib -o $@ $< do_ipc.o
+$(BUILDDIR)/%.exe: %-data.c $(BUILDDIR)/SimpleProc.h $(BUILDDIR)/do_ipc.o
+	$(GCC) -g $(LINKOPTS) $(INC) -nostdlib -o $@ $< $(BUILDDIR)/do_ipc.o
 
-%.run: %.img
+%.run: $(BUILDDIR)/%.img
 	cp ../grubdisk .
 	mcopy -Do -i grubdisk $< ::mkimage.out
 	mcopy -Do -i grubdisk $(KERNEL) ::
 	sh ./testme.sh $(patsubst %.run,%,$@)
 
-ipc.img: openrcv.exe
+$(BUILDDIR)/ipc.img: $(BUILDDIR)/openrcv.exe
