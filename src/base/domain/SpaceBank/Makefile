@@ -36,6 +36,11 @@ BASE_IDL_FILES=$(wildcard $(BASE_IDL_DIR)/*.idl)
 SYS_IDL_DIR=../../../sys/idl
 SYS_IDL_FILES=$(wildcard $(SYS_IDL_DIR)/*.idl)
 
+SERVER_INTERFACES=\
+    SpaceBank
+
+SERVER_IDL_FILES=$(SERVER_INTERFACES:%=$(BASE_IDL_DIR)/%.idl)
+
 IDL_FILES=\
     $(BASE_IDL_FILES) \
     $(SYS_IDL_FILES)
@@ -57,10 +62,10 @@ $(BUILDDIR)/coyotos.SpaceBank.h: $(BASE_MKI_DIR)/coyotos/SpaceBank.mki $(MKIMAGE
 $(BUILDDIR)/coyotos.TargetInfo.h: $(COMMON_MKI_DIR)/coyotos/TargetInfo/$(COYOTOS_TARGET).mki $(MKIMAGE)
 	$(MKIMAGE) -t $(COYOTOS_TARGET) -H $(BUILDDIR) -I $(BASE_MKI_DIR) coyotos.TargetInfo
 
-$(BUILDDIR)/generated-idl: $(IDL_FILES) $(SERVER_IDL_FILES) $(CAPIDL)
+$(BUILDDIR)/generated-idl: $(IDL_FILES) $(SERVER_IDL_FILES) $(CAPIDL) Makefile
 	touch $@
 	$(CAPIDL) -D $(BUILDDIR)/idl -a $(COYOTOS_TARGET) -h -I $(BASE_IDL_DIR) -I $(SYS_IDL_DIR) $(IDL_FILES) || (e=$$?; rm -f $@; exit $$e)
-	$(CAPIDL) -D $(BUILDDIR)/idl -a $(COYOTOS_TARGET) -s -I $(BASE_IDL_DIR) -I $(SYS_IDL_DIR) $(IDL_FILES) || (e=$$?; rm -f $@; exit $$e)
+	$(CAPIDL) -D $(BUILDDIR)/idl -a $(COYOTOS_TARGET) -s -I $(BASE_IDL_DIR) -I $(SYS_IDL_DIR) $(SERVER_IDL_FILES) || (e=$$?; rm -f $@; exit $$e)
 
 $(IDL_HEADERS): $(BUILDDIR)/generated-idl
 	@true
