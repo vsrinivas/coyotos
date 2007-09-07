@@ -47,19 +47,19 @@
 
 #include "coyotos.Constructor.h"
 
-#define CR_NEW_PROC    	CR_APP(coyotos_Constructor_APP_NEW_PROC)
-#define CR_NEW_ENDPT	CR_APP(coyotos_Constructor_APP_NEW_ENDPT)
-#define CR_NEW_RENDPT	CR_APP(coyotos_Constructor_APP_NEW_RENDPT)
-#define CR_VERIFIER	CR_APP(coyotos_Constructor_APP_VERIFIER)
-#define CR_YIELD_TOOLS	CR_APP(coyotos_Constructor_APP_YIELD_TOOLS)
-#define CR_YIELD_BRAND	CR_APP(coyotos_Constructor_APP_YIELD_BRAND)
-#define CR_YIELD_ADDRSPACE  CR_APP(coyotos_Constructor_APP_YIELD_ADDRSPACE)
-#define CR_YIELD_HANDLER    CR_APP(coyotos_Constructor_APP_YIELD_HANDLER)
-#define CR_YIELD_PROTOSPACE CR_APP(coyotos_Constructor_APP_YIELD_PROTOSPACE)
-#define CR_BUILD_TOOLS	CR_APP(coyotos_Constructor_APP_BUILD_TOOLS)
-#define CR_BUILD_PROTOSPACE CR_APP(coyotos_Constructor_APP_BUILD_PROTOSPACE)
-#define CR_DISCRIM	CR_APP(coyotos_Constructor_APP_DISCRIM)
-#define CR_TMP		CR_APP(coyotos_Constructor_APP_TMP)
+#define CR_NEW_PROC    		coyotos_Constructor_APP_NEW_PROC
+#define CR_NEW_ENDPT		coyotos_Constructor_APP_NEW_ENDPT
+#define CR_NEW_RENDPT		coyotos_Constructor_APP_NEW_RENDPT
+#define CR_VERIFIER		coyotos_Constructor_APP_VERIFIER
+#define CR_YIELD_TOOLS		coyotos_Constructor_APP_YIELD_TOOLS
+#define CR_YIELD_BRAND		coyotos_Constructor_APP_YIELD_BRAND
+#define CR_YIELD_ADDRSPACE	coyotos_Constructor_APP_YIELD_ADDRSPACE
+#define CR_YIELD_HANDLER    	coyotos_Constructor_APP_YIELD_HANDLER
+#define CR_YIELD_PROTOSPACE	coyotos_Constructor_APP_YIELD_PROTOSPACE
+#define CR_BUILD_TOOLS		coyotos_Constructor_APP_BUILD_TOOLS
+#define CR_BUILD_PROTOSPACE 	coyotos_Constructor_APP_BUILD_PROTOSPACE
+#define CR_DISCRIM		coyotos_Constructor_APP_DISCRIM
+#define CR_TMP			coyotos_Constructor_APP_TMP
 
 typedef union {
   _IDL_IFUNION_coyotos_Verifier
@@ -214,13 +214,13 @@ HANDLE_coyotos_Constructor_create(caploc_t bank, caploc_t sched,
 			      CR_RUNTIME.fld.loc, runtime, IDL_E) ||
       /* set up the protospace arguments */
       !coyotos_Process_setReg(CR_NEW_PROC,
-	CR_APP(coyotos_Constructor_PROTOAPP_ADDRSPACE).fld.loc, 
+	coyotos_Constructor_PROTOAPP_ADDRSPACE.fld.loc, 
 	CR_YIELD_ADDRSPACE, IDL_E) ||
       !coyotos_Process_setReg(CR_NEW_PROC,
-	CR_APP(coyotos_Constructor_PROTOAPP_HANDLER).fld.loc, 
+	coyotos_Constructor_PROTOAPP_HANDLER.fld.loc, 
 	CR_YIELD_HANDLER, IDL_E) ||
       !coyotos_Process_setReg(CR_NEW_PROC,
-	CR_APP(coyotos_Constructor_PROTOAPP_SCHEDULE).fld.loc, 
+	coyotos_Constructor_PROTOAPP_SCHEDULE.fld.loc, 
         sched, IDL_E) ||
       /* set it up to return to our caller */
       !coyotos_Process_setReg(CR_NEW_PROC, 

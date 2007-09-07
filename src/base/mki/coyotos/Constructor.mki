@@ -68,8 +68,8 @@ module coyotos.Constructor {
    * so we use them for temporaries.  The rest are set up for pre-constructed
    * Constructors.
    */
-  export enum APP {
-    NEW_PROC = 0,
+  export capreg APP {
+    NEW_PROC = rt.REG.APP0,
     NEW_ENDPT,
     NEW_RENDPT,
     VERIFIER,
@@ -89,8 +89,8 @@ module coyotos.Constructor {
   };
   
   /* The initial app registers as seen by ProtoSpace. */
-  export enum PROTOAPP {
-    ADDRSPACE = 0,
+  export capreg PROTOAPP {
+    ADDRSPACE = rt.REG.APP0,
     HANDLER,
     SCHEDULE
   };
@@ -157,11 +157,11 @@ module coyotos.Constructor {
     /* Set up the YIELD app registers for the Constructor so that it
      * can initialize as Sealed.
      */
-    proc.capReg[rt.REG.APP + APP.YIELD_TOOLS] = readonly(my_tools);
-    proc.capReg[rt.REG.APP + APP.YIELD_PROTOSPACE] = weaken(my_protospace);
-    proc.capReg[rt.REG.APP + APP.YIELD_ADDRSPACE] = as;
-    proc.capReg[rt.REG.APP + APP.YIELD_HANDLER] = handler;
-    proc.capReg[rt.REG.APP + APP.YIELD_BRAND] = enter(initEpt, PP.BRAND);
+    proc.capReg[APP.YIELD_TOOLS] = readonly(my_tools);
+    proc.capReg[APP.YIELD_PROTOSPACE] = weaken(my_protospace);
+    proc.capReg[APP.YIELD_ADDRSPACE] = as;
+    proc.capReg[APP.YIELD_HANDLER] = handler;
+    proc.capReg[APP.YIELD_BRAND] = enter(initEpt, PP.BRAND);
     
     /* Return the Constructor facet */
     return enter(initEpt, PP.Constructor);
