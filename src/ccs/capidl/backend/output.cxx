@@ -53,8 +53,7 @@ extern bool c_typecheck(GCPtr<Symbol> );
 BackEnd back_ends[] = {
   { "raw",       0, 	      0,             output_symdump,       0  },
   { "xml",       0,           0,             output_xmldoc,        0  },
-  { "c-server-header",  c_typecheck, 0,	     output_c_server_hdr,  0  },
-  { "c-server-all-header",  c_typecheck, 0,	     output_c_server_hdr,  
+  { "c-server-header",  c_typecheck, 0,	     output_c_server_hdr,
     output_server_dependent_headers  },
   { "c-client-header",  c_typecheck, 0,	     output_c_client_hdr,  0  },
   { "c-template",       c_typecheck, 0,	     0,  output_c_template },
