@@ -23,19 +23,21 @@ COYOTOS_SRC=../../../../..
 
 include $(COYOTOS_SRC)/build/make/makevars.mk
 
+CFLAGS += -g
+
 MKIMAGE=$(COYOTOS_SRC)/ccs/mkimage/$(BUILDDIR)/mkimage
 KERNEL=../../kernel/$(BUILDDIR)/coyotos
 
-IMAGES=$(filter-out SimpleProc,$(patsubst %.mki,$(BUILDDIR)/%.img,$(wildcard *.mki)))
+IMAGES=$(patsubst %.mki,$(BUILDDIR)/%.img,$(filter-out SimpleProc.mki,$(wildcard *.mki)))
 INC=-I$(COYOTOS_SRC)/sys -I$(COYOTOS_SRC)/sys/idl/$(BUILDDIR)/h -IBUILD
 LINKOPTS=-Wl,-Ttext,0x1000 -Wl,-Tdata,0x3000
 QEMU=qemu
 
-CLEANLIST=*.exe *.img do_ipc.o
-
 include $(COYOTOS_SRC)/build/make/makerules.mk
 
-all: $(IMAGES)
+install all: $(IMAGES)
+
+.PRECIOUS: $(BUILDDIR)/%.o $(BUILDDIR)/%.exe
 
 #iplimage:
 #	$(MKIMAGE) -t i386 -I. $(IMGFILE)
@@ -46,13 +48,10 @@ $(BUILDDIR)/SimpleProc.h: SimpleProc.mki | $(BUILDDIR)
 $(BUILDDIR)/%.img: %.mki $(BUILDDIR)/%.exe
 	$(MKIMAGE) -t i386 -I. -L$(BUILDDIR) -o $@ $(patsubst $(BUILDDIR)/%.img,%,$@)
 
-$(BUILDDIR)/%.exe: %.S $(BUILDDIR)/SimpleProc.h
+$(BUILDDIR)/%.exe: $(BUILDDIR)/%.o $(BUILDDIR)/SimpleProc.h
 	$(GCC) -g $(LINKOPTS) $(INC) -nostdlib -o $@ $<
 
-$(BUILDDIR)/do_ipc.o: do_ipc.S | $(BUILDDIR)
-	$(GCC) -g $(INC) -c -o $@ $<
-
-$(BUILDDIR)/%.exe: %-data.c $(BUILDDIR)/SimpleProc.h $(BUILDDIR)/do_ipc.o
+$(BUILDDIR)/%.exe: $(BUILDDIR)/%-data.o $(BUILDDIR)/SimpleProc.h $(BUILDDIR)/do_ipc.o
 	$(GCC) -g $(LINKOPTS) $(INC) -nostdlib -o $@ $< $(BUILDDIR)/do_ipc.o
 
 %.run: $(BUILDDIR)/%.img

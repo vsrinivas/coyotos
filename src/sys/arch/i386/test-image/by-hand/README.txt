@@ -33,8 +33,10 @@ INC_EAX
 
 LDCAP (STCAP)
 
-   Performs a load (store) capability pseudo instruction. Lets us
-   check that the system call path is operating correctly.
+   Performs a copy capability capability pseudo instruction, loading
+   a capability from a capability page into a register (storing a
+   capability to a capability page from a register). Lets us check that
+   the system call path is operating correctly.
 
 RECEIVE
 
