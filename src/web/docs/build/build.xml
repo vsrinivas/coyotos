@@ -434,7 +434,7 @@ coyotos
     build    - makefile fragments for the build system
     ccs      - coyotos compilation system tools package
     ccs-xenv - the cross environment package
-    doc      - the documentation tree (including this web site)
+    web      - the documentation tree (this web site)
     sys      - the coyotos kernel package
     base     - basic domains and libraries package
     tutorial - package of tutorials for people getting started.</literallayout>
