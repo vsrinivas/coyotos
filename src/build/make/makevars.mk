@@ -288,7 +288,7 @@ BOOTSTRAP=boot
 # Until proven otherwise...
 
 ifeq "$(BUILDDIR)" ""
-ifeq "$(PACKAGE)" "doc"
+ifeq "$(PACKAGE)" "web"
 BUILDDIR=.
 RBUILDDIR=.
 endif

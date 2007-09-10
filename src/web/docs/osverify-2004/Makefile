@@ -19,9 +19,9 @@
 #
 
 default: package
-COYOTOS_SRC=../../../..
+COYOTOS_SRC=../../..
 
-OSDOC_XML_SRC=sigops-2007
+OSDOC_XML_SRC=osverify-2004
 
 
 include $(COYOTOS_SRC)/build/make/makerules.mk

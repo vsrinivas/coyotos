@@ -19,9 +19,12 @@
 #
 
 default: package
-COYOTOS_SRC=../../../..
+COYOTOS_SRC=../../..
 
-OSDOC_XML_SRC=osverify-2004
+OSDOC_XML_SRC=\
+	build \
+	capidl \
+	mkimage
 
 
 include $(COYOTOS_SRC)/build/make/makerules.mk

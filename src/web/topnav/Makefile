@@ -19,15 +19,6 @@
 #
 
 default: package
-COYOTOS_SRC=../../..
-OSDOC_NAVCONTEXT="Projects"
-OSDOC_XHTML_SRC=$(patsubst %.xhtml,%,$(wildcard *.xhtml))
-HTML_TOPNAV=projects.html
-
-DOCSTYLES= #docstyles.css
+COYOTOS_SRC=../..
 
 include $(COYOTOS_SRC)/build/make/makerules.mk
-
-all:
-
-install: all

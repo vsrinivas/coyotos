@@ -21,4 +21,9 @@
 default: package
 COYOTOS_SRC=../../..
 
+OSDOC_XML_SRC=sigops-2007
+
+
 include $(COYOTOS_SRC)/build/make/makerules.mk
+
+install: all

@@ -54,7 +54,7 @@ doxygen
 # OSDoc chunked output directories:
 html-chunk
 
-src/doc/web/docs/dir.dev.gxml
+src/web/docs/dir.dev.gxml
 #dir.dev.xml
 
 # Default name for mkimage.out. These are going to end up all over

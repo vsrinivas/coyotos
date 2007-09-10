@@ -19,10 +19,12 @@
 #
 
 default: package
-COYOTOS_SRC=../../../..
+COYOTOS_SRC=../..
+OSDOC_NAVCONTEXT="History"
+OSDOC_XHTML_SRC=$(patsubst %.xhtml,%,$(wildcard *.xhtml))
+HTML_TOPNAV=projects.html
 
-OSDOC_FIG_SRC=$(wildcard *.fig)
-OSDOC_XML_SRC=eros-comparison linus-rebuttal eros-structure
+DOCSTYLES= #docstyles.css
 
 include $(COYOTOS_SRC)/build/make/makerules.mk
 

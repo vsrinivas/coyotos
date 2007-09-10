@@ -27,14 +27,14 @@ else
 OSDOCTOOLS=/usr/share/osdoc
 endif
 
-# If we are in the doc/web tree, we want a relative path 
+# If we are in the doc/ tree, we want a relative path 
 # to the web root, otherwise we want an absolute path:#
-WEBROOT=$(COYOTOS_SRC)/doc/web/
-ifeq "$(PACKAGE)" "doc"
-ifeq "$(COYOTOS_SRC)" "../.."
+WEBROOT=$(COYOTOS_SRC)/web/
+ifeq "$(PACKAGE)" "web"
+ifeq "$(COYOTOS_SRC)" ".."
 WEBROOT=.
 else
-WEBROOT=$(subst /../../doc/web/,,$(COYOTOS_SRC)/doc/web/)
+WEBROOT=$(subst /../web/,,$(COYOTOS_SRC)/web/)
 endif
 endif
 
@@ -65,7 +65,7 @@ OSDOC_SITEHDFT_PARAM=--stringparam siteheader $(WEBROOT)/siteheader.html \
                      --stringparam sitefooter $(WEBROOT)/sitefooter.html
 
 LATEX_XSLTPROC_OPTS+=
-ifeq "$(PACKAGE)" "doc"
+ifeq "$(PACKAGE)" "web"
 OSDOC_HTML_OPTS+=\
 	--param navbars 1 \
 	$(OSDOC_SITEHDFT_PARAM) \
@@ -85,11 +85,11 @@ OSDOC_HTML_CHUNK_OPTS+= --param enable.chunking 1
 
 ifndef STYLESHEET
 # Definite path to default style sheet would be
-#    $(COYOTOS_SRC)/doc/web/styles.css
+#    $(COYOTOS_SRC)/web/styles.css
 # We assume here that if a style sheet is going to be used, it will
 # be used from within the doc subtree, in which case we need the 
 # relative path from the build directory to
-#    $(COYOTOS_SRC)/doc/web.
+#    $(COYOTOS_SRC)/web.
 # We construct this using substitution:
 
 STYLESHEET=$(WEBROOT)/styles.css
@@ -98,7 +98,7 @@ endif
 webroot:
 	@echo "webroot: $(WEBROOT)"
 	@echo "pwd:     $(PWD)"
-	@echo "web:     $(COYOTOS_SRC)/doc/web"
+	@echo "web:     $(COYOTOS_SRC)/web"
 	@echo "pkg:     $(PACKAGE)"
 	@echo "STYLESHEET=$(WEBROOT)/styles.css"
 

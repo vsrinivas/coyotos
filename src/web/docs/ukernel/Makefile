@@ -1,5 +1,5 @@
 #
-# Copyright (C) 2007, Jonathan S. Shapiro.
+# Copyright (C) 2004, Jonathan S. Shapiro.
 #
 # This file is part of the Coyotos Operating System.
 #
@@ -21,11 +21,11 @@
 .SUFFIXES: .xmli .idlxml
 
 default: package
-COYOTOS_SRC=../../../..
+COYOTOS_SRC=../../..
 CLEANLIST += *.xmli
 CLEANLIST += *.idlxml
 
-OSDOC_XML_SRC=interfaces
+OSDOC_XML_SRC=spec bootstrap kmap target-coldfire irq-and-smp
 OSDOC_SBOX_SRC=$(wildcard *.sbox)
 OSDOC_FIG_SRC=$(wildcard *.fig)
 
@@ -35,20 +35,19 @@ all:
 
 install: all
 
-XSL_IDL_OSDOC=../ukernel/idl-osdoc.xsl
+XSL_IDL_OSDOC=idl-osdoc.xsl
 XSL_IDL_OPTS= \
 	-param seclevel 0  \
 	-param manpages 1
 
 SYSIDL=$(COYOTOS_SRC)/sys/idl
-BASEIDL=$(COYOTOS_SRC)/base/idl
-IDL=$(notdir $(wildcard $(BASEIDL)/[A-Za-z]*.idl))
+IDL=$(notdir $(wildcard $(SYSIDL)/[A-Za-z]*.idl))
 
-interfaces.ltx: $(IDL:.idl=.xmli) $(XSL_IDL_OSDOC)
-interfaces.html: $(IDL:.idl=.xmli) $(XSL_IDL_OSDOC)
+spec.ltx: $(IDL:.idl=.xmli) $(XSL_IDL_OSDOC)
+spec.html: $(IDL:.idl=.xmli) $(XSL_IDL_OSDOC)
 
-#%.xmli: $(BASEIDL)/%.idl $(XSL_IDL_OSDOC)
-#	$(CAPIDL) -I $(BASEIDL) -l xml $< | $(XSLTPROC) $(LATEX_XSLTPROC_OPTS) $(XSL_IDL_OPTS) --output $@ $(XSL_IDL_OSDOC) -
+#%.xmli: $(SYSIDL)/%.idl $(XSL_IDL_OSDOC)
+#	$(CAPIDL) -I $(SYSIDL) -l xml $< | $(XSLTPROC) $(LATEX_XSLTPROC_OPTS) $(XSL_IDL_OPTS) --output $@ $(XSL_IDL_OSDOC) -
 
 %.xmli: %.idlxml $(XSL_IDL_OSDOC)
 	$(XSLTPROC) $(OSDOC_LATEX_OPTS) $(XSL_IDL_OPTS) --output $@ $(XSL_IDL_OSDOC) $<
@@ -56,8 +55,10 @@ interfaces.html: $(IDL:.idl=.xmli) $(XSL_IDL_OSDOC)
 # This is moderately tricky. The dependency here is between the 
 # files (at least for the moment), but the new capidl command line
 # wants to be passed the interface name.
-%.idlxml: $(BASEIDL)/%.idl
-	$(CAPIDL) -I $(BASEIDL) -I $(SYSIDL) -l xml $< > $@
+%.idlxml: $(SYSIDL)/%.idl
+	$(CAPIDL) -I $(SYSIDL) -l xml $< > $@ || { a=$$?; rm -f $@; exit $$a;}
+
+$(IDL:.idl=.idlxml): $(CAPIDL)
 
 cleanif:
 	-rm -f *.idlxml *.xmli

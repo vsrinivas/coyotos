@@ -27,7 +27,7 @@ COYOTOS_SRC=.
 # build must be made before others. base and doc can be in either order.
 # Nothing depends on legal.
 REQUIRED_DIRS=ccs sys base
-OPTIONAL_DIRS=doc tutorial
+OPTIONAL_DIRS=web tutorial
 VAR_ADDED_DIRS=$(sort $(wildcard var.*))
 DIRS=$(REQUIRED_DIRS) $(OPTIONAL_DIRS) $(VAR_ADDED_DIRS)
 CLEANDIRS=build $(DIRS)

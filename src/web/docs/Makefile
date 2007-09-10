@@ -19,15 +19,42 @@
 #
 
 default: package
-COYOTOS_SRC=../../..
-OSDOC_NAVCONTEXT="History"
-OSDOC_XHTML_SRC=$(patsubst %.xhtml,%,$(wildcard *.xhtml))
-HTML_TOPNAV=projects.html
+COYOTOS_SRC=../..
 
-DOCSTYLES= #docstyles.css
+CLEANLIST=dir.dev.gxml
+DIRS=build
+DIRS+=ukernel
+DIRS+=base
+DIRS+=misc
+DIRS+=osverify-2004
+OSDOC_XML_SRC=index
+# Only build the HTML targets in this directory...
+OSDOC_NAVCONTEXT="Docs"
+OSDOC_TARGETS=%.html
 
 include $(COYOTOS_SRC)/build/make/makerules.mk
 
-all:
-
+all: index.html
 install: all
+
+dirfrag:
+	$(XSLTPROC) \
+		--stringparam url $(patsubst %.xml,%.html,$(XMLURL)) \
+		--stringparam pdfurl $(patsubst %.xml,%.pdf,$(XMLURL)) \
+		$(OSDOC_DIRENT) $(XMLURL) >> tmp.xml
+
+xmlroots:
+	for i in $(DIRS); do \
+	  make -C $$d xmlsources; \
+	done
+
+dir.dev.gxml:
+	echo "<fakeroot>" > tmp.xml
+	for i in $(foreach dir,$(DIRS),$(wildcard $(dir)/*.xml)); do \
+		$(MAKE) XMLURL="$$i" dirfrag; \
+	done
+	echo "</fakeroot>" >> tmp.xml
+	mv tmp.xml dir.dev.gxml
+
+#index.html: STYLESHEET="$(WEBROOT)/dirstyles.css"
+index.html: index.xml dir.dev.gxml $(XSL_HTML)
