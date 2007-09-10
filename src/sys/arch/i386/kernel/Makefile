@@ -24,7 +24,7 @@ CROSS_BUILD=yes
 COYOTOS_SRC=../../../..
 DIRS=
 
-INC=-I../../.. -I. -I$(BUILDDIR)
+INC=-I$(COYOTOS_SRC)/../usr/include -I../../.. -I. -I$(BUILDDIR)
 DEF=-D__KERNEL__ # -DNDEBUG -DHAVE_HUI=0
 DEF+= -DBRING_UP
 DEF+= -DEVT_TRACE
@@ -125,26 +125,7 @@ $(BUILDDIR)/asm-offsets.h: $(BUILDDIR)/asm-offsets.s
 MACH_HEADERS=\
 	../../../coyotos/machine/target.h
 
-#
-# We'd like to do a single pass over the IDL files to generate headers.
-# To do so, we make all of our generated headers depend on
-# BUILDDIR/generated-idl, which we touch before calling capidl.  If capidl
-# fails, we delete the file.  Touching the file *before* the headers are
-# generated ensures that the timestamps line up correctly.
-#
-IDL_HEADERS=$(IDL_FILES:$(IDL_DIR)/%.idl=$(BUILDDIR)/idl/coyotos/%.h)
-
-$(BUILDDIR)/generated-idl: $(IDL_FILES) $(CAPIDL)
-	touch $@
-	$(CAPIDL) -D $(BUILDDIR)/idl -a $(COYOTOS_TARGET) -h -I $(IDL_DIR) $(IDL_FILES) || ( e=$$?; rm -f $@; exit $$e )
-
-$(IDL_HEADERS): $(BUILDDIR)/generated-idl
-	@true
-
-#$(BUILDDIR)/.idl.m: $(IDL_FILES)
-#	$(CAPIDL) -o $(BUILDDIR)/.idl.m -D $(BUILDDIR)/idl --lang c-header-depend -I $(IDL_DIR) $(IDL_FILES)
-
-$(OBJECTS) $(BUILDDIR)/ldscript $(BUILDDIR)/asm-offsets.s: $(MACH_HEADERS) $(IDL_HEADERS)
+$(OBJECTS) $(BUILDDIR)/ldscript $(BUILDDIR)/asm-offsets.s: $(MACH_HEADERS)
 $(MACH_HEADERS): ../../../ARCH-LIST
 	(cd ../../../coyotos/machine;make all)
 

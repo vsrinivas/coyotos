@@ -24,7 +24,7 @@ CROSS_BUILD=yes
 
 CFLAGS+=-g -O
 
-INC=-I. -I$(COYOTOS_ROOT)/usr/include -I$(BUILDDIR) -I../../../sys
+INC=-I. -I$(COYOTOS_SRC)/../usr/include -I$(BUILDDIR) -I../../../sys
 SOURCES=$(wildcard *.c)
 OBJECTS=$(patsubst %.c,$(BUILDDIR)/%.o,$(wildcard *.c))
 PROTO_OBJECTS=\
@@ -51,9 +51,7 @@ IDL_FILES=\
     $(SYS_IDL_FILES)
 
 IDL_HEADERS=\
-    $(BASE_IDL_FILES:$(BASE_IDL_DIR)/%.idl=$(BUILDDIR)/idl/coyotos/%.h) \
     $(BASE_IDL_FILES:$(BASE_IDL_DIR)/%.idl=$(BUILDDIR)/idl/coyotos/%.server.h) \
-    $(SYS_IDL_FILES:$(SYS_IDL_DIR)/%.idl=$(BUILDDIR)/idl/coyotos/%.h) \
     $(SYS_IDL_FILES:$(SYS_IDL_DIR)/%.idl=$(BUILDDIR)/idl/coyotos/%.server.h)
 
 ENUM_MODULES=coyotos.Constructor
@@ -66,13 +64,12 @@ $(BUILDDIR)/coyotos.Constructor.h: $(BASE_MKI_DIR)/coyotos/Constructor.mki $(MKI
 
 $(BUILDDIR)/generated-idl: $(IDL_FILES) $(SERVER_IDL_FILES) $(CAPIDL) Makefile
 	touch $@
-	$(CAPIDL) -D $(BUILDDIR)/idl -a $(COYOTOS_TARGET) -h -I $(BASE_IDL_DIR) -I $(SYS_IDL_DIR) $(IDL_FILES) || (e=$$?; rm -f $@; exit $$e)
 	$(CAPIDL) -D $(BUILDDIR)/idl -a $(COYOTOS_TARGET) -s -I $(BASE_IDL_DIR) -I $(SYS_IDL_DIR) $(SERVER_IDL_FILES) || (e=$$?; rm -f $@; exit $$e)
 
 $(IDL_HEADERS): $(BUILDDIR)/generated-idl
 	@true
 
-$(OBJECTS) $(PROTO_OBJECTS): $(IDL_HEADERS) $(ENUM_HDRS)
+$(OBJECTS) $(PROTO_OBJECTS): $(BUILDDIR)/generated-idl $(ENUM_HDRS)
 
 install all: $(TARGETS)
 
