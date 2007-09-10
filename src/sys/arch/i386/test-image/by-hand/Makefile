@@ -26,7 +26,7 @@ include $(COYOTOS_SRC)/build/make/makevars.mk
 MKIMAGE=$(COYOTOS_SRC)/ccs/mkimage/$(BUILDDIR)/mkimage
 KERNEL=../../kernel/$(BUILDDIR)/coyotos
 
-IMAGES=$(filter-out SimpleProc,$(patsubst %.mki,$(BUILDDIR)/%.img,$(wildcard *.mki)))
+IMAGES=$(patsubst %.mki,$(BUILDDIR)/%.img,$(filter-out SimpleProc.mki,$(wildcard *.mki)))
 INC=-I$(COYOTOS_SRC)/sys -I$(COYOTOS_SRC)/sys/idl/$(BUILDDIR)/h -IBUILD
 LINKOPTS=-Wl,-Ttext,0x1000 -Wl,-Tdata,0x3000
 QEMU=qemu
