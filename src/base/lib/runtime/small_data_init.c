@@ -45,25 +45,25 @@ __small_data_init(uintptr_t data, uintptr_t end)
   size_t last_slot = (end + COYOTOS_PAGE_SIZE - 1) / COYOTOS_PAGE_SIZE;
 
   for (cur = first_slot; cur < last_slot; cur++) {
-    if (coyotos_AddressSpace_getSlot(CR_OLDADDR, cur, CR_OLDPAGE, &_IDL_E) ||
-	coyotos_SpaceBank_alloc(CR_SPACEBANK,
-				coyotos_Range_obType_otPage,
-				coyotos_Range_obType_otInvalid,
-				coyotos_Range_obType_otInvalid,
-				CR_NEWPAGE,
-				CR_NULL,
-				CR_NULL,
-				&_IDL_E) ||
-	coyotos_AddressSpace_copyFrom(CR_NEWPAGE, CR_OLDPAGE, 
-				      CR_NEWPAGE, &_IDL_E) ||
-	coyotos_AddressSpace_setSlot(CR_NEWADDR, cur, CR_NEWPAGE, &_IDL_E))
+    if (!coyotos_AddressSpace_getSlot(CR_OLDADDR, cur, CR_OLDPAGE, &_IDL_E) ||
+	!coyotos_SpaceBank_alloc(CR_SPACEBANK,
+				 coyotos_Range_obType_otPage,
+				 coyotos_Range_obType_otInvalid,
+				 coyotos_Range_obType_otInvalid,
+				 CR_NEWPAGE,
+				 CR_NULL,
+				 CR_NULL,
+				 &_IDL_E) ||
+	!coyotos_AddressSpace_copyFrom(CR_NEWPAGE, CR_OLDPAGE, 
+				       CR_NEWPAGE, &_IDL_E) ||
+	!coyotos_AddressSpace_setSlot(CR_NEWADDR, cur, CR_NEWPAGE, &_IDL_E))
       goto fail;
   }
   return;
 
  fail:
   coyotos_SpaceBank_destroyBankAndReturn(CR_SPACEBANK, CR_RETURN,
-                                         RC_coyotos_SpaceBank_LimitReached,
+                                         _IDL_E.errCode,
                                          &_IDL_E);
   return;
 }

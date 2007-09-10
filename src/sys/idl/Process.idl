@@ -235,6 +235,25 @@ abstract interface Process extends Cap {
   /// will occur in the @em subsequent invocation.
   void setSpaceAndPC(Cap newAS, archaddr_t newPC); 
 
+
+  /// @brief Retrieve architecture-neutral state.
+  ///
+  /// This interface is subject to change; at some point, runState and
+  /// notices will be added, and everything will move into a
+  /// structure.
+  void getState(out FC faultCode, out archaddr_t faultInfo);
+
+  /// @brief Set architecture-neutral state.
+  ///
+  /// This interface will fail with RequestError if faultCode is FC_NoFault
+  /// and faultInfo is non-zero.
+  ///
+  /// This interface is subject to change; at some point, runState and
+  /// notices will be added, and everything will move into a
+  /// structure.  (note that this interface will @b never be able to
+  /// set runState)
+  void setState(FC faultCode, archaddr_t faultInfo);
+
   /// @brief Capability slots of a process.
   ///
   /// <b>This is obsolete</b>
@@ -260,20 +279,20 @@ abstract interface Process extends Cap {
   /// unsuitable for the slot, the RequestError exception is raised.
   void setSlot(cslot slot, Cap c) raises(RequestError);
 
-  typedef unsigned long capreg_t;
+  typedef unsigned long capRegister;
 
   /// @brief Retrieve the capability stored in the specified
   /// capability register.
   ///
   /// If @p reg is out of bounds (@>= 32), the RequestError exception is raised.
-  Cap getCapReg(capreg_t reg) raises (RequestError);
+  Cap getCapReg(capRegister reg) raises (RequestError);
 
   /// @brief Store the supplied capability stored to the specified
   /// capability register.
   ///
   /// If @p reg is out of bounds (@>= 32), the RequestError exception is raised.
   /// If @p reg is zero, the RequestError exception is raised.
-  void setCapReg(capreg_t reg, Cap c) raises(RequestError);
+  void setCapReg(capRegister reg, Cap c) raises(RequestError);
 
   /// @brief Identify whether the passed entry capability @p ent is an
   /// entry capability to a process whose brand matches ours.

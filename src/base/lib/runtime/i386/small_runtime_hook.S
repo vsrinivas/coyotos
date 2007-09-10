@@ -61,8 +61,8 @@ __small_runtime_hook:
 	mov $coyotos_TargetInfo_small_stack_pointer, %esp
 
 	/* use the new stack to call a C routine to make data/bss writable */
-	pushl _end
-	pushl _etext
+	pushl $_end
+	pushl $_etext
 	call __small_data_init	/* __small_data_init(_etext, _end) */
 	addl $8, %esp
 	movl $__rt_runtime_hook, %eax

@@ -191,12 +191,29 @@ HANDLE_coyotos_Constructor_create(caploc_t bank, caploc_t sched,
 			       CR_NEW_ENDPT,
 			       CR_NEW_RENDPT,
 			       CR_NULL,
-			       IDL_E) ||
-      !coyotos_Endpoint_setRecipient(CR_NEW_ENDPT, CR_NEW_PROC, IDL_E) ||
+			       IDL_E)) {
+    errcode_t err = IDL_E->errCode;
+      
+    (void) coyotos_Cap_destroy(bank, IDL_E);
+    return (err);
+  }
+
+  // when state grows to more than FC + faultInfo, this will need to change.
+  // 8 is the ProtoSpace entry point.
+  if (!coyotos_Process_setState(CR_NEW_PROC, coyotos_Process_FC_Startup, 8, 
+				IDL_E)) {
+    errcode_t err = IDL_E->errCode;
+      
+    (void) coyotos_Cap_destroy(bank, IDL_E);
+    return (err);
+  }
+
+  if (!coyotos_Endpoint_setRecipient(CR_NEW_ENDPT, CR_NEW_PROC, IDL_E) ||
       !coyotos_Endpoint_setRecipient(CR_NEW_RENDPT, CR_NEW_PROC, IDL_E) ||
       !coyotos_Endpoint_setPayloadMatch(CR_NEW_RENDPT, IDL_E) ||
-      !coyotos_Process_setSpaceAndPC(CR_NEW_PROC, 
-				     CR_YIELD_PROTOSPACE, 8, IDL_E) ||
+      !coyotos_Process_setSlot(CR_NEW_PROC, 
+			       coyotos_Process_cslot_addrSpace,
+			       CR_YIELD_PROTOSPACE, IDL_E) ||
       !coyotos_Process_setSlot(CR_NEW_PROC, 
 			       coyotos_Process_cslot_schedule,
 			       sched, IDL_E) ||
