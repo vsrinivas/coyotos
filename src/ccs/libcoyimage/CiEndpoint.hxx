@@ -43,7 +43,6 @@ operator<<(sherpa::oBinaryStream& obs, const CiEndpoint& ep)
   obs << ep.v.endpointID;
 
   obs << ep.v.recipient;
-  obs << ep.v.rcvQueue;
 
   return obs;
 }
@@ -57,7 +56,6 @@ operator>>(sherpa::iBinaryStream& ibs, CiEndpoint& ep)
   ibs >> ep.v.endpointID;
 
   ibs >> ep.v.recipient;
-  ibs >> ep.v.rcvQueue;
 
   return ibs;
 }
@@ -72,7 +70,6 @@ operator <<(std::ostream& strm, CiEndpoint& ep)
        << '\n'
        << "       epid=" << ep.v.endpointID << '\n' 
        << "       recip=" << ep.v.recipient << '\n'
-       << "       rcvq=" << ep.v.rcvQueue << '\n'
        << "}\n";
 
   return strm;

@@ -752,7 +752,6 @@ void
 endpt_gc(Endpoint *endpt)
 {
   cap_gc(&endpt->state.recipient);
-  cap_gc(&endpt->state.rcvQueue);
 }
 
 void 

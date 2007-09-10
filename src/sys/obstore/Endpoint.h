@@ -36,7 +36,6 @@ struct ExEndpoint {
   uint64_t         endpointID;
 
   capability       recipient;
-  capability       rcvQueue;
 };
 typedef struct ExEndpoint ExEndpoint;
 
