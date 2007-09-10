@@ -18,7 +18,7 @@
 # Foundation, 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 #
 default: all
-CROSS_COMPILE=yes
+CROSS_BUILD=yes
 COYOTOS_SRC=../../../../..
 
 include $(COYOTOS_SRC)/build/make/makevars.mk
@@ -26,7 +26,7 @@ include $(COYOTOS_SRC)/build/make/makevars.mk
 MKIMAGE=$(COYOTOS_SRC)/ccs/mkimage/$(BUILDDIR)/mkimage
 KERNEL=../../kernel/$(BUILDDIR)/coyotos
 
-IMAGES=$(filter-out SimpleProc,$(patsubst %.mki,%,$(wildcard *.mki)))
+IMAGES=$(filter-out SimpleProc,$(patsubst %.mki,$(BUILDDIR)/%.img,$(wildcard *.mki)))
 INC=-I$(COYOTOS_SRC)/sys -I$(COYOTOS_SRC)/sys/idl/$(BUILDDIR)/h -IBUILD
 LINKOPTS=-Wl,-Ttext,0x1000 -Wl,-Tdata,0x3000
 QEMU=qemu
@@ -34,6 +34,8 @@ QEMU=qemu
 CLEANLIST=*.exe *.img do_ipc.o
 
 include $(COYOTOS_SRC)/build/make/makerules.mk
+
+all: $(IMAGES)
 
 #iplimage:
 #	$(MKIMAGE) -t i386 -I. $(IMGFILE)
