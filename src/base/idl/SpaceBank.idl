@@ -64,12 +64,12 @@ interface SpaceBank extends Cap {
 
   /// @brief Allocate objects.
   ///
-  /// Allocates @p count objects of type @p obType, returning them in
-  /// @p c1, @p c2, @p c3.  If range.obType.otInvalid is passed as a
-  /// desired object type, the corresponding return capability will be
-  /// cap.null. The operation is all or nothing; if three objects are
-  /// requested but only two can be allocated, the LimitReached
-  /// exception is raised.
+  /// Allocates objects of type @p obType1, @p obType2, and @p
+  /// obType3, returning them in @p c1, @p c2, @p c3.  If
+  /// range.obType.otInvalid is passed as a desired object type, the
+  /// corresponding return capability will be cap.null. The operation
+  /// is all or nothing; if three objects are requested but only two
+  /// can be allocated, the LimitReached exception is raised.
   ///
   /// An allocation performed on any bank is performed in parallel on
   /// all of its parent banks up to the prime bank. This means that
