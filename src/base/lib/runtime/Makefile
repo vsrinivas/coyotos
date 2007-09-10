@@ -65,8 +65,8 @@ include $(COYOTOS_SRC)/build/make/makerules.mk
 install all: $(TARGETS)
 
 install: all
-	$(INSTALL) -d $(COYOTOS_ROOT)/lib
-	$(INSTALL) -m 0644 $(TARGETS) $(COYOTOS_ROOT)/lib
+	$(INSTALL) -d $(COYOTOS_ROOT)/usr/lib
+	$(INSTALL) -m 0644 $(TARGETS) $(COYOTOS_ROOT)/usr/lib
 	$(INSTALL) -d $(COYOTOS_ROOT)/usr/include/coyotos
 	$(INSTALL) -m 0644 $(RUNTIME_H) $(COYOTOS_ROOT)/usr/include/coyotos
 

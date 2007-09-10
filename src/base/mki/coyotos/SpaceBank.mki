@@ -67,6 +67,6 @@ module coyotos.SpaceBank {
    };
 
    /* Set up spacebank's application registers */
-   spacebank.capReg[rt.REG.FIRSTAPP + APP.RANGE] = Range();
-   spacebank.capReg[rt.REG.FIRSTAPP + APP.INITGPT] = new GPT(PrimeBank);
+   spacebank.capReg[APP.RANGE] = Range();
+   spacebank.capReg[APP.INITGPT] = new GPT(PrimeBank);
 }

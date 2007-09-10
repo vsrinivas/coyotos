@@ -7,9 +7,9 @@
 #include <idl/coyotos/Constructor.h>
 #include "coyotos.Constructor.h"
 
-#define CR_ADDRSPACE	CR_APP(coyotos_Constructor_PROTOAPP_ADDRSPACE)
-#define CR_HANDLER	CR_APP(coyotos_Constructor_PROTOAPP_HANDLER)
-#define CR_SCHEDULE	CR_APP(coyotos_Constructor_PROTOAPP_SCHEDULE)
+#define CR_ADDRSPACE	coyotos_Constructor_PROTOAPP_ADDRSPACE
+#define CR_HANDLER	coyotos_Constructor_PROTOAPP_HANDLER
+#define CR_SCHEDULE	coyotos_Constructor_PROTOAPP_SCHEDULE
 
 #define MY_IPW0(dw, sc) \
     (IPW0_CW|IPW0_SP|IPW0_RP|IPW0_RC|IPW0_SC| \

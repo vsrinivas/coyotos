@@ -143,8 +143,8 @@ ifndef COYOTOS_HD
 COYOTOS_HD=/dev/null
 endif
 
-CAPIDL=$(COYOTOS_SRC)/ccs/capidl/BUILD/capidl
-MKIMAGE=$(COYOTOS_SRC)/ccs/mkimage/BUILD/mkimage
+CAPIDL=$(COYOTOS_ROOT)/host/bin/capidl
+MKIMAGE=$(COYOTOS_ROOT)/host/bin/mkimage
 
 #
 # This is where the target environment makefile gets a chance to override
@@ -213,7 +213,7 @@ STRIP=$(COYOTOS_STRIP)
 RANLIB=$(COYOTOS_RANLIB)
 GPLUS_OPTIM=$(COYOTOS_GPLUS_OPTIM)
 GCC_OPTIM=$(COYOTOS_GCC_OPTIM)
-STDLIBDIRS=-L $(COYOTOS_ROOT)/usr/lib -L $(COYOTOS_ROOT)/lib
+STDLIBDIRS=-L $(COYOTOS_ROOT)/usr/lib
 endif
 ifndef CROSS_BUILD
 GCC=$(COYOTOS_CCACHE) $(NATIVE_GCC)
