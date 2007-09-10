@@ -2,15 +2,21 @@
 <!DOCTYPE sbox>
 <sbox>
   <wbox>
-    <field label="NR=0" size="4"/>
-    <field label="CW" size="1"/>
-    <field label="NB" size="1"/>
-    <field label="AS" size="1"/>
-    <field label="AC" size="1"/>
-    <field label="RC" size="1"/>
-    <field label="RP" size="1"/>
-    <field label="u" size="5"/>
-    <field label="t" size="4"/>
-    <field label="reserved" size="13" szlabel="13/45"/>
+    <field label="nr=0" size="4"/>
+    <field label="ldw" size="3"/>
+    <field label="lsc" size="2"/>
+    <field label="lrc" size="2"/>
+    <field label="sg" size="1"/>
+    <field label="as" size="1"/>
+    <field label="nb" size="1"/>
+    <field label="cw" size="1"/>
+    <field label="rp" size="1"/>
+    <field label="sp" size="1"/>
+    <field label="rc" size="1"/>
+    <field label="sc" size="1"/>
+    <field label="ac" size="1"/>
+    <field label="co" size="1"/>
+    <field label="ex" size="1"/>
+    <field label="reserved" size="10" szlabel="10/26"/>
   </wbox>
 </sbox>

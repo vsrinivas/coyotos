@@ -2,7 +2,7 @@
 <!DOCTYPE book PUBLIC "-//EROS Group//DTD OSDoc XML V0.1//EN"
                "http://www.coyotos.org/OSDoc/DTD/osdoc-0.1.dtd" [
 
-<!ENTITY SpecVersion "0.5+ (0.6 in progress)">
+<!ENTITY SpecVersion "0.6">
 ]>
   <book id="ukernel-spec" xmlns:xi="http://www.w3.org/2001/XInclude">
   <docinfo>
@@ -25,41 +25,7 @@
 	<orgname>The EROS Group, LLC</orgname>
       </affiliation>
     </authorgroup>
-    <authorgroup>
-      <author>
- 	<firstname>Eric</firstname>
- 	<surname>Northup</surname>
-      </author> 
-      <author>
-	<othername>M.</othername>
- 	<firstname>Scott</firstname>
- 	<surname>Doerrie</surname>
-      </author> 
-      <author>
- 	<firstname>Swaroop</firstname>
- 	<surname>Sridhar</surname>
-      </author> 
-      <affiliation>
-	<orgname>Systems Research Laboratory</orgname>
-	<address>Dept. of Computer Science</address>
-	<address>Johns Hopkins University</address>
-      </affiliation>
-    </authorgroup>
-    <authorgroup>
-      <author>
-	<firstname>Neal</firstname>
-	<othername>H.</othername>
-	<surname>Walfield</surname>
-      </author>
-      <author>
-	<firstname>Marcus</firstname>
-	<surname>Brinkmann</surname>
-      </author>
-      <affiliation>
-	<orgname>GNU Hurd Project</orgname>
-      </affiliation>
-    </authorgroup>
-    <pubdate>April 29, 2007</pubdate>
+    <pubdate>August 10, 2007</pubdate>
     <copyright>
       <year>2007</year> 
       <holder>The EROS Group, LLC</holder>
@@ -107,6 +73,11 @@
       <p>
 	The members of the L4 community, notably Hermann H&auml;rtig,
 	Espen Skoglund, and Kevin Elphinstone.
+      </p>
+      <p>
+	The members of the Systems Research Laboratory at Johns
+	Hopkins University, notably Eric Northup, Swaroop Sridhar, and
+	M. Scott Doerrie.
       </p>
       <p>
 	The external participants in the kernel design review meeting
@@ -230,132 +201,34 @@
 	design for Coyotos.
       </p>
       <p>
-	The January discussions exposed a fundamental problem in the
-	originally intended Coyotos interface: <b>kernel threads are
-	not cheap.</b> Over the last 15 years, it has become a tenet
-	of faith among microkernel designers that blocking and
-	unbuffered communication mechanisms are good. Perhaps the most
-	persuasive argument supporting this position was offered by
-	Liedtke in <doctitle>Improving IPC by Kernel Design</doctitle>
-	<cite ref="l3:ipc"/>. The essential argument of this paper is
-	that buffering carries additional copying costs, and that
-	non-synchronizing IPC carries additional context switch
-	overheads, the paper argues that the correct way to eliminate
-	these expenses is by eliminating both features in favor of a
-	blocking and unbuffered communication model. When an
-	application must block on multiple communication channels, it
-	should use multiple kernel threads. Our own research results
-	<cite ref="EROS:IPC"/> along with those of Ford <em>et
-	al.</em> <cite ref="mach4evolving"/> and others seemed to
-	confirm the performance argument, and unbuffered blocking IPC
-	systems became more or less the accepted design wisdom in the
-	microkernel world. Looking back, it now seems likely that none
-	of us adequately considered the issue of space or thought hard
-	enough about application-level robustness.
-      </p>
-      <p>
-	The space concern is a clear failing in blocking, unbuffered
-	designs. Suppose there is a server that wishes to wait
-	simultaneously for activity on one of 1024 network
-	connections. In a blocking IPC design you need a thread to
-	wait on each of these connections. The register state of a
-	modern Pentium-family processor occupies nearly four
-	kilobytes, and there is additional state needed within the
-	operating system. Estimate it at two pages, or 8 kilobytes.
-	Ignoring their address space, runtime storage requirements, or
-	any other space that may be needed, the mere existence of
-	these 1024 threads requires about 8 <em>megabytes</em>. It
-	could be argued that this is acceptable on a modern desktop PC
-	(though I disagree). It is simply <em>not</em> acceptable on
-	smaller embedded systems. The requirement for many threads
-	solely for the purpose of demultiplexing presents an intrinsic
-	failure of scalability.
-      </p>
-      <p>
-	The robustness problem is more difficult to see, because it
-	occurs rarely. The problem is that we need to be able to
-	preempt the <em>receiver</em> (as when debugging) without
-	thereby preempting the <em>receive</em>. If there is no
-	receive and the sender will not block then we will lose
-	messages that would normally be delivered. Coyotos resolves
-	this by dividing the message into long and short
-	components. The long portion of the message is delivered to
-	memory as before. The short portion is delivered to a ``short
-	message buffer'' if the target process is not actually
-	receiving at the moment of transmission. The buffered message
-	payload is delivered when the process next enters a receiving
-	state. In contrast to most buffered designs, the buffer
-	storage is explicitly allocated and bounded.
-      </p>
-      <p>
-	The end result of all this is that Coyotos uses a very
-	different IPC model than the EROS model.
+	In response to those discussions, we flirted for a while with
+	introducing scheduler activations and a new IPC model. It
+	didn't pan out. Initially, we thought that activations might
+	be lighter weight than synchronous IPC. They aren't, and they
+	introduce a lot of complexity in the exception handling
+	model. Through editing errors, you may still find traces of
+	that effort remaining in this document. If so, they are
+	errors, and we would appreciate it if you might bring them to
+	our attention.
       </p>
     </sect1>
     <sect1>
-      <title>Scheduler Activations</title>
+      <title>Coyotos Today</title>
       <p>
-	While redesigning the IPC system, we wanted to address another
-	issue. EROS never provided a reasonable solution for
-	application-level preemption. This makes emulating things like
-	UNIX signals difficult, and it makes it tricky to notify
-	running processes that events of possible interest have
-	occurred. Because of the ``cannot preempt receive'' issue, it
-	was also difficult in EROS to notify <em>waiting</em>
-	processes of possible events of interest. The Coyotos process
-	model incorporates scheduler activations and soft interrupts
-	as a way to provide this. Our mechanism is most directly
-	related to the Topaz system <cite ref="thomas90scheduler"/>,
-	but interested readers should also look at first-class user
-	threads in the Psyche system <cite ref="marsh91firstclass"/>,
-	and the Nemesis kernel <cite ref="roscoe1995thesis"/>.
-      </p>
-      <p>
-	Scheduler activations give us clean event loop
-	concurrency support and a sensible scheduling strategy for
-	user-level threads.
-      </p>
-    </sect1>
-    <sect1>
-      <title>Coyotos: Take II</title>
-      <p>
-	The version of Coyotos described here is an outgrowth of the
-	January 2006 discussions between Walfield, Brinkmann, and
-	Shapiro. In contrast to the original plan, it is an unbuffered
-	<em>asynchronous</em> design. A single kernel-scheduled thread
-	may have multiple receives outstanding at the same time, and
-	will be reliably notified when each is completed.<footnote>
-	  <p>
-	    Provided that it correctly implements the activation
-	    protocol.
-	  </p>
-	</footnote> Completion notifications are delivered to an
-	application-supplied activation handler, which can elect
-	whether to preempt the current user-mode thread of execution,
-	enqueue the event for later processing, or simply ignore
-	it. The resulting design presents a curious sort of hybrid:
-	the kernel mechanisms are both asynchronous and atomic, but
-	applications are able to efficiently construct blocking
-	semantics on top of these if desired. If we have gotten this
-	right, the common-case simplicity and performance of the old
-	design has been largely preserved, but the less common (though
-	still important) cases of multithreading and polling can now
-	be handled sensibly.
-      </p>
-      <p>
+	The version of Coyotos described here has come full circle,
+	and returns to the basic model of the EROS system. The primary
+	differences are the introduction of endpoints, a first-class
+	process object, and GPTs. It also reflects the January 2006
+	discussions between Walfield, Brinkmann, and Shapiro. As a
+	result of those discussions, the archtecture has been
+	challenged a bit harder than it had been.
 	Coyotos retains the atomicity and pure capability-based design
-	of the EROS system, but has moved completely to this new,
-	asynchronous communications model. It also introduces a more
-	efficient memory mapping mechanism, jointly invented by
-	Shapiro, Eric Northup, and Scott Doerrie.  We will need to see
-	whether the result works out. There is no substitute for
-	measurement.
+	of the EROS system.
       </p>
       <p align="right">
 	Jonathan S. Shapiro, Ph.D.<br/>
-	Department of Computer Science<br/>
-	Johns Hopkins University<br/>
-	January, 2006
+	The EROS Group, LLC<br/>
+	August, 2007
       </p>
     </sect1>
     <!-- <sect1> -->
@@ -495,6 +368,10 @@
 	performance on multiprocessors.
       </p>
       <p>
+	Receive queues remain an experimental idea, and are not
+	implemented by the current kernel.
+      </p>
+      <p>
 	<leadin>Pages</leadin> Pages are the atomic unit of data and
 	capability storage allocation. An address space consists of a
 	lattice of GPTs whose leaves are pages. Pages are typed: a
@@ -547,9 +424,14 @@
 	structures. Applications may also use this mechanism if
 	desired.
       </p>
+      <p>
+	The checkpoint management interfaces used in a driverless kernel are
+	still being refined, and are not yet included in this
+	specification.
+      </p>
     </sect1>
     <sect1>
-      <title>Activations and Process States</title>
+      <title>Process States and Exceptions</title>
       <p>
 	From the kernel perspective, a process has five run states:
 	<term>blocked</term>, <term>faulted</term>,
@@ -557,65 +439,15 @@
 	<term>running</term>.  A blocked process is waiting for a
 	kernel resource. A ready process is attempting to execute
 	instructions and is waiting for a CPU. A running process is
-	currently executing.
+	currently executing. A faulted process is not attempting to
+	initiate instructions.
       </p>
       <p>
-	Orthogonal to these states is the process activation
-	status. Coyotos implements a variant of the design proposed by
-	March <foreignphrase>et al.</foreignphrase> in <em>First-Class
-	User-Level Threads</em> <cite ref="marsh91firstclass"/>, and
-	is similar to the <em>Scheduler Activations</em> design of
-	Anderson <foreignphrase>et al.</foreignphrase> <cite
-	ref="thomas90scheduler"/>.  Coyotos does not initiate all
-	activations through the activation handler, but it does use
-	the activation mechanism to allow a process to handle its own
-	exceptions and to indicate events such as slice timeout that
-	are of interest to real-time thread schedulers.
-      </p>
-      <p>
-	The activation mechanism introduces two activation states:
-	<term>normal</term> and <term>activated</term>. The activation
-	state of a process is largely orthogonal to its run
-	state. When the specification speaks of ``transitioning to the
-	running state,'' the activation state of the process is
-	unchanged unless a change is explicitly mentioned.
-      </p>
-<!--       <p> -->
-<!-- 	At user level, a process has two states in which it may be -->
-<!-- 	executing: the <term>normal</term> state and the -->
-<!-- 	<term>activated</term> state. Incoming events are always -->
-<!-- 	delivered in association with a transition from the normal to -->
-<!-- 	the activated state. The activated state has a separate entry -->
-<!-- 	point known as the <em>activation handler</em>. The activation -->
-<!-- 	handler exists to make dispatching (or deferral) decisions -->
-<!-- 	about incoming events. One possibility is that the activation -->
-<!-- 	handler may elect to perform a user-level thread switch, and -->
-<!-- 	therefore acts as a user-mode scheduling agent (which is how -->
-<!-- 	these came to be known as <em>scheduler activations</em>.  The -->
-<!-- 	user-level thread switch is kernel supported by placing the -->
-<!-- 	register save area for user-mode registers in memory that is -->
-<!-- 	shared between the kernel and the application and is readable -->
-<!-- 	and writable to both. The kernel supports the activation -->
-<!-- 	handler by handling register save in a mode-sensitive way on -->
-<!-- 	kernel entry.  A scheduler activation may be thought of as a -->
-<!-- 	kernel-implemented trap mechanism that operates entirely at -->
-<!-- 	application level.  It is similar in concept to a single-level -->
-<!-- 	hardware exception mechanism in a RISC processor. -->
-<!--       </p> -->
-<!--       <p> -->
-<!-- 	Another possible handling mechanism is that the activation -->
-<!-- 	handler might simply enqueue the newly received message for -->
-<!-- 	later processing and then resume the current user thread of -->
-<!-- 	control without modification. In the latter design, the user -->
-<!-- 	thread would typically execute in event-driven fashion until -->
-<!-- 	all pending events are processed. -->
-<!--       </p> -->
-      <p>
-	Both hardware and software exceptions incurred by a process in
-	the <em>normal</em> state are delivered by transition to the
-	<em>activated</em> state. Software-defined exceptions are used
-	to encapsulate various events of interest, including slice
-	expiration, and non-blocking interprocess signalling.
+	When a process incurs an exception, the Coyotos kernel
+	synthesizes a message on behalf of the faulted process to a
+	fault handler. It is the responsibility of the fault handler
+	to decide what to do. The kernel does not define a fault
+	handling policy.
       </p>
     </sect1>
     <sect1>
@@ -680,9 +512,12 @@
 	receiver's designated receive location(s) will be delivered to
 	the receiver-designated fault handlers as required. When fault
 	handling has completed, the sender will retry the send
-	operation from the beginning. Senders may implement watchdog
-	timeouts on send operations by arranging to send themselves an
-	idempotent message after a preset delay.
+	operation from the beginning.<footnote><p>The need to retry
+	from the beginning is onerous, and the specification will
+	eventually be refined to allow optimization in this
+	case.</p></footnote>  Senders may implement watchdog
+	timeouts on send operations by arranging to post exceptions to
+	themselves after a timed delay.
       </p>
       <p>
 	<leadin>Non-blocking Send</leadin> A non-blocking send will be
@@ -750,8 +585,7 @@
 	The Coyotos kernel also pushes responsibility for exception
 	handling policy to application level. When runtime application
 	exceptions occur, the kernel delivers the state associated
-	with the exception as an activation, either to the offending
-	process's activation handler or to an external fault handler
+	with the exception to an external fault handler
 	designated by an endpoint.
       </p>
     </sect1>
@@ -1439,8 +1273,7 @@
 	  intervention. This includes architecture-defined
 	  non-privileged register state. It also includes additional
 	  ``pseudo registers'' defined by Coyotos that support the
-	  activation handling mechanism and the capability invocation
-	  system call.
+	  capability invocation mechanism.
 	</p>
 	<p>
 	  <term>Kernel state</term> is that state which records or
@@ -1481,6 +1314,13 @@
 	  <ul>
 	    <li>
 	      <p>
+		The process run state. This field indicates whether
+		the process is running (0), receiving (1), or faulted
+		(2).
+	      </p>
+	    </li>
+	    <li>
+	      <p>
 		The process flags word. This word contains the process
 		run state and several bits that control fault-related
 		and debugging-related behavior.
@@ -1488,9 +1328,9 @@
 	    </li>
 	    <li>
 	      <p>
-		A software-defined interrupt bitfield,
-		<term>softInts</term>, indicating (by bit position)
-		the software-defined interrupts that are pending for
+		A software-defined notices bitfield,
+		<term>notices</term>, indicating (by bit position)
+		the software-defined notices that are pending for
 		this process.
 	      </p>
 	    </li>
@@ -1552,19 +1392,6 @@
 		capability.
 	      </p>
 	    </li>
-	    <li>
-	      <p>
-		Slots related to capability invocation and IPC, which
-		are discussed in Chapter&nbsp;<xref
-		ref="invocation"/>: the message scratchpad and receive
-		parameter location registers
-		(<term>rcvParam[]</term>). The values of these slots
-		are typically updated by the
-		<progident>InvokeCap</progident> system call. They can
-		also be copied or updated through get and set
-		operations supplied by the process capability.
-	      </p>
-	    </li>
 	  </ul>
 	  <p>
 	    The per-process capability state, fault code, and
@@ -1572,12 +1399,12 @@
 	    through invocations of the process capability. 
 	  </p>
 	  <p>
-	    The process flags word is shown in Figure&nbsp;<xref
-	    ref="fig:proc-flags"/>.  The fields of the flags word have
+	    The process flags are shown in Figure&nbsp;<xref
+	    ref="fig:proc-flags"/>.  The fields have
 	    the following meanings:
 	  </p>
 	  <figure id="fig:proc-flags" latex.position="h">
-	    <img source="proc-flags" width="65" srctype="sbox"/>
+	    <img source="proc-flags" width="75" srctype="sbox"/>
 	    <caption>Process flags word</caption>
 	  </figure>
 	  <table latex.long="yes" latex.center="yes" latex.colspec="lp{5.5in}">
@@ -1589,7 +1416,7 @@
 	    </thead>
 	    <tbody>
 	      <tr>
-		<td><term>XM</term></td>
+		<td><term>xm</term></td>
 		<td>
 		  <p>
 		    <leadin>Execution Model</leadin> indicates whether
@@ -1602,7 +1429,7 @@
 		</td>
 	      </tr>
 	      <tr>
-		<td><term>SX</term></td>
+		<td><term>sx</term></td>
 		<td>
 		  <p>
 		    <leadin>Slice Expired</leadin> This bit is set by
@@ -1615,23 +1442,18 @@
 		</td>
 	      </tr>
 	      <tr>
-		<td><term>SN</term></td>
+		<td><term>sn</term></td>
 		<td>
 		  <p>
 		    <leadin>Soft Notice</leadin>
 		    This bit is set by the kernel whenever a
 		    new bit is set in the pending
-		    application-defined notices field.  It
-		    signals that the handler should be
-		    dispatched in the activated state with an
-		    <progident>AppNotice</progident> exception if
-		    no exceptions are pending when it is next
-		    dispatched.
+		    application-defined notices field.
 		  </p>
 		</td>
 	      </tr>
 	      <tr>
-		<td><term>TC</term></td>
+		<td><term>tc</term></td>
 		<td>
 		  <p>
 		    <leadin>Trap On Call</leadin> indicates that the
@@ -1646,7 +1468,7 @@
 		</td>
 	      </tr>
 	      <tr>
-		<td><term>TR</term></td>
+		<td><term>tr</term></td>
 		<td>
 		  <p>
 		    <leadin>Trap On Return</leadin> indicates that the
@@ -1673,7 +1495,7 @@
 		</td>
 	      </tr>
 	      <tr>
-		<td><term>CS</term></td>
+		<td><term>cs</term></td>
 		<td>
 		  <p>
 		    <leadin>Call Step</leadin> if set (1), indicate
@@ -1693,7 +1515,7 @@
 		</td>
 	      </tr>
 	      <tr>
-		<td><term>PC</term></td>
+		<td><term>pc</term></td>
 		<td>
 		  <p>
 		    <leadin>Parameter Copyout</leadin> This bit is set
@@ -1704,52 +1526,8 @@
 		  </p>
 		</td>
 	      </tr>
-	      <tr>
-		<td><term>runState</term></td>
-		<td>
-		  <p>
-		    The process run state. Indicates whether the
-		    process is running (0), receiving (1), or stopped
-		    (2).
-		  </p>
-		</td>
-	      </tr>
 	    </tbody>
 	  </table>
-	</sect2>
-	<sect2 id="proc_act_state">
-	  <title>Activation Save Area</title>
-	  <p>
-	    The <term>actSaveArea</term> field of the kernel Process
-	    structure is a pointer value that is set by the
-	    application. It defines the user-mode address where
-	    certain registers should be saved when transitioning
-	    control to the in-process fault handler when an exception
-	    is incurred. If this field is NULL (0), no transition to
-	    an in-process handler will be attempted.
-	  </p>
-	  <p>
-	    If the field is non-null, the kernel will
-	    <em>reference</em> the structure at this address to
-	    determine how exception information should be delivered.
-	    The address indicated by <term>actSaveArea</term> should
-	    point to the structure show in Figure&nbsp;<xref
-	    ref="fig:actstate"/>. The architecture-specific annex may
-	    define additional registers to be saved. The save area
-	    structure must be word aligned.  If, during activation
-	    state copyout, a page fault is incurred, the kernel will
-	    attempt to deliver a page fault exception to the
-	    <em>external</em> fault handler if one is defined.
-	  </p>
-	  <p>
-	    The use and interpretation of the activation save area
-	    fields is described in Section&nbsp;<xref
-	    ref="ExceptionDelivery"/>.
-	  </p>
-	  <figure id="fig:actstate" latex.position="thb">
-	    <img source="proc-actstate" width="75" srctype="sbox"/>
-	    <caption>Activation process state</caption>
-	  </figure>
 	</sect2>
       </sect1>
       <sect1 id="proc_exec_model">
@@ -1800,6 +1578,15 @@
 	    </li>
 	  </defli>
 	  <defli>
+	    <label><term>running</term></label>
+	    <li>
+	      <p>
+		Process is assigned to a CPU and is executing
+		instructions.
+	      </p>
+	    </li>
+	  </defli>
+	  <defli>
 	    <label><term>faulted</term></label>
 	    <li>
 	      <p>
@@ -1812,13 +1599,11 @@
 	  </defli>
 	</deflist>
 	<p>
-	  Orthogonal to these states, a process may be in the
-	  <em>activated</em> or <em>normal</em> activation state.  The
-	  state transition diagram is shown in Figure&nbsp;<xref
+	  The state transition diagram is shown in Figure&nbsp;<xref
 	  ref="fig.transition"/>.
 	</p>
 	<figure id="fig.transition" latex.placement="bth">
-	  <img source="transitions" width="65" srctype="gif"/>
+	  <img source="transitions" width="30" srctype="gif"/>
 	  <caption>Process state transitions</caption>
 	</figure>
 	<p>
@@ -1826,9 +1611,9 @@
 	  blocked process has an externally reported
 	  <progident>runState</progident> of ``running''. Such a
 	  process is deemed to be running without making progress or
-	  consuming CPU cycles.  The <em>faulted</em> state is
-	  externally reported as a <progident>runState</progident> of
-	  ``stopped'' with a non-zero fault code.
+	  consuming CPU cycles.  The receiving state it also not
+	  externally observable. A receiving process is executing the
+	  receive phase of a capability invocation very slowly.
 	</p>
 	<p>
 	  A process that is in the <em>running</em> state will
@@ -1850,7 +1635,7 @@
 	  fault code and fault information are delivered to the
 	  process by storing them in the
 	  <progident>faultCode</progident> and
-	  <progident>faultInfo</progident> fields of the KPCB and
+	  <progident>faultInfo</progident> fields of the Process and
 	  causing the process to resume execution.
 	</p>
 	<sect2 id="ExceptionDelivery">
@@ -1858,270 +1643,65 @@
 	  <p>
 	    When a process attempts to initiate instructions with a
 	    <progident>faultCode</progident> other than
-	    <progident>FC_NoFault</progident>, the behavior depends on
-	    the value of the <progident>actSaveArea</progident> field:
+	    <progident>FC_NoFault</progident>, the behavior is as
+	    follows:
 	  </p>
-	  <ul>
+	  <ol>
 	    <li>
 	      <p>
-		If <progident>actSaveArea</progident> is non-null, and
-		the <progident>actSaveArea-&gt;flags.a</progident> bit
-		is clear (0), then:
+		If an Entry capability is stored in the
+		process's <progident>handler</progident> slot, the
+		kernel synthesizes a message to this endpoint on
+		behalf of the faulting process. The message will
+		provide the <progident>faultCode</progident> and
+		<progident>faultInfo</progident> values and a
+		process capability to the faulted
+		process. Disposition of the faulted process is now
+		at the discretion of the fault handler.
 	      </p>
-	      <ol>
-		<li>
-		  <p>
-		    The current program counter, stack pointer, flags
-		    register (processor status word),
-		    <progident>faultCode</progident>, and
-		    <progident>faultInfo</progident>, and
-		    <progident>softInts</progident> fields are copied
-		    to the activation save area. The
-		    <progident>SN</progident> and
-		    <progident>SX</progident> bit values are copied
-		    from the process flags to the activation save area
-		    flags. The <progident>a</progident> bit of the
-		    activation save area is set.
-		  </p>
-		</li>
-		<li>
-		  <p>
-		    The values of <progident>aEntryPC</progident>,
-		    <progident>aEntrySP</progident>, and
-		    <progident>aEntryFlags</progident> in the
-		    activation save area are copied to the program
-		    counter, stack pointer, and flags fields the
-		    in-kernel process structure (respectively).
-		  </p>
-		</li>
-		<li>
-		  <p>
-		    The <progident>softInts</progident>,
-		    <progident>SN</progident>,
-		    <progident>SX</progident>,
-		    <progident>faultCode</progident>, and
-		    <progident>faultInfo</progident>, fields of the
-		    in-kernel process structure are cleared.
-		  </p>
-		</li>
-		<li>
-		  <p>
-		    The process is now dispatched normally.
-		  </p>
-		</li>
-	      </ol>
 	      <p>
-		The copyin step is performed in such a way that
-		exceptions are recoverable without losing the process
-		state. If a page fault occurs during the copyout or
-		copyin steps, an <progident>ActivationFail</progident>
-		exception is reported to the external handler
-		providing the page fault address as its fault
-		information (this is, in effect, a type of ``double
-		fault'').  In this case the
-		<progident>faultCode</progident> and
-		<progident>faultInfo</progident> fields of the kernel
-		process structure retain their original fault
-		information. Debuggers resuming a process after an
-		<progident>ActivationFail</progident> fault should
-		take care <em>not</em> to clear the fault code if
-		delivery of the original fault to the activation
-		handler is still desired.
+		If the handler process is blocked, handler message
+		delivery will be re-attempted when the external
+		handler process becomes unblocked.
 	      </p>
 	    </li>
 	    <li>
 	      <p>
-		Otherwise, the following actions are taken in
-		sequence:
-	      </p>
-	      <ol>
-		<li>
-		  <p>
-		    If an Entry capability is stored in the
-		    process's <progident>handler</progident> slot, the
-		    kernel synthesizes a message to this endpoint on
-		    behalf of the faulting process. The message will
-		    provide the <progident>faultCode</progident> and
-		    <progident>faultInfo</progident> values and a
-		    process capability to the faulted
-		    process. Disposition of the faulted process is now
-		    at the discretion of the fault handler.
-		  </p>
-		  <p>
-		    If the handler process is blocked, handler message
-		    delivery will be re-attempted when the external
-		    handler process becomes unblocked.
-		  </p>
-		</li>
-		<li>
-		  <p>
-		    The process enters the <em>faulted</em> state
-		    (runState = stopped) and ceases to execute
-		    instructions.
-		  </p>
-		</li>
-	      </ol>
-	      <p>
-		In the absence of a specified external handler, a
-		process attempting to deliver a fault notification to its
-		external handler will effectively cease to execute
-		instructions without notice to anyone. It is the
-		reponsibility of the programmer to ensure that an
-		external handler capability is defined if noticing
-		this condition is required.
+		The process enters the <em>faulted</em> state
+		(runState = stopped) and ceases to execute
+		instructions.
 	      </p>
 	    </li>
-	  </ul>
+	  </ol>
 	  <p>
-	    Note that the state of <progident>actSaveArea</progident>,
-	    <progident>actSaveArea-&gt;flags.a</progident>, and
-	    <progident>handler</progident> are checked on each
+	    In the absence of a specified external handler, a
+	    process attempting to deliver a fault notification to its
+	    external handler will effectively cease to execute
+	    instructions without notice to anyone. It is the
+	    reponsibility of the programmer to ensure that an
+	    external handler capability is defined if noticing
+	    this condition is required.
+	  </p>
+	  <p>
+	    Note that the state of the per-process
+	    <progident>handler</progident> slot is checked on each
 	    delivery attempt. If a process blocks attempting to
 	    deliver its fault information to an external fault
-	    handler, and the <progident>actSaveArea</progident> and/or
-	    field is modified before the external handler becomes
-	    unblocked, the fault may end up being delivered to the
-	    in-process fault handler depending on the value of
-	    <progident>actSaveArea-&gt;flags.a</progident>.
-	  </p>
-<!-- 	  <note> -->
-<!-- 	    <title>Open Issue</title> -->
-<!-- 	    <p> -->
-<!-- 	      There is an open issue here regarding debugging. Certain -->
-<!-- 	      messaging-related faults are deferred if -->
-<!-- 	      <progident>upcb.a</progident> is set, because they are -->
-<!-- 	      really notifications. This means that a debugger cannot -->
-<!-- 	      trace events simply by setting -->
-<!-- 	      <progident>upcb.a=1</progident>. -->
-<!-- 	    </p> -->
-<!-- 	    <p> -->
-<!-- 	      If a debugger wishes to learn of notifications, there -->
-<!-- 	      appear to be three (mutually exclusive) posssible -->
-<!-- 	      strategies: -->
-<!-- 	    </p> -->
-<!-- 	    <ol> -->
-<!-- 	      <li> -->
-<!-- 		<p> -->
-<!-- 		  Add a bit <progident>nh</progident> (<b>n</b>otify -->
-<!-- 		  <b>h</b>andler) indicating that notifications should -->
-<!-- 		  be delivered when in the <em>SelfHandling</em> state -->
-<!-- 		  (and thereby be delivered to the debugger). -->
-<!-- 		</p> -->
-<!-- 	      </li> -->
-<!-- 	      <li> -->
-<!-- 		<p> -->
-<!-- 		  Add a bit <progident>xh</progident> (e<b>x</b>ternal -->
-<!-- 		  <b>h</b>andler) indicating that all faults and -->
-<!-- 		  notifications should be delivered to the external -->
-<!-- 		  handler. -->
-<!-- 		</p> -->
-<!-- 	      </li> -->
-<!-- 	      <li> -->
-<!-- 		<p> -->
-<!-- 		 Debugger injects its own handler entry point, taking -->
-<!-- 		 over the handler logic. -->
-<!-- 		</p> -->
-<!-- 	      </li> -->
-<!-- 	    </ol> -->
-<!-- 	    <p> -->
-<!-- 	      We have not yet adopted a choice among these options. -->
-<!-- 	    </p> -->
-<!-- 	  </note> -->
-	</sect2>
-	<sect2>
-	  <title>Return From In-Process Handler</title>
-	  <p>
-	    Several things need to happen simultaneously to return
-	    from an in-process fault handler:
-	  </p>
-	  <ul>
-	    <li>
-	      <p>
-		The <progident>upcb.a</progident> field must be
-		cleared (set to 0).
-	      </p>
-	    </li>
-	    <li>
-	      <p>
-		The <progident>PC</progident> must be updated.
-	      </p>
-	    </li>
-	    <li>
-	      <p>
-		The <progident>SP</progident> must be updated.
-	      </p>
-	    </li>
-	    <li>
-	      <p>
-		The <progident>flags</progident> must be updated.
-	      </p>
-	    </li>
-	    <li>
-	      <p>
-		A check must be performed to confirm that
-		<progident>upcb.ai</progident> is clear (0).
-	      </p>
-	    </li>
-	  </ul>
-	  <p>
-	    These operations must be performed in user mode while
-	    running within a critical section, which is not possible
-	    on any architecture we know about. The alternative is to
-	    perform the sequence in a way that the kernel can
-	    recognize in the event that preemption occurs. This is the
-	    approach adopted by Coyotos. The kernel implements a
-	    dedicated code page at an architecture-specific virtual
-	    address. In most implementations, the kernel reserves a
-	    location in the thread-local storage area for the return
-	    program counter.
-	  </p>
-	  <note>
-	    <title>Non-Normative Illustration</title>
-	    <p>
-	      The following code sequences are not normative. Consult
-	      the architecture-specific annex for normative code
-	      sequences on your architecture.
-	    </p>
-	  </note>
-	  <p>
-	    The return sequence is implemented by:
-	  </p>
-	  <literallayout>
-actSaveArea.savedPC    &lt;-  <em>return PC</em>
-actSaveArea.savedSP    &lt;-  <em>return SP</em>
-actSaveArea.savedFlags &lt;-  <em>return flags value</em>;
-jmp <em>kernel_supplied_return_stub</em></literallayout>
-	  <p indent="no">
-	    The kernel-supplied stub in turn performs something like
-	    the following sequence:
-	  </p>
-	  <literallayout>
-tls.savedPC     &lt;- actSaveArea.savedPC
-actSaveArea.a   &lt;- 0
-FLAGS           &lt;- actSaveArea.savedFLAGS
-SP              &lt;- actSaveArea.savedSP
-j *tls.savedPC
-</literallayout>
-	  <p>
-	    If preemption occurs within the kernel-supplied page, the
-	    update is completed by the kernel on behalf of the
-	    de-activating process. This is done by copying the values
-	    of <progident>actSaveArea.savedPC</progident>,
-	    <progident>actSaveArea.savedSP</progident>, and
-	    <progident>actSaveArea.savedFlags</progident> from the
-	    activation save area into the corresponding in-process
-	    locations and clearing
-	    <progident>actSaveArea.flags.a</progident>.
+	    handler, and the <progident>handler</progident> slot is
+	    modified before the external handler becomes unblocked,
+	    the fault may end up being delivered to a different
+	    handler or to no handler at all depending on the new value
+	    of the <progident>handler</progident> slot.
 	  </p>
 	</sect2>
 	<sect2>
 	  <title>Return From Out-of-Process Handler</title>
 	  <p>
-	    If an exception has been delivered to an out-of-process
-	    handler, the fault was incurred in the activation
-	    handler. The out-of-process handler must take action to
-	    clear the fault, and then invokes the process capability
-	    to return the process to the running state.
+	    If an exception has been delivered to a handler, the
+	    handler must take action to clear the fault. It does this
+	    by invoking the process capability provided by the kernel
+	    upcall to clear the fault and return the process to the
+	    running state.
 	  </p>
 	</sect2>
       </sect1>
@@ -2141,22 +1721,21 @@ j *tls.savedPC
 	  of the target process <progident>softNotices</progident>
 	  word, and to set the <progident>sn</progident> bit of the
 	  target process flags if the value of
-	  <progident>appNotices</progident> has changed as a
-	  consequence of this posting (i.e. if the interrupt was not
+	  <progident>notices</progident> has changed as a
+	  consequence of this posting (i.e. if the notice was not
 	  already pending). Of the set of notices posted, only the
 	  authorized subset is delivered.
 	</p>
 	<p>
-	  Application-defined notifications have lower delivery
-	  priority than hardware exceptions. Delivery is suppressed
-	  during a closed wait, and also when the application is
-	  running in the <em>activated</em> state. If the
-	  <progident>upcb.ai</progident> bit is set, no other
-	  exception is pending, and the application is running in the
-	  <em>normal</em> state or is in an open <em>receive</em>
-	  state, the kernel will deliver the
-	  <progident>SoftNotice</progident> fault code to the
-	  activation handler.
+	  If any notices are pending when the recipient enters an open
+	  wait, they will be delivered as a message, with a specified
+	  endpoint ID of <tt>~0ull</tt> and a protected payload value
+	  of zero. Delivery of pending notices has higher priority
+	  than other incoming messages.
+	</p>
+	<p>
+	  Delivery of application-defined notices is suppressed during
+	  a closed wait.
 	</p>
       </sect1>
     </chapter>
@@ -2320,11 +1899,11 @@ j *tls.savedPC
 	    <progident>translate(space,addr,access-type)</progident>
 	    is either an exception or a valid translation of the form
 	    <progident>(page,offset)</progident>. If an exception is
-	    reported, the type of the exception and the originally
-	    referenced address are provided to the referencing
-	    process's activation handler, the faulting instruction (if
-	    any) has no effect), and the program counter is not
-	    advanced. The defined reference types are:
+	    generated, the type of the exception and the originally
+	    referenced address are reported to a handler (if one is
+	    defined), the faulting instruction (if any) has no
+	    effect), and the program counter is not advanced. The
+	    defined reference types are:
 	  </p>
 	  <deflist latex.colspec="ll">
 	    <defli>
@@ -2656,7 +2235,9 @@ v = va &amp; ((1u &lt;&lt; C.l2v) - 1);</literallayout>
 	  <p>
 	    At the start of translation, the background space
 	    capability <progident>C<sub>background</sub></progident>
-	    is the Null capability, the virtual address is as provided
+	    and the memory handler capability
+	    <progident>C<sub>handler</sub></progident> are initialized
+	    to the Null capability, the virtual address is as provided
 	    by the hardware (or possibly the IPC logic) and the
 	    effective access restrictions <progident>AR</progident> is
 	    the empty set.  Translation proceeds by iteration, with
@@ -2803,12 +2384,15 @@ C := gpt-&gt;cap[<em>u</em>]</literallayout>
 	  <title>Exception Handling</title>
 	  <p>
 	    If an exception is generated by the translation mechanism,
-	    the exception is
-	    reported by storing the exception type and address in the
-	    process's
+	    and the memory exception handler capability
+	    <progident>C<sub>handler</sub></progident> is not
+	    <progident>Null</progident>, then the exception will be
+	    delivered to the memory exception handler. Otherwise, the
+	    exception type and address are stored in the process's
 	    <progident>faultCode</progident> and
-	    <progident>faultInfo</progident> slots, respectively. The
-	    exception is then delivered as described in
+	    <progident>faultInfo</progident> slots, respectively, and
+	    the process is set running with the pending fault code,
+	    and the exception is then delivered as described in
 	    Section&nbsp;<xref ref="ExceptionDelivery"/>.
 	  </p>
 	</sect2>
@@ -3065,18 +2649,13 @@ C := gpt-&gt;cap[<em>u</em>]</literallayout>
 	<ul>
 	  <li>
 	    <p>
-	      Either 16 or 32 <term>untyped parameter words</term>,
-	      depending on the natural register size of the executing
-	      process. On a 32-bit platform there are 32 untyped
-	      parameter words, each 32-bits wide.  On a 64-bit
-	      platform there are 16 untyped parameter words, each
-	      64-bits wide. These words may be carried in registers or
-	      memory, as specified by the architecture-specific annex
-	      for the target platform.
-	    </p>
-	    <p>
-	      Up to 16 <em>typed parameters</em>, which are described
-	      by <em>typed parameter items</em>.
+	      Up to 8 direct words, the first of which is the
+	      invocation control word. The size of these words is
+	      architecture dependent. These words may be carried in
+	      registers or memory, as specified by the
+	      architecture-specific annex for the target platform.
+	      The index of the last word transmitted is given by
+	      <progident>IPW0.ldw</progident>.
 	    </p>
 	    <p>
 	      Input parameter word 0 of the invoke capability
@@ -3084,7 +2663,7 @@ C := gpt-&gt;cap[<em>u</em>]</literallayout>
 	      rest of the message payload:
 	    </p>
 	    <figure latex.placement="h">
-	      <img source="syscall-invcap-ipw0" width="70"
+	      <img source="syscall-invcap-ipw0" width="75"
 		srctype="sbox"/>
 	      <caption>Invocation control word (input)</caption>
 	    </figure>
@@ -3097,39 +2676,20 @@ C := gpt-&gt;cap[<em>u</em>]</literallayout>
 	  </li>
 	  <li>
 	    <p>
-	      Up to four capabilities. If
-	      <progident>IPW0.SC=1</progident>, capabilities are
-	      transmitted, and <progident>IPW0.c</progident> gives the
-	      index of the last capability transmitted. If
-	      capabilities are transmitted, IPW0.RC=1, and the first
-	      capability transmitted is an Endpoint capability, the
-	      first capability received will be an Entry capability to
-	      that endpoint.  See the specification of the ``invoke
-	      capability'' system call in Section&nbsp;<xref
-	      ref="syscall_invcap"/> for an explanation of the
-	      <progident>SC</progident> and <progident>RC</progident>
-	      bits.
+	      Up to four capabilities. Capabilities are transmitted if
+	      <progident>IPW0.SC=1</progident>. If so,
+	      <progident>IPW0.lsc</progident> gives the index of the
+	      last capability transmitted.  Capabilities are received
+	      if <progident>IPW0.AC=1</progident>. If so,
+	      <progident>IPW0.lrc</progident> gives the index of the
+	      last capability that will be accepted.
 	    </p>
 	  </li>
 	  <li>
 	    <p>
-	      Up to 6 <term>indirect strings</term>, specified by the
-	      typed item parameter words.
-	      The corresponding receive regions are named by the
-	      <progident>rcvBuf[]</progident> fields of the process
-	      structure.
-	    </p>
-	    <p>
-	      Note that parameter words are used to express both typed
-	      and untyped items. The <progident>IPW0.u</progident>
-	      field gives the index of the last untyped item
-	      transmitted. The <progident>IPW0.t</progident> field
-	      gives the <em>count</em> of typed item words that are to
-	      be processed. If <progident>IPW0.t</progident> is zero,
-	      no typed item words are present and no strings are
-	      transmitted. The sum
-	      <progident>IPW0.t+IPW0.u</progident> may not exceed the
-	      total number of parameter words.
+	      An <term>indirect string</term> of up to 64 kilobytes.
+	      The length of this string is given in a parameter word
+	      to the system call.
 	    </p>
 	  </li>
 	</ul>
@@ -3163,6 +2723,13 @@ C := gpt-&gt;cap[<em>u</em>]</literallayout>
 	  </li>
 	  <li>
 	    <p>
+	      Whether copy-out of soft registers should be performed
+	      on those architectures that define soft registers.
+	      (<progident>IPW0.CO</progident>).
+	    </p>
+	  </li>
+	  <li>
+	    <p>
 	      Whether the receive phase should accept messages only
 	      from a particular endpoint
 	      (<progident>IPW0.CW</progident>,
@@ -3189,60 +2756,21 @@ C := gpt-&gt;cap[<em>u</em>]</literallayout>
 	  </li>
 	  <li>
 	    <p>
-	      The number of typed items corresponding to strings that
-	      were actually received (as opposed to the bound that the
-	      receiver was <em>willing</em> to receive).
+	      The length of the string that was sent, it any.
 	    </p>
 	  </li>
 	  <li>
 	    <p>
-	      A modified copy of the invoker's invocation control
-	      word, which indicates various information about the
-	      incoming message:
-	    </p>
-	    <figure latex.placement="h">
-	      <img source="syscall-invcap-opw0" width="70"
-		srctype="sbox"/>
-	      <caption>Invocation control word (output)</caption>
-	    </figure>
-	    <p>
-	      In this returned word, the <progident>u</progident>,
-	      <progident>RC</progident>, and
+	      A modified copy of the invocation control word, which
+	      indicates various information about the incoming
+	      message.  In this returned word, the
+	      <progident>u</progident>, <progident>RC</progident>, and
 	      <progident>SC</progident>, fields are copied from the
 	      sender's <em>input</em> invocation control word. The
-	      <progident>t</progident> field indicates the number of
-	      sent typed item words that were received. A typed item
-	      parameter word is received only if the corresponding
-	      string was fully received. <progident>OPW1.t</progident>
-	      indicates the number of typed item words received. If
-	      <progident>OPW1.SC</progident> is set (1),
-	      <progident>OPW1.c</progident> indicates either the index
-	      of the last capability received or the index of the
-	      capability argument that was truncated if
-	      <progident>OPW1.T</progident> is set.
-	    </p>
-	    <p>
-	      The <progident>TS</progident> bit indicates whether any
-	      incoming parameter string was truncated. If
-	      <progident>TS</progident> is clear (0), all transmitted
-	      strings were received. If <progident>TS</progident> is
-	      set, truncation occurred at an unspecified location
-	      following the last received parameter word.
-	      A transmitted string will be truncated only if the
-	      sender uses a non-blocking send and the
-	      receiver-specified buffer is not valid and writable. In
-	      this case, the received value
-	    </p>
-	    <p>
-	      Similarly, the <progident>TC</progident> bit indicates
-	      whether any transmitted capability parameters were
-	      dropped. This can occur if a receiver-specified
-	      capability address is invalid or non-writable and the
-	      sender has specified a non-blocking transmission.  A
-	      transmitted capability that is received into a
-	      capability register will never be dropped. If all
-	      capabilities are received into capability registers,
-	      <progident>OPW1.T</progident> will never be set (1).
+	      <progident>lsc</progident> field indicates the number of
+	      capabilities that have been received. The
+	      <progident>ldw</progident> field indicates the number of
+	      data words that have been received.
 	    </p>
 	  </li>
 	</ul>
@@ -3324,7 +2852,7 @@ C := gpt-&gt;cap[<em>u</em>]</literallayout>
 	  </thead>
 	  <tbody>
 	    <tr>
-	      <td><term>PM</term></td>
+	      <td><term>pm</term></td>
 	      <td>
 		<p>
 		  <leadin>Payload Match</leadin> Indicates that the
@@ -3332,17 +2860,6 @@ C := gpt-&gt;cap[<em>u</em>]</literallayout>
 		  to the protected payload of the Entry
 		  capability. If they are not equal, the invocation
 		  behaves as if the Null capability had been invoked.
-		</p>
-	      </td>
-	    </tr>
-	    <tr>
-	      <td><term>CM</term></td>
-	      <td>
-		<p>
-		  <leadin>Cached Message</leadin> A small message has
-		  been cached in the endpoint for delivery. The endpoint
-		  has been chained onto the target process via the
-		  <progident>chain</progident> slot.
 		</p>
 	      </td>
 	    </tr>
@@ -3374,47 +2891,8 @@ C := gpt-&gt;cap[<em>u</em>]</literallayout>
 		</p>
 	      </td>
 	    </tr>
-	    <tr>
-	      <td><term>ipw0..ipw2</term></td>
-	      <td>
-		<p>
-		  Cached locations for the
-		  <progident>ipw0</progident>..<progident>ipw2</progident>
-		  values of a short message.
-		</p>
-	      </td>
-	    </tr>
 	  </tbody>
 	</table>
-	<p>
-	  A message consisting of exactly two parameter words may be
-	  cached in the endpoint if the endpoint does not already
-	  contain a cached message. If this is done, the
-	  <progident>IPW0</progident> and <progident>IPW1</progident>
-	  values of the message will be copied to the endpoint and the
-	  endpoint will be added to a chain of endpoints that are
-	  attempting to deliver messages to the target process. The
-	  <progident>CM</progident> bit will be set to indicate that a
-	  message is cached in this endpoint.
-	</p>
-	<note>
-	  <title>Open Issue</title>
-	  <p>
-	    There is a design issue in how to chain endpoints having
-	    cached messages. I originally contemplated a
-	    <progident>chain</progident> field threaded through a
-	    pending endpoint list, but this does not handle the
-	    endpoint destroy operation well. What should happen to
-	    later entries in the chain?
-	  </p>
-	  <p>
-	    I am presently thinking that it is best to have the
-	    chaining be a kernel-internal matter, and handle the
-	    dangling endpoint issue by decongestion. If we cannot come
-	    up with a clean way to do that, we will simply drop
-	    endpoint caching.
-	  </p>
-	</note>
 	<note>
 	  <title>Non-Normative Illustration</title>
 	  <p>
@@ -3644,7 +3122,7 @@ C := gpt-&gt;cap[<em>u</em>]</literallayout>
     <chapter id="syscalls">
       <title>System Calls</title>
       <p>
-	Coyotos currently defines four system calls:
+	Coyotos currently defines three system calls:
       </p>
       <table latex.center="yes" latex.colspec="llp{4.5in}">
 	<thead>
@@ -3708,16 +3186,17 @@ C := gpt-&gt;cap[<em>u</em>]</literallayout>
 	<title>Parameters and Parameter Words</title>
 	<p>
 	  At the system call trap interface, arguments and return
-	  values are conveyed by means of <em>parameter
-	  words</em>. The size of a parameter word is determined by
-	  the native machine word size. The number of the parameter
-	  words is system-call dependent.  Parameter words may be
-	  transmitted across the user/supervisor boundary in memory
-	  (via the stack) or in registers. The specification of which
-	  parameter words are carried in registers at system call
-	  entry and exit is defined by the architecture-specific
-	  annex. No annex defines fewer than five registers to be
-	  available at this interface.
+	  values are conveyed by means of a combination of
+	  registerized parameter values and (optionally) a system-call
+	  specific stack frame. Every architecture-specific annex
+	  specifies a subset of hardware registers that are be used to
+	  convey system call parameters.  No annex defines fewer than
+	  four registers to be available at this interface. Where a
+	  specialized stack frame is specified, the
+	  architecture-specific annex may specify that some or all of
+	  that stack frame is conveyed across the user/supervisor
+	  boundary in registers. The corresponding fields of the
+	  stack frame will never be accessed by the kernel.
 	</p>
 	<p>
 	  The Coyotos system call specification ensures that all
@@ -3726,9 +3205,7 @@ C := gpt-&gt;cap[<em>u</em>]</literallayout>
 	  in registers. In addition, the majority of
 	  kernel-implemented capabilities, including all capabilities
 	  likely to be invoked in performance-critical application
-	  paths, can be invoked solely through register-marshalled
-	  arguments and return values <em>except</em> where indirect
-	  strings are used.
+	  paths, can be invoked without a string parameter.
 	</p>
 <!-- 	<p> -->
 <!-- 	  On 32-bit platforms, there are 64 parameter -->
@@ -3752,14 +3229,12 @@ C := gpt-&gt;cap[<em>u</em>]</literallayout>
 <!-- 	  will be naturally aligned within the parameter words. -->
 <!-- 	</p> -->
 	<p>
-	  In the system call specifications that follow, the notations
-	  IPW<em>n</em> and OPW<em>n</em> indicate input and output
-	  parameter words, respectively. Other fields appearing in
-	  input and output descriptions have locations determined by
-	  the architecture-specific annex, typically in the UPCB or in
-	  registers.  Parameter words above the last parameter word
-	  returned by a system call hold the same value that they held
-	  at kernel entry.
+	  In the system call specifications that follow, the notation
+	  IPR<em>n</em> and OPR<em>n</em> indicate input and output
+	  parameter registers, respectively.  Except where required by
+	  the architecture-specific system call mechanism, or
+	  explicitly noted by the system call, output registers retain
+	  their value at the time of system call netry.
 	</p>
       </sect1>
       <sect1 id="syscall_exceptions">
@@ -3881,262 +3356,35 @@ C := gpt-&gt;cap[<em>u</em>]</literallayout>
 	</p>
       </sect1>
       <sect1>
-	<title>Capability Parameter Types</title>
-	<p>
-	  The system call specifications that follow reference the
-	  types shown in Figure&nbsp;<xref ref="param_types"/>.
-	</p>
-	<figure id="param_types" latex.placement="h">
-	  <table>
-	    <tbody>
-	      <tr>
-		<td><progident>capreg_t</progident></td>
-		<td><img source="capreg_t" width="65"
-		    srctype="sbox"/></td>
-	      </tr>
-	      <tr>
-		<td><progident>caploc_t</progident></td>
-		<td><img source="caploc_t" width="65"
-		    srctype="sbox"/></td>
-	      </tr>
-	    </tbody>
-	  </table>
-	  <caption>Parameter type layouts</caption>
+	<title>Capability Locations</title>
+	<figure id="caploc_t" latex.placement="h">
+	  <img source="caploc_t" width="75" srctype="sbox"/>
+	  <caption>caploc_t structure</caption>
 	</figure>
-	<sect2 id="capregs">
-	  <title>Meaning of <progident>capreg_t</progident></title>
-	  <p>
-	    A <progident>capreg_t</progident> parameter
-	    (Figure&nbsp;<xref ref="param_types"/>) is an 8-bit value
-	    that describes a capability register.  Capability register
-	    zero is defined by the architecture to hold a Null
-	    capability. The least <progident>ty</progident> field of a
-	    <progident>capreg_t</progident> is required to be
-	    zero. This provides for assignability between
-	    <progident>capreg_t</progident> and
-	    <progident>caploc_t</progident>.
-	  </p>
-	  <p>
-	    A register <progident>capreg_t</progident> appearing as a
-	    source operand indicates that the contents of the
-	    capability register indexed by the
-	    <progident>location</progident> field should be used as
-	    the source parameter.
-	  </p>
-	  <p>
-	    A register <progident>capreg_t</progident> appearing as a
-	    destination operand indicates that the capability register
-	    indexed by the <progident>location</progident> should be
-	    used as the destination of the operation. Assignments to
-	    capability register zero are silently discarded.
-	  </p>
-	</sect2>
-	<sect2 id="caplocs">
-	  <title>Meaning of <progident>caploc_t</progident></title>
-	  <p>
-	    A <progident>caploc_t</progident> parameter
-	    (Figure&nbsp;<xref ref="param_types"/>) describes a
-	    generalized capability location that is either a
-	    capability register (ty=0) or a memory
-	    address (ty=1).
-	  </p>
-	  <p>
-	    The encoding of register <progident>caploc_t</progident>
-	    values is identical to the encoding used for
-	    <progident>capreg_t</progident> values, modulo the wider
-	    <progident>location</progident> field. When the
-	    <progident>caploc_t</progident> describes a memory
-	    address, the <progident>location</progident> field holds
-	    the most significant bits of the address. Capability
-	    addresses are required to be 16 byte aligned. In
-	    consequence, the expression of valid capability addresses
-	    is not restricted by the re-use of the least significant
-	    bit for this purpose.
-	  </p>
-	  <p>
-	    The size of a <progident>caploc_t</progident> matches the
-	    architecture-defined word size.
-	  </p>
-	</sect2>
-      </sect1>
-      <sect1>
-	<title>Typed Item Parameters</title>
 	<p>
-	  <em>Section now stale; update coming.</em>
+	  A <progident>caploc_t</progident> parameter
+	  (Figure&nbsp;<xref ref="param_types"/>) describes a
+	  generalized capability location that is either a
+	  capability register (ty=0) or a memory
+	  address (ty=1).
 	</p>
 	<p>
-	  The <progident>InvokeCap</progident> system call
-	  (Section&nbsp;<xref ref="syscall_invcap"/>) defines some of
-	  its parameter words as a sequence of <em>untyped parameter
-	  words</em> followed by a sequence of <em>typed
-	  items</em>. Each typed item is described by one or more more
-	  <em>typed item words</em>. The defined typed items are shown
-	  in Figure&nbsp;<xref ref="param_types"/>.
+	  The encoding of register <progident>caploc_t</progident>
+	  values is identical to the encoding used for
+	  <progident>capreg_t</progident> values, modulo the wider
+	  <progident>location</progident> field. When the
+	  <progident>caploc_t</progident> describes a memory
+	  address, the <progident>location</progident> field holds
+	  the most significant bits of the address. Capability
+	  addresses are required to be 16 byte aligned. In
+	  consequence, the expression of valid capability addresses
+	  is not restricted by the re-use of the least significant
+	  bit for this purpose.
 	</p>
-	<figure id="item_types" latex.placement="h">
-	  <table>
-	    <tbody>
-	      <tr>
-		<td><progident>stringitem_t</progident></td>
-		<td><img source="stringitem_t" width="65"
-		    srctype="sbox"/></td>
-	      </tr>
-	      <tr>
-		<td><progident>bufitem_t</progident></td>
-		<td><img source="bufitem_t" width="65"
-		    srctype="sbox"/></td>
-	      </tr>
-	      <tr>
-		<td><progident>epiditem_t</progident></td>
-		<td><img source="epiditem_t" width="65"
-		    srctype="sbox"/></td>
-	      </tr>
-	      <tr>
-		<td><progident>capitem_t</progident></td>
-		<td><img source="capitem_t" width="65"
-		    srctype="sbox"/></td>
-	      </tr>
-	      <tr>
-		<td><progident>rcvcapitem_t</progident></td>
-		<td><img source="rcvcapitem_t" width="65"
-		    srctype="sbox"/></td>
-	      </tr>
-	    </tbody>
-	  </table>
-	  <caption>Parameter type layouts</caption>
-	</figure>
-	<sect2 id="endpointiditems">
-	  <title>Meaning of Endpoint ID Items
-	    (<progident>epiditem_t</progident>)</title>
-	  <p>
-	    If CW is set, an endpoint ID item indicates the endpoint
-	    ID on which the application wishes to wait. Otherwise,
-	    this field should be supplied on input an arbitrarily
-	    selected endpoint ID. The corresponding output parameter
-	    will contain the endpoint ID of the invoked endpoint, if
-	    any.
-	  </p>
-	</sect2>
-	<sect2 id="stringitems">
-	  <title>Meaning of String Items
-	    (<progident>stringitem_t</progident>)</title>
-	  <p>
-	    A logical string consists of one or more logically
-	    concatenated (gathered) substrings. Each
-	    <progident>stringitem_t</progident> describes a single
-	    substring. If the continuation bit <em>c</em> of a
-	    <progident>stringitem_t</progident> is set (1), this
-	    indicates that the <em>next</em>
-	    <progident>stringitem_t</progident> describes a
-	    continuation of the same logical string.  The last
-	    substring in the string is indicated by a
-	    <progident>stringitem_t</progident> whose continuation bit
-	    <em>c</em> is clear (0).  Each substring in turn is made
-	    up of <em>j</em>&nbsp;&ge;&nbsp;1 cords having identical
-	    length. The <em>string length</em> field is
-	    <u>inclusive</u>. A string of length zero is encoded using
-	    a <em>j</em> value of zero.
-	  </p>
-	  <p>
-	    <leadin>Example</leadin> A contiguous, 27 byte string at
-	    address <em>s</em> is encoded by the string item:
-	  </p>
-	  <figure id="stringitem_ex_simple" latex.placement="h">
-	    <img source="stringitem_ex_simple" width="65" srctype="sbox"/>
-	  </figure>
-	  <p>
-	    <leadin>Example</leadin> A gathered string consisting of
-	    an initial 33 byte fragement at address <em>a</em>
-	    followed by two 4096 byte fragments at addresses
-	    <em>b</em> and <em>c</em> is encoded by the sequence of
-	    string items:
-	  </p>
-	  <figure id="stringitem_ex_complex" latex.placement="h">
-	    <img source="stringitem_ex_complex" width="65" srctype="sbox"/>
-	  </figure>
-	  <p>
-	    The string item structure is adapted from the L4
-	    specification <cite ref="sag04l4refman"/>, but not all of
-	    the features expressible in L4 are currently supported by
-	    Coyotos. In particular, the <em>hh</em> bits are reserved
-	    for architecture-dependent cacheability hints, and are
-	    required to be zero by the current implementation.
-	  </p>
-	  <p>
-	    When a string item is passed as a parameter to an
-	    invocation, the words of the string item are passed as
-	    successive parameter words.
-	  </p>
-	</sect2>
-	<sect2 id="bufitems">
-	  <title>Meaning of Buffer Items
-	    (<progident>bufitem_t</progident>)</title>
-	  <p>
-	    Buffer items are the dual of string items. They describe
-	    how an incoming string should be distributed (scattered)
-	    in the receiving address space.
-	  </p>
-	  <p>
-	    In contrast to string items, which induce the invocation
-	    path to perform string copies, a
-	    <progident>bufitem_t</progident> is interpreted by the
-	    invocation path as overwriting successive receive buffer
-	    registers. That is: the <em>k</em>th
-	    <progident>bufitem_t</progident> overwrites
-	    <progident>rcvBuf</progident> register <em>k</em>.
-	  </p>
-	</sect2>
-	<sect2 id="capitems">
-	  <title>Meaning of Capability Items
-	    (<progident>capitem_t</progident>)</title>
-	  <p>
-	    Capability items describe the locations of capabilities
-	    that are to be transmitted by the current invocation. The
-	    interpretation of the <progident>location</progident> and
-	    <progident>ty</progident> fields are interpreted the same
-	    way as for <progident>caploc_t</progident> parameters,
-	    except that the the <progident>location</progident> field
-	    holds the most significant bits of the address (the 4
-	    least significant bits are not required due to alignment
-	    requirements).
-	  </p>
-	</sect2>
-	<sect2 id="rcvcapitems">
-	  <title>Meaning of Receive Capability Items
-	    (<progident>rcvcapitem_t</progident>)</title>
-	  <p>
-	    Receive capability items are the dual of capability
-	    items. They describe how an incoming capability should be
-	    stored in the receiving context.
-	  </p>
-	  <p>
-	    In contrast to capability items, which induce the
-	    invocation path to perform capability copies, a
-	    <progident>rcvcaptem_t</progident> is interpreted by the
-	    invocation path as overwriting successive receive
-	    capability location registers. That is: the <em>k</em>th
-	    <progident>rcvcapitem_t</progident> overwrites
-	    <progident>rcvCap</progident> register <em>k</em>.
-	  </p>
-	</sect2>
-	<sect2>
-	  <title>Order of Appearance</title>
-	  <p>
-	    When typed items are passed to the
-	    <progident>InvokeCap</progident> system call, those that
-	    are present must be ordered by type. Endpoint ID items
-	    (<progident>epiditem_t</progident>) must appear first,
-	    followed by string items
-	    (<progident>stringitem_t</progident>) must appear first,
-	    followed by capability items
-	    (<progident>capitem_t</progident>) followed by buffer
-	    items, (<progident>bufitem_t</progident>) followed by
-	    receive capability items
-	    (<progident>bufitem_t</progident>). If this ordering is
-	    not maintained, a <progident>MalformedSyscall</progident>
-	    exception is generated.
-	  </p>
-	</sect2>
+	<p>
+	  The size of a <progident>caploc_t</progident> matches the
+	  architecture-defined word size.
+	</p>
       </sect1>
       <sect1 id="pseudo_instrs">
 	<title>Pseudo-Instructions</title>
@@ -4162,7 +3410,7 @@ C := gpt-&gt;cap[<em>u</em>]</literallayout>
 	    </thead>
 	    <tbody>
 	      <tr>
-		<td>IPW0</td>
+		<td>IPR0</td>
 		<td><img source="syscall-yield-ipw0" width="70" srctype="sbox"/></td>
 	      </tr>
 	    </tbody>
@@ -4190,15 +3438,15 @@ C := gpt-&gt;cap[<em>u</em>]</literallayout>
 	    </thead>
 	    <tbody>
 	      <tr>
-		<td>IPW0</td>
+		<td>IPR0</td>
 		<td><img source="syscall-copycap-ipw0" width="70" srctype="sbox"/></td>
 	      </tr>
 	      <tr>
-		<td>IPW1</td>
+		<td>IPR1</td>
 		<td><img source="syscall-copycap-ipw1" width="70" srctype="sbox"/></td>
 	      </tr>
 	      <tr>
-		<td>IPW2</td>
+		<td>IPR2</td>
 		<td><img source="syscall-copycap-ipw2" width="70" srctype="sbox"/></td>
 	      </tr>
 	    </tbody>
@@ -4230,7 +3478,8 @@ C := gpt-&gt;cap[<em>u</em>]</literallayout>
 	  one capability and optionally blocks for an incoming message
 	  on an Endpoint. <progident>InvokeCap</progident> takes a
 	  variable number of parameters determined by the invocation
-	  control word provided in IPW0.
+	  control word provided in IPW0 and a system-call specific
+	  stack frame.
 	</p>
 	<p>
 	  Any of the exceptions listed in Section&nbsp;<xref
@@ -4240,9 +3489,38 @@ C := gpt-&gt;cap[<em>u</em>]</literallayout>
 	<sect2 id="invcap_args">
 	  <title>Arguments</title>
 	  <p>
-	    <progident>InvokeCap</progident> accepts a variable number
-	    of arguments specified by the invoker. The argument
-	    parameters to <progident>InvokeCap</progident> are:
+	    The arguments to <progident>InvokeCap</progident> are
+	    organized in a specialized stack frame. Some elements of
+	    the stack frame are then registerized. The canonical stack
+	    frame format for <progident>InvokeCap</progident> is shown
+	    below:
+	  </p>
+	  <literallayout>
+typedef struct {
+  uintptr_t pw[8];
+  union {
+    caploc_t  invCap;		/* on entry */
+    uintptr_t pp;		/* on exit */
+  } u;
+  caploc_t  sndCap[4];
+  caploc_t  rcvCap[4];
+  uint32_t  sndLen;		/* FIX: Should be 16 bits */
+  uint32_t  rcvBound;		/* FIX: Should be 16 bits */
+  void     *sndPtr;
+  void     *rcvPtr;
+  uint64_t  epID;
+} InvParameterBlock_t;</literallayout>
+	  <p>
+	    All architectures guarantee that the
+	    <progident>pw[0]..pw[3]</progident> field are conveyed in
+	    registers on both entry and exit. Since the message
+	    payload may contain up to 8 data words, the caller should
+	    assume that <progident>pw[0]..pw[7]</progident> may be
+	    modified on return.
+	  </p>
+	  <p>
+	    The control word parameter to
+	    <progident>InvokeCap</progident> is given by:
 	  </p>
 	  <table latex.center="yes" latex.colspec="llp{5in}">
 	    <thead>
@@ -4253,26 +3531,46 @@ C := gpt-&gt;cap[<em>u</em>]</literallayout>
 	    </thead>
 	    <tbody>
 	      <tr>
-		<td>IPW0</td>
+		<td>IPR0</td>
 		<td><img source="syscall-invcap-ipw0" width="70" srctype="sbox"/></td>
 	      </tr>
 	      <tr>
-		<td>IPW1</td>
-		<td><img source="syscall-invcap-ipw1" width="70" srctype="sbox"/></td>
+		<td>IPR1</td>
+		<td>Input <progident>pw[1]</progident>, if transmitted.</td>
 	      </tr>
 	      <tr>
-		<td>IPW2..IPW<em>u</em></td>
-		<td><img source="syscall-invcap-word" width="70" srctype="sbox"/></td>
+		<td>IPR2</td>
+		<td>Input <progident>pw[2]</progident>, if transmitted.</td>
 	      </tr>
 	      <tr>
-		<td>IPW<em>u+1</em>..IPW<em>u+t+1</em></td>
-		<td><img source="syscall-invcap-titem" width="70" srctype="sbox"/></td>
+		<td>IPR3</td>
+		<td>Input <progident>pw[3]</progident>, if transmitted.</td>
+	      </tr>
+	      <tr>
+		<td>OPR0</td>
+		<td><img source="syscall-invcap-ipw0" width="70" srctype="sbox"/></td>
+	      </tr>
+	      <tr>
+		<td>OPR1</td>
+		<td>Output <progident>pw[1]</progident>, if received.</td>
+	      </tr>
+	      <tr>
+		<td>OPR2</td>
+		<td>Output <progident>pw[2]</progident>, if received.</td>
+	      </tr>
+	      <tr>
+		<td>OPR3</td>
+		<td>Output <progident>pw[3]</progident>, if received.</td>
 	      </tr>
 	    </tbody>
 	  </table>
 	  <p>
-	    The first parameter word (IPW0) is the invocation control
-	    word. The fields of this word have the following meanings:
+	    Other fields and registers are sourced and modified
+	    according to the interpretation of the control word and
+	    the parameters provided in the stack frame.
+	  </p>
+	  <p>
+	    The fields of the control word have the following meanings:
 	  </p>
 	  <table latex.colspec="llp{5in}" latex.long="yes">
 	    <thead>
@@ -4284,7 +3582,71 @@ C := gpt-&gt;cap[<em>u</em>]</literallayout>
 	    </thead>
 	    <tbody>
 	      <tr>
-		<td>NB</td>
+		<td>ldw</td>
+		<td>Last Data Word</td>
+		<td>
+		  <p>
+		    On entry, the index of the last data word
+		    transmitted.  Following a receive phase, this
+		    field will contain the values specified in the
+		    sender's invocation control word. A receiving
+		    process must be prepared to accept 8 direct data
+		    words.
+		  </p>
+		</td>
+	      </tr>
+	      <tr>
+		<td>lsc</td>
+		<td>Last Sent Capability</td>
+		<td>
+		  <p>
+		    The index of the last sent capability. No
+		    capabilities are sent if the
+		    <progident>SC</progident> field is clear
+		    (0). Following a receive phase, this fieldwill
+		    contain the value specified in the sender's
+		    invocation control word.
+		  </p>
+		</td>
+	      </tr>
+	      <tr>
+		<td>lrc</td>
+		<td>Last Received Capability</td>
+		<td>
+		  <p>
+		    On entry: the index of the last capability slot
+		    that will be received. No capabilities are
+		    received if the <progident>AC</progident> field is
+		    clear (0).
+		  </p>
+		</td>
+	      </tr>
+	      <tr>
+		<td>sg</td>
+		<td>Send Gather</td>
+		<td>
+		  <p>
+		    Send transmitted string(s) using the gather
+		    mechanism. This mechanism is not yet specified,
+		    and the bit should be clear (0) in all
+		    invocations.
+		  </p>
+		</td>
+	      </tr>
+	      <tr>
+		<td>as</td>
+		<td>accept scatter</td>
+		<td>
+		  <p>
+		    Accept transmitted string(s) using the scatter
+		    mechanism. This mechanism is not yet specified,
+		    and the bit should be clear (0) in all
+		    invocations.
+		  </p>
+		</td>
+	      </tr>
+	      <tr>
+		<td>nb</td>
 		<td>Non-Blocking</td>
 		<td>
 		  <p>
@@ -4299,7 +3661,43 @@ C := gpt-&gt;cap[<em>u</em>]</literallayout>
 		</td>
 	      </tr>
 	      <tr>
-		<td>RC</td>
+		<td>cw</td>
+		<td>Closed Wait</td>
+		<td>
+		  <p>
+		    If set (1), indicates that the receive phase is
+		    performing a closed wait, and only messages from
+		    endpoints whose endpoint ID matches the supplied
+		    <progident>epID</progident> value will be
+		    accepted.
+		  </p>
+		  <p>
+		    If clear (0), no restrictions are imposed on
+		    receipt and the <progident>epID</progident>
+		    field is ignored.
+		  </p>
+		</td>
+	      </tr>	   
+	      <tr>
+		<td>sp</td>
+		<td>Send Phase</td>
+		<td>
+		  <p>
+		    If set (1), the send phase will be executed.
+		  </p>
+		</td>
+	      </tr>
+	      <tr>
+		<td>rp</td>
+		<td>Receive Phase</td>
+		<td>
+		  <p>
+		    If set (1), the receive phase will be executed.
+		  </p>
+		</td>
+	      </tr>
+	      <tr>
+		<td>rc</td>
 		<td>Reply Capability</td>
 		<td>
 		  <p>
@@ -4314,71 +3712,48 @@ C := gpt-&gt;cap[<em>u</em>]</literallayout>
 		</td>
 	      </tr>
 	      <tr>
-		<td>CW</td>
-		<td>Closed Wait</td>
+		<td>sc</td>
+		<td>Send Capabilities</td>
 		<td>
 		  <p>
-		    If set (1), indicates that the receive phase is
-		    performing a closed wait, and only messages from
-		    endpoints whose endpoint ID matches
-		    <progident>recv_id</progident> will be
-		    accepted.
-		  </p>
-		  <p>
-		    If clear (0), no restrictions are imposed on
-		    receipt and the <progident>recv_id</progident>
-		    field is ignored.
-		  </p>
-		</td>
-	      </tr>	   
-	      <tr>
-		<td>RP</td>
-		<td>Receive Phase</td>
-		<td>
-		  <p>
-		    If set (1), the receive phase will be executed.
+		    If set (1), capabilities will be transmited.
+		    Following a receive phase, this fieldwill contain
+		    the value specified in the sender's invocation
+		    control word.
 		  </p>
 		</td>
 	      </tr>
 	      <tr>
-		<td>AS</td>
-		<td>Accept Strings</td>
-		<td>
-		  <p>
-		    If clear (0), any string items recieved will be
-		    dropped.
-		  </p>
-		</td>
-	      </tr>
-	      <tr>
-		<td>AC</td>
+		<td>ac</td>
 		<td>Accept Capabilities</td>
 		<td>
 		  <p>
-		    If clear (0), any capabilities received will be
-		    dropped.
+		    If set (0), incoming capabilities will be accepted.
 		  </p>
 		</td>
 	      </tr>
 	      <tr>
-		<td>u</td>
-		<td>Untyped Words</td>
+		<td>co</td>
+		<td>Copy Out</td>
 		<td>
 		  <p>
-		    The index of the last untyped word parameter,
-		    including IPW0.
+		    If set (0), the copy out phase will be
+		    executed. Soft register values will be copied back
+		    from the kernel to the invocation parameter
+		    structure.
 		  </p>
 		</td>
 	      </tr>
 	      <tr>
-		<td>t</td>
-		<td>Typed Words</td>
+		<td>ex</td>
+		<td>exceptional return</td>
 		<td>
 		  <p>
-		    The index of the last typed word parameter. Note
-		    that the interface requires at least an endpoint
-		    ID parameter word to be present in all
-		    invocations.
+		    If set (1), indicates that the message payload
+		    describes an exception.
+		    Following a receive phase, this fieldwill contain
+		    the value specified in the sender's invocation
+		    control word.
 		  </p>
 		</td>
 	      </tr>
@@ -4386,9 +3761,9 @@ C := gpt-&gt;cap[<em>u</em>]</literallayout>
 	  </table>
 	  <p>
 	    The parameters of the <progident>InvokeCap</progident>
-	    system call are unusual, in that IPW0 determines how the
+	    system call are unusual, in that IPR0 determines how the
 	    remaining input parameter words are interpreted. Further,
-	    some of the bits in the IPW0 word determine how the output
+	    some of the bits in the IPR0 word determine how the output
 	    parameteres are processed and delivered.
 	    <progident>InvokeCap</progident> is <em>also</em> unusual
 	    because control flow may not return immediately to the
@@ -4407,25 +3782,32 @@ C := gpt-&gt;cap[<em>u</em>]</literallayout>
 	      these conventions are effectively mandated.
 	    </p>
 	    <p>
-	      <leadin>Requests</leadin> IPW2 contains the request code
-	      (a method code that is typically assigned by
-	      CapIDL). The implementing process uses this request
-	      code, in combination with the received endpoint ID and
-	      protected payload, to determine what interface has been
-	      invoked, what method has been requested, and what
-	      permissions the invoker has. By convention, no method
-	      should be assigned the method code zero (0).
+	      <leadin>Requests</leadin> <progident>IPR1</progident>
+	      contains the request code (a method code that is
+	      typically assigned by CapIDL). The implementing process
+	      uses this request code, in combination with the received
+	      endpoint ID and protected payload, to determine what
+	      interface has been invoked, what method has been
+	      requested, and what permissions the invoker has. By
+	      convention, no method should be assigned the method code
+	      zero (0).
 	    </p>
 	    <p>
-	      <leadin>Replies</leadin> IPW2 of a reply either contains
-	      zero (0), indicating a normal result, or non-zero,
-	      indicating an exceptional result. If IPW2 of the reply
-	      is zero, the remaining parameters are the result of the
-	      method as specified by the appropriate IDL
-	      specification. If IPW2 of the reply is non-zero, the
-	      remaining parameters are determined by the exception
-	      specification. In effect, all replies are a tagged union
-	      descriminated by their first untyped word value.
+	      <leadin>Replies</leadin> If
+	      <progident>OPR0.ex</progident> is clear (0), then the
+	      remaining paramter words contain the specified out
+	      parameters according to the interface specification. If
+	      <progident>OPR0.ex</progident> is set (0), then the
+	      remaining paramter words contain the exception message,
+	      which consists of a 64-bit exception code followed by an
+	      optional structure containing additional
+	      information. The exception code may occupy
+	      <progident>OPR1</progident> or
+	      <progident>OPR1..OPR2</progident> or
+	      <progident>OPR2..OPR3</progident> (notably SPARC)
+	      depending on whether the target architecture is 64-bit
+	      or 32-bit and the alignment restrictions imposed on
+	      64-bit integral values by the underlying architecture.
 	    </p>
 	  </sect3>
 	  <sect3>
@@ -4523,19 +3905,19 @@ C := gpt-&gt;cap[<em>u</em>]</literallayout>
 	    </thead>
 	    <tbody>
 	      <tr>
-		<td>OPW0</td>
+		<td>OPR0</td>
 		<td><img source="syscall-invcap-opw0" width="70" srctype="sbox"/></td>
 	      </tr>
 	      <tr>
-		<td>OPW1</td>
+		<td>OPR1</td>
 		<td><img source="syscall-invcap-rcvPP" width="70" srctype="sbox"/></td>
 	      </tr>
 	      <tr>
-		<td>OPW2..OPW<em>u</em></td>
+		<td>OPR2..OPR<em>u</em></td>
 		<td><img source="syscall-invcap-word" width="70" srctype="sbox"/></td>
 	      </tr>
 	      <tr>
-		<td>OPW<em>u+1</em>..OPW<em>u+t+1</em></td>
+		<td>OPR<em>u+1</em>..OPR<em>u+t+1</em></td>
 		<td><img source="syscall-invcap-titem" width="70" srctype="sbox"/></td>
 	      </tr>
 	    </tbody>
@@ -5256,51 +4638,6 @@ C := gpt-&gt;cap[<em>u</em>]</literallayout>
 	</p>
       </sect1>
       <sect1>
-	<title>Activation Return</title>
-	<p>
-	  The kernel supplies a ``return from activation handler''
-	  entry point at offset 256 of the kernel interface page. The
-	  purpose of this entry point is to allow an activation
-	  handler to return to normal mode without entering the
-	  kernel. The return to normal mode requires a
-	  multi-instruction atomic sequence. The activation return
-	  entry point accomplishes this by connivance with the kernel;
-	  if a process executing the activation return sequence is
-	  interrupted, the kernel will complete the sequence on behalf
-	  of the process.
-	</p>
-	<p>
-	  A process returning from activation mode should first store
-	  the desired normal-mode PC, SP, and EFLAGS values into the
-	  UCPB's <progident>savedPC</progident>,
-	  <progident>savedSP</progident>, and
-	  <progident>savedFlags</progident> fields. It should then
-	  load all registers other than %ESP and %EIP with the desired
-	  normal-mode values and branch to the activation return entry
-	  point at <progident>0x32:256</progident>. This entry point
-	  tests the <progident>upcb.PE</progident> bit, invoking the
-	  <progident>Yield()</progident> system call explicitly if
-	  <progident>upcb.PE</progident> is non-zero. Otherwise it
-	  clears the <progident>upcb.A</progident> bit and proceeds to
-	  reload the intended EFLAGS, PC, and SP values by hand. If an
-	  interrupt occurs within the activation return sequence, the
-	  kernel will execute:
-	</p>
-	<literallayout>
-if (upcb.PE) {
-  upcb.a             &lt;- 1;
-  upcb.dispatchPC    &lt;- upcb.actPC;
-  upcb.dispatchSP    &lt;- upcb.actSP;
-  upcb.dispatchFlags &lt;- <em>architecture defined</em>;
-  upcb.pe            &lt;- 1 if multiple events pending, 0 otherwise
-else {
-  upcb.a             &lt;- 0;
-  upcb.dispatchPC    &lt;- upcb.savedPC;
-  upcb.dispatchSP    &lt;- upcb.savedSP;
-  upcb.dispatchFlags &lt;- upcb.savedFlags;
-}</literallayout>
-      </sect1>
-      <sect1>
 	<title>Virtual Registers</title>
 	<p>
 	  The architecture defines the following locations for input
@@ -5392,7 +4729,7 @@ else {
 	    not necessarily efficient. The problem is that the value
 	    must be range checked on every kernel exit because it can
 	    be modified by user-mode code. It may be better to
-	    introduce a system call for this and store it in the KPCB
+	    introduce a system call for this and store it in the Process
 	    instead.
 	  </p>
 	</note>
@@ -6062,22 +5399,22 @@ else {
       Threads Model'' <doctitle>Proc. 1994 Winter USENIX
       Conference</doctitle>. Jan 1994. pp. 97&ndash;114.
     </bibentry>
-    <bibentry label="thomas90scheduler">
-      T. E. Anderson and B. N. Bershad and E. D. Lazowska and
-      H. M. Levy.
-      ``Scheduler Activations: Effective Kernel Support for the
-      User-Level Management of Parallelism'' <doctitle>Proc. 13th ACM
-      Symposium on Operating Systems Principles</doctitle>. Pacific
-      Grove, CA, USA. pp. 95&ndash;109. 1991.
-    </bibentry>
-    <bibentry label="marsh91firstclass">
-      B. D. Marsh and M. L. Scott and T. J. LeBlank and
-      E. P. Markatos,
-      ``First-Class User-Level Threads'' <doctitle>Proc 13th ACM
-      Symposium on Operating Systems Principles</doctitle>.
-      Pacific Grove, CA, USA.
-      pp. 110&ndash;121. 1991.
-    </bibentry>
+<!--     <bibentry label="thomas90scheduler"> -->
+<!--       T. E. Anderson and B. N. Bershad and E. D. Lazowska and -->
+<!--       H. M. Levy. -->
+<!--       ``Scheduler Activations: Effective Kernel Support for the -->
+<!--       User-Level Management of Parallelism'' <doctitle>Proc. 13th ACM -->
+<!--       Symposium on Operating Systems Principles</doctitle>. Pacific -->
+<!--       Grove, CA, USA. pp. 95&ndash;109. 1991. -->
+<!--     </bibentry> -->
+<!--     <bibentry label="marsh91firstclass"> -->
+<!--       B. D. Marsh and M. L. Scott and T. J. LeBlank and -->
+<!--       E. P. Markatos, -->
+<!--       ``First-Class User-Level Threads'' <doctitle>Proc 13th ACM -->
+<!--       Symposium on Operating Systems Principles</doctitle>. -->
+<!--       Pacific Grove, CA, USA. -->
+<!--       pp. 110&ndash;121. 1991. -->
+<!--     </bibentry> -->
     <bibentry label="roscoe1995thesis">
       T. Roscoe.
       <doctitle>The Structure of a Multi-Service Operating

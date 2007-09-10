@@ -2,14 +2,13 @@
 <!DOCTYPE sbox>
 <sbox>
   <wbox>
-    <field label="runState" size="8"/>
-    <field label="XM" size="1"/>
-    <field label="SX" size="1"/>
-    <field label="SI" size="1"/>
-    <field label="TC" size="1"/>
-    <field label="TR" size="1"/>
-    <field label="CS" size="1"/>
-    <field label="PC" size="1"/>
-    <field label="reserved" size="17"/>
+    <field label="xm" size="1"/>
+    <field label="sx" size="1"/>
+    <field label="sn" size="1"/>
+    <field label="tc" size="1"/>
+    <field label="tr" size="1"/>
+    <field label="cs" size="1"/>
+    <field label="pc" size="1"/>
+    <field label="reserved" size="9"/>
   </wbox>
 </sbox>

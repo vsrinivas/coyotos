@@ -53,7 +53,7 @@
  *    SC   = send caps (1 => yes)
  *    AC   = accept caps (1 => yes)
  *    CO   = copy out soft regs (1 => yes) [IA-32 only]
- *    EX   = exceptional return (1 => yes) [IA-32 only]
+ *    EX   = exceptional return (1 => yes)
  *
  * Reminder: ldw=0 is insufficient to signal send phase completion,
  * because field is reused on output to indicate number of transmitted
