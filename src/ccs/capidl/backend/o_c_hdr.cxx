@@ -2036,9 +2036,9 @@ client_header_symdump(GCPtr<Symbol> s, INOstream& out)
 
       print_asmifdef(out);
 
-      out << "typedef unsigned long " 
-	  << s->QualifiedName('_')
-	  << ";\n";
+      out << "typedef ";
+      output_c_type(s->type, out);
+      out << ' ' << s->QualifiedName('_') << ";\n";
 
       print_asmendif(out);
 
