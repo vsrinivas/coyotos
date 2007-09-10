@@ -216,7 +216,7 @@ void cap_ProcessCommon(InvParam_t *iParam)
       return;
     }
 
-  case OC_coyotos_Process_getReg: 
+  case OC_coyotos_Process_getCapReg: 
     {
       uint32_t slot = get_iparam32(iParam);
 
@@ -239,7 +239,7 @@ void cap_ProcessCommon(InvParam_t *iParam)
       return;
     }
     
-  case OC_coyotos_Process_setReg:
+  case OC_coyotos_Process_setCapReg:
     {
       uint32_t slot = get_iparam32(iParam);
 

@@ -200,30 +200,30 @@ HANDLE_coyotos_Constructor_create(caploc_t bank, caploc_t sched,
       !coyotos_Process_setSlot(CR_NEW_PROC, 
 			       coyotos_Process_cslot_schedule,
 			       sched, IDL_E) ||
-      !coyotos_Process_setReg(CR_NEW_PROC, 
-			      CR_REPLYEPT.fld.loc, CR_NEW_RENDPT, IDL_E) ||
-      !coyotos_Process_setReg(CR_NEW_PROC, 
-			      CR_SELF.fld.loc, CR_NEW_PROC, IDL_E) ||
-      !coyotos_Process_setReg(CR_NEW_PROC, 
-			      CR_SPACEBANK.fld.loc, bank, IDL_E) ||
-      !coyotos_Process_setReg(CR_NEW_PROC, 
+      !coyotos_Process_setCapReg(CR_NEW_PROC, 
+				 CR_REPLYEPT.fld.loc, CR_NEW_RENDPT, IDL_E) ||
+      !coyotos_Process_setCapReg(CR_NEW_PROC, 
+				 CR_SELF.fld.loc, CR_NEW_PROC, IDL_E) ||
+      !coyotos_Process_setCapReg(CR_NEW_PROC, 
+				 CR_SPACEBANK.fld.loc, bank, IDL_E) ||
+      !coyotos_Process_setCapReg(CR_NEW_PROC, 
 			      CR_TOOLS.fld.loc, CR_YIELD_TOOLS, IDL_E) ||
-      !coyotos_Process_setReg(CR_NEW_PROC, 
+      !coyotos_Process_setCapReg(CR_NEW_PROC, 
 			      CR_INITEPT.fld.loc, CR_NEW_ENDPT, IDL_E) ||
-      !coyotos_Process_setReg(CR_NEW_PROC, 
+      !coyotos_Process_setCapReg(CR_NEW_PROC, 
 			      CR_RUNTIME.fld.loc, runtime, IDL_E) ||
       /* set up the protospace arguments */
-      !coyotos_Process_setReg(CR_NEW_PROC,
+      !coyotos_Process_setCapReg(CR_NEW_PROC,
 	coyotos_Constructor_PROTOAPP_ADDRSPACE.fld.loc, 
 	CR_YIELD_ADDRSPACE, IDL_E) ||
-      !coyotos_Process_setReg(CR_NEW_PROC,
+      !coyotos_Process_setCapReg(CR_NEW_PROC,
 	coyotos_Constructor_PROTOAPP_HANDLER.fld.loc, 
 	CR_YIELD_HANDLER, IDL_E) ||
-      !coyotos_Process_setReg(CR_NEW_PROC,
+      !coyotos_Process_setCapReg(CR_NEW_PROC,
 	coyotos_Constructor_PROTOAPP_SCHEDULE.fld.loc, 
         sched, IDL_E) ||
       /* set it up to return to our caller */
-      !coyotos_Process_setReg(CR_NEW_PROC, 
+      !coyotos_Process_setCapReg(CR_NEW_PROC, 
 			      CR_RETURN.fld.loc, 
 			      _env->haveReturn ? CR_RETURN : CR_NULL, 
 			      IDL_E) ||
