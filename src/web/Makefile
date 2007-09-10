@@ -29,7 +29,7 @@ HTML_TOPNAV=home.html
 DIRS=topnav docs download projects history bugs
 DOCSTYLES= #docstyles.css
 
-include $(COYOTOS_SRC)/build/make/makerules.mk
+include $(COYOTOS_SRC)/build/make/pkgrules.mk
 
 all: index.html
 
