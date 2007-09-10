@@ -87,6 +87,33 @@ sq_EnqueueOn(StallQueue *sq)
   spinlock_release(shi);
 }
 
+void
+sq_Unsleep(Process *process)
+{
+  assert(process->onQ != 0);
+
+  StallQueue *sq;
+  SpinHoldInfo shi;
+  for (;;) {
+    sq = process->onQ;
+    if (sq == 0 || sq == &mainRQ.queue)
+      return;
+    shi = spinlock_grab(&sq->qLock);
+    if (sq == process->onQ)
+      break;
+    spinlock_release(shi);
+  }
+  SpinHoldInfo rshi = spinlock_grab(&mainRQ.queue.qLock);
+
+  Link *cur = process_to_link(process);
+  link_unlink(cur);
+  process->onQ = &mainRQ.queue;
+  link_insertBefore(&mainRQ.queue.q_head, cur);
+
+  spinlock_release(rshi);
+  spinlock_release(shi);
+}
+
 void 
 rq_add(ReadyQueue *queue, Process *process, bool at_front)
 {

@@ -57,6 +57,14 @@ void sq_WakeAll(StallQueue* sq, bool verbose /*@ default false @*/);
 
 void sq_EnqueueOn(StallQueue *sq);
 
+/** @brief remove a Process from the queue it is on, and put it on the
+ * runqueue.
+ *
+ * If the process is not sleeping on a queue, or is on a RunQueue already,
+ * this has no effect.
+ */
+void sq_Unsleep(struct Process *process);
+
 static inline void sq_SleepOn(StallQueue *sq) {
   sq_EnqueueOn(sq);
   sched_abandon_transaction();

@@ -178,6 +178,11 @@ void cap_ProcessCommon(InvParam_t *iParam)
       capability *pSlot = 0;
       switch (slot) {
       case coyotos_Process_cslot_handler:
+	/* We may be asleep waiting for our handler to become available.
+	 * Unblock ourselves just in case, to give a chance at the new
+	 * handler.
+	 */
+	sq_Unsleep(p);
 	pSlot = &p->state.handler;
 	break;
       case coyotos_Process_cslot_addrSpace:
@@ -260,6 +265,39 @@ void cap_ProcessCommon(InvParam_t *iParam)
       return;
     }
 
+  case OC_coyotos_Process_getState:
+    {
+      INV_REQUIRE_ARGS(iParam, 0);
+      
+      sched_commit_point();
+
+      put_oparam8(iParam, p->state.faultCode);
+      put_oparam64(iParam, p->state.faultInfo);
+
+      iParam->opw[0] = InvResult(iParam, 0);
+      return;
+    }
+  case OC_coyotos_Process_setState:
+    {
+      uint8_t faultCode = get_iparam8(iParam);
+      coyaddr_t faultInfo = get_iparam64(iParam);
+
+      INV_REQUIRE_ARGS(iParam, 0);
+
+      sched_commit_point();
+
+      /** @bug should this do bounds-checking on faultCode? */
+      if (faultCode == coyotos_Process_FC_NoFault && faultInfo != 0) {
+	InvErrorMessage(iParam,  RC_coyotos_Cap_RequestError);
+	return;
+      }
+
+      p->state.faultCode = faultCode;
+      p->state.faultInfo = faultInfo;
+
+      iParam->opw[0] = InvResult(iParam, 0);
+      return;
+    }
   case OC_coyotos_Process_identifyEntry:
     {
       INV_REQUIRE_ARGS(iParam, 1);

@@ -123,7 +123,7 @@ module coyotos.Constructor {
   export def Verifier = enter(metacon_proc.capReg[rt.REG.INITEPT], 
 			      PP.Verifier);
   
-  def primordial_tools = readonly(make_cappage(PrimeBank));
+  def primordial_tools = readonly(new CapPage(PrimeBank));
   primordial_tools[rt.TOOL.DISCRIM] = Discrim();
   primordial_tools[rt.TOOL.PROTOSPACE] = protospace;
   primordial_tools[rt.TOOL.SPACEBANK_VERIFY] = sb.Verifier;
@@ -173,7 +173,7 @@ module coyotos.Constructor {
    * set_tool() can be used to set up the yield's tool page.
    */
   export def create_small(src_bank, file, handler) {
-    def bank = make_bank(src_bank);
+    def bank = new Bank(src_bank);
     def proc = rt.make_running_process(src_bank, cons_space, cons_pc);
     
     def image = loadimage(bank, file);
@@ -192,7 +192,7 @@ module coyotos.Constructor {
    * set_tool() can be used to set up the yield's tool page.
    */
   export def create(src_bank, as, pc, handler) {
-    def bank = make_bank(src_bank);
+    def bank = new Bank(src_bank);
     def proc = rt.make_running_process(src_bank, cons_space, cons_pc);
     
     return setup(bank, proc, as, pc, handler);
@@ -202,7 +202,7 @@ module coyotos.Constructor {
    * *con* to *value*.
    */
   export def set_tool(con, offset, value) {
-    con.recipient.capReg[rt.REG.APP + APP.YIELD_TOOLS][offset] = value;
+    con.recipient.capReg[APP.YIELD_TOOLS][offset] = value;
   }
   
   /* Now we can set up the metaconstructor;  It's just a constructor whose
@@ -215,5 +215,5 @@ module coyotos.Constructor {
    * its brand.
    */
   metacon_proc.brand = constructor_brand;
-  metacon_proc.capReg[rt.REG.APP + APP.YIELD_BRAND] = constructor_brand;
+  metacon_proc.capReg[APP.YIELD_BRAND] = constructor_brand;
 }
