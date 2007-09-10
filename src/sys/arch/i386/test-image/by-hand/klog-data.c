@@ -6,7 +6,7 @@
 
 /* This currently uses an open wait. */
 _INV_coyotos_KernLog_log ipc_parameter_block = { .in = {
-  ._icw = IPW0_RP|IPW0_CO|IPW0_RC|IPW0_SP+IPW0_SC+IPW0_MAKE_LSC(0)+IPW0_MAKE_LDW(4)+sc_InvokeCap,
+  ._icw = (IPW0_RP|IPW0_CO|IPW0_RC|IPW0_SP|IPW0_SC|IPW0_MAKE_LSC(0)|IPW0_MAKE_LDW(4)|sc_InvokeCap),
   ._opCode = OC_coyotos_KernLog_log,
   ._invCap = REG_CAPLOC(2),
   ._replyCap = REG_CAPLOC(1),
