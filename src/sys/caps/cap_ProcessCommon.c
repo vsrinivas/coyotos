@@ -211,8 +211,52 @@ void cap_ProcessCommon(InvParam_t *iParam)
 	return;
       }
 
-      iParam->opw[0] = InvResult(iParam, 1);
+      iParam->opw[0] = InvResult(iParam, 0);
       cap_set(pSlot, iParam->srcCap[1].cap);
+      return;
+    }
+
+  case OC_coyotos_Process_getReg: 
+    {
+      uint32_t slot = get_iparam32(iParam);
+
+      INV_REQUIRE_ARGS(iParam, 0);
+
+      sched_commit_point();
+
+      if (slot >= NUM_CAP_REGS) {
+	InvErrorMessage(iParam,  RC_coyotos_Cap_RequestError);
+	return;
+      }
+
+      iParam->opw[0] = InvResult(iParam, 1);
+
+      if (slot == 0)
+	cap_init(&iParam->srcCap[0].theCap);
+      else
+	cap_set(&iParam->srcCap[0].theCap, &p->state.capReg[slot]);
+
+      return;
+    }
+    
+  case OC_coyotos_Process_setReg:
+    {
+      uint32_t slot = get_iparam32(iParam);
+
+      /* no need for exclusive access, since holding the Process lock prevents
+       * the thread from accessing its capability registers.
+       */
+      INV_REQUIRE_ARGS(iParam, 1);
+
+      sched_commit_point();
+
+      if (slot == 0 || slot >= NUM_CAP_REGS) {
+	InvErrorMessage(iParam,  RC_coyotos_Cap_RequestError);
+	return;
+      }
+
+      iParam->opw[0] = InvResult(iParam, 0);
+      cap_set(&p->state.capReg[slot], iParam->srcCap[1].cap);
       return;
     }
 

@@ -272,6 +272,7 @@ abstract interface Process extends Cap {
   /// capability register.
   ///
   /// If @p reg is out of bounds (@>= 32), the RequestError exception is raised.
+  /// If @p reg is zero, the RequestError exception is raised.
   void setReg(capreg_t reg, Cap c) raises(RequestError);
 
   /// @brief Identify whether the passed entry capability @p ent is an
