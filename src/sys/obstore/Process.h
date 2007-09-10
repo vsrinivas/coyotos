@@ -74,11 +74,7 @@ typedef struct ExProcess {
   /** @brief Current fault code, or zero. */
   uint32_t          faultCode;
 
-#if 0
-  uint32_t          nParam;
-#else
   uint32_t          /* PAD */: 32;
-#endif
 
   /** @brief Auxiliary fault information (or zero). */
   coyaddr_t         faultInfo;
@@ -99,13 +95,6 @@ typedef struct ExProcess {
   capability        capReg[NUM_CAP_REGS]; /* Type capage.rw */
 
 #if defined(COYOTOS_TARGET)
-#if 0
-  ActSaveArea_t     *actSaveArea; /* USER-mode pointer! */
-
-  uintptr_t         scratchPad[128/sizeof(uintptr_t)];
-  uintptr_t         rcvParam[16];
-#endif
-
   fixregs_t         fixregs;
   floatregs_t       floatregs;
 #ifdef COYOTOS_TARGET_HAS_SOFTREGS
