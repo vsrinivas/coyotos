@@ -1465,10 +1465,7 @@ Symbol::alignof(const ArchInfo& archInfo)
   case sc_enum:
   case sc_bitset:
     {
-      // FIX: I suspect strongly that this is wrong, but I am
-      // following C convention here.
-      return archInfo.wordBytes;
-      break;
+      return s->type->alignof(archInfo);
     }
   case sc_struct:
     {
@@ -1574,7 +1571,7 @@ Symbol::sizeof(GCPtr<Symbol> s)
     {
       // FIX: I suspect strongly that this is wrong, but I am
       // following C convention here.
-      return ENUMERAL_SIZE;
+      return s->type->sizeof(archInfo);
     }
   case sc_struct:
     {
@@ -1715,9 +1712,7 @@ Symbol::directSize(const ArchInfo& archInfo)
   case sc_enum:
   case sc_bitset:
     {
-      // FIX: I suspect strongly that this is wrong, but I am
-      // following C convention here.
-      return archInfo.wordBytes;
+      return s->type->directSize(archInfo);
     }
   case sc_struct:
     {
