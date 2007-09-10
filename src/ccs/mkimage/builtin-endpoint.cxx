@@ -73,14 +73,6 @@ EndpointSet(PrimFieldValue& pfv,
     return;
   }
 
-  if (pfv.ident == "sq") {
-    if (val->kind != Value::vk_int)
-      throw excpt::BadValue;
-
-    ob->v.sq = (val.upcast<IntValue>()->bn == 0) ? 0 : 1;
-    return;
-  }
-
   assert(false && "Missing or unknown field name");
 }
 
@@ -106,9 +98,6 @@ EndpointGet(PrimFieldValue& pfv)
 
   if (pfv.ident == "pm")
     return new IntValue(ob->v.pm);
-
-  if (pfv.ident == "sq")
-    return new IntValue(ob->v.sq);
 
   assert(false && "Missing or unknown field name");
 }

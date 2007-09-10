@@ -68,7 +68,6 @@ operator <<(std::ostream& strm, CiEndpoint& ep)
   strm << "{ ENDP [bank=" << ep.bank << "]\n"
        << "       oid=" << ep.oid << '\n'
        << "       pm=" << ep.v.pm 
-       << " sq=" << ep.v.sq
        << " pp=" << ep.v.protPayload
        << '\n'
        << "       epid=" << ep.v.endpointID << '\n' 

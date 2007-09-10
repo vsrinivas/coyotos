@@ -30,9 +30,7 @@
  */
 struct ExEndpoint {
   uint32_t         pm : 1;	/**< @brief Endpoint matches payload */
-  uint32_t         sq : 1;	/**< @brief Endpoint squeals if not
-				   listened to. */
-  uint32_t            : 30;     /* PAD */
+  uint32_t            : 31;     /* PAD */
 
   uint32_t         protPayload;
   uint64_t         endpointID;
