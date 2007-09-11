@@ -30,7 +30,7 @@
       <holder>Jonathan S. Shapiro</holder>
     </copyright>
     <categories>
-      <category>dev/coyotos</category>
+      <category>dev/design</category>
     </categories>
     <synopsis>
       <p>How the Coyotos kernel virtual map is set up.</p>

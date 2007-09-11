@@ -20,16 +20,20 @@
       <dir-expand-entries category="dev/coyotos"/>
     </dirgroup>
     <dirgroup>
-      <title>Coyotos Build Tools</title>
+      <title>Build Tools</title>
       <dir-expand-entries category="dev/build"/>
-    </dirgroup>
-    <dirgroup>
-      <title>Miscellaneous</title>
-      <dir-expand-entries category="dev/misc"/>
     </dirgroup>
     <dirgroup>
       <title>The System View</title>
       <dir-expand-entries category="dev/system"/>
+    </dirgroup>
+    <dirgroup>
+      <title>Design Notes</title>
+      <dir-expand-entries category="dev/design"/>
+    </dirgroup>
+    <dirgroup>
+      <title>Miscellaneous</title>
+      <dir-expand-entries category="dev/misc"/>
     </dirgroup>
   </dirgroup>
   <dirgroup>

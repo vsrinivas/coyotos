@@ -2655,7 +2655,7 @@ C := gpt-&gt;cap[<em>u</em>]</literallayout>
 	      registers or memory, as specified by the
 	      architecture-specific annex for the target platform.
 	      The index of the last word transmitted is given by
-	      <progident>IPW0.ldw</progident>.
+	      <progident>IPR0.ldw</progident>.
 	    </p>
 	    <p>
 	      Input parameter word 0 of the invoke capability
@@ -2677,11 +2677,11 @@ C := gpt-&gt;cap[<em>u</em>]</literallayout>
 	  <li>
 	    <p>
 	      Up to four capabilities. Capabilities are transmitted if
-	      <progident>IPW0.SC=1</progident>. If so,
-	      <progident>IPW0.lsc</progident> gives the index of the
+	      <progident>IPR0.SC=1</progident>. If so,
+	      <progident>IPR0.lsc</progident> gives the index of the
 	      last capability transmitted.  Capabilities are received
-	      if <progident>IPW0.AC=1</progident>. If so,
-	      <progident>IPW0.lrc</progident> gives the index of the
+	      if <progident>IPR0.AC=1</progident>. If so,
+	      <progident>IPR0.lrc</progident> gives the index of the
 	      last capability that will be accepted.
 	    </p>
 	  </li>
@@ -2706,33 +2706,33 @@ C := gpt-&gt;cap[<em>u</em>]</literallayout>
 	  <li>
 	    <p>
 	      Whether they are willing to block in order for the
-	      message to be delivered (<progident>IPW0.NB</progident>).
+	      message to be delivered (<progident>IPR0.NB</progident>).
 	    </p>
 	  </li>
 	  <li>
 	    <p>
 	      Whether to fabricate a reply capability
-	      (<progident>IPW0.RC</progident>).
+	      (<progident>IPR0.RC</progident>).
 	    </p>
 	  </li>
 	  <li>
 	    <p>
 	      Whether the receive phase should be performed
-	      (<progident>IPW0.RP</progident>).
+	      (<progident>IPR0.RP</progident>).
 	    </p>
 	  </li>
 	  <li>
 	    <p>
 	      Whether copy-out of soft registers should be performed
 	      on those architectures that define soft registers.
-	      (<progident>IPW0.CO</progident>).
+	      (<progident>IPR0.CO</progident>).
 	    </p>
 	  </li>
 	  <li>
 	    <p>
 	      Whether the receive phase should accept messages only
 	      from a particular endpoint
-	      (<progident>IPW0.CW</progident>,
+	      (<progident>IPR0.CW</progident>,
 	      <progident>upcb.rcvEpID</progident>).
 	    </p>
 	  </li>
@@ -2909,7 +2909,7 @@ C := gpt-&gt;cap[<em>u</em>]</literallayout>
 	    where a reply is expected. The endpoint's protected
 	    payload is used to ensure that no more than one reply will
 	    be received (by means of the
-	    <progident>IPW0.RC</progident> bit of the invoke
+	    <progident>IPR0.RC</progident> bit of the invoke
 	    capability system call).
 	  </p>
 	  <p>
@@ -2926,7 +2926,7 @@ C := gpt-&gt;cap[<em>u</em>]</literallayout>
 	<note>
 	  <title>Non-Normative Note on Reply Endpoints</title>
 	  <p>
-	    If the <progident>IPW0.RC</progident> bit is set in the
+	    If the <progident>IPR0.RC</progident> bit is set in the
 	    invocation control word parameter, the protected payload
 	    of the endpoint is pre-incremented before the Entry
 	    capability is fabricated. The purpose of the RC bit is to allow
@@ -2971,7 +2971,7 @@ C := gpt-&gt;cap[<em>u</em>]</literallayout>
 	  service. Because no kernel operation accepts an indirect
 	  string, the invocation of a kernel capability behaves as if
 	  this hypothetical provider had performed a receive phase
-	  with <progident>IPW0.AS=0</progident> (no strings will be
+	  with <progident>IPR0.AS=0</progident> (no strings will be
 	  accepted).  This hypothetical provider arrives at the
 	  specified answer and accomplishes any effects of the
 	  invocation by unspecified means. It then replies as if it
@@ -3478,7 +3478,7 @@ C := gpt-&gt;cap[<em>u</em>]</literallayout>
 	  one capability and optionally blocks for an incoming message
 	  on an Endpoint. <progident>InvokeCap</progident> takes a
 	  variable number of parameters determined by the invocation
-	  control word provided in IPW0 and a system-call specific
+	  control word provided in IPR0 and a system-call specific
 	  stack frame.
 	</p>
 	<p>
@@ -3819,7 +3819,7 @@ typedef struct {
 	      capability. If the capability invoked is a
 	      kernel-implemented capability, the invocation behaves as
 	      if the kernel were a receiving process that had just
-	      performed a SendAndWait with IPW0 and IPW1 fields set as
+	      performed a SendAndWait with IPR0 and IPR1 fields set as
 	      follows:
 	    </p>
 	    <table latex.center="yes" latex.colspec="lp{2in}lp{2in}">
@@ -3833,27 +3833,27 @@ typedef struct {
 	      </thead>
 	      <tbody>
 		<tr>
-		  <td>IPW0.CW=0</td>
+		  <td>IPR0.CW=0</td>
 		  <td>Perform an open wait.</td>
-		  <td>IPW0.NB=0</td>
+		  <td>IPR0.NB=0</td>
 		  <td>Reply will be non-blocking.</td>
 		</tr>
 		<tr>
-		  <td>IPW0.AS=1</td>
+		  <td>IPR0.AS=1</td>
 		  <td>Accept string arguments.</td>
-		  <td>IPW0.AC=1</td> <td>Accept capability
+		  <td>IPR0.AC=1</td> <td>Accept capability
 		  arguments.</td>
 		</tr>
 		<tr>
 		  <td>IPW1</td>
 		  <td>(ignored <progident>capitem_t</progident>).</td>
-		  <td>IPW0.RP=1</td>
+		  <td>IPR0.RP=1</td>
 		  <td>Perform a receive operation.</td>
 		</tr>
 		<tr>
-		  <td>IPW0.RC=0</td> 
+		  <td>IPR0.RC=0</td> 
 		  <td>No reply capability.</td> 
-		  <td>IPW0.{u,t}</td>
+		  <td>IPR0.ldw</td>
 		  <td>Set according to last operation.</td>
 		</tr>
 	      </tbody>
@@ -3923,487 +3923,6 @@ typedef struct {
 	    </tbody>
 	  </table>
 	</sect2>
-<!-- 	<sect2> -->
-<!-- 	  <title>Send Phase</title> -->
-<!-- 	  <p> -->
-<!-- 	    Because of the many exceptions that are possible, the -->
-<!-- 	    steps performed by the <progident>InvokeCap</progident> -->
-<!-- 	    instruction must be specified in detail. -->
-<!-- 	  </p> -->
-<!-- 	  <note> -->
-<!-- 	    <title>Incomplete Algorithm</title> -->
-<!-- 	    <p> -->
-<!-- 	      The algorithm description given below does not consider -->
-<!-- 	      short messages that may be cached in endpoints. That is, -->
-<!-- 	      it assumes that the endpoint <progident>CM</progident> -->
-<!-- 	      bit is clear (0) at the time of invocation. The -->
-<!-- 	      algorithm specification will be revised when endpoint -->
-<!-- 	      message caching is implemented. -->
-<!-- 	    </p> -->
-<!-- 	  </note> -->
-<!-- 	  <p> -->
-<!-- 	    The send phase conveys three types of information: -->
-<!-- 	  </p> -->
-<!-- 	  <ol> -->
-<!-- 	    <li> -->
-<!-- 	      <p> -->
-<!-- 		The object to be invoked (via -->
-<!-- 		<progident>IPW1</progident>), if any. -->
-<!-- 	      </p> -->
-<!-- 	    </li> -->
-<!-- 	    <li> -->
-<!-- 	      <p> -->
-<!-- 		The payload parameters to be transferred to the -->
-<!-- 		invokee, if any. These include the untyped parameter -->
-<!-- 		words and typed item parameter words -->
-<!-- 		<em>excluding</em> typed items of types -->
-<!-- 		<progident>bufitem_t</progident>, -->
-<!-- 		<progident>epiditem_t</progident> or -->
-<!-- 		<progident>rcvcap_t</progident>. -->
-<!-- 	      </p> -->
-<!-- 	    </li> -->
-<!-- 	    <li> -->
-<!-- 	      <p> -->
-<!-- 		Pseudo-parameters that update the internal receive -->
-<!-- 		register state of the invoker. These are the typed -->
-<!-- 		item parameters of types -->
-<!-- 		<progident>bufitem_t</progident>, -->
-<!-- 		<progident>epiditem_t</progident> or -->
-<!-- 		<progident>rcvcap_t</progident>. -->
-<!-- 	      </p> -->
-<!-- 	    </li> -->
-<!-- 	  </ol> -->
-<!-- 	  <p indent="no"> -->
-<!-- 	    Note that if the <progident>IPW0.u</progident> field is -->
-<!-- 	    zero, the send phase is entirely skipped. If the send -->
-<!-- 	    phase is skipped, input typed item words will not be -->
-<!-- 	    processed. Notably, this means that typed item parameters -->
-<!-- 	    which update the receive buffers will not be processed. -->
-<!-- 	    The kernel implementation exploits the fact that -->
-<!-- 	    <progident>IPW0.u</progident> is always registerized to -->
-<!-- 	    allow it to zero the <progident>IPW0.u</progident> field -->
-<!-- 	    at the end of the send. This update prevents -->
-<!-- 	    re-transmission of messages in the face of -->
-<!-- 	    checkpoint/restart. -->
-<!-- 	  </p> -->
-<!-- 	  <ol> -->
-<!-- 	    <li id="ipc_start"> -->
-<!-- 	      <p> -->
-<!-- 		<leadin>Validity Check</leadin> If the reserved bits -->
-<!-- 		of <progident>IPW0</progident> are non-zero, a -->
-<!-- 		<progident>MalformedSyscall</progident> exception is -->
-<!-- 		delivered to the invoker. -->
-<!-- 	      </p> -->
-<!-- 	    </li> -->
-<!-- 	    <li> -->
-<!-- 	      <p> -->
-<!-- 		If the <progident>IPW0.u</progident> field contains -->
-<!-- 		zero, the send phase terminates immediately, -->
-<!-- 		processing proceeds immediately to the receive phase -->
-<!-- 		of the system call. The remainder of the send phase -->
-<!-- 		processing is skipped. -->
-<!-- 	      </p> -->
-<!-- 	    </li> -->
-<!-- 	    <li> -->
-<!-- 	      <p> -->
-<!-- 		<progident>IPW1</progident> is interpreted as a -->
-<!-- 		<progident>capitem_t</progident> to determine the -->
-<!-- 		capability invoked, and the invoked capability is -->
-<!-- 		fetched. If the capability is fetched from the address -->
-<!-- 		space, the address space is traversed, which has the -->
-<!-- 		effect of preparing the capabilities along the -->
-<!-- 		traversed path. If insufficient permissions are -->
-<!-- 		provided by the referenced path, a memory reference -->
-<!-- 		exception is delivered to the invoker. -->
-<!-- 	      </p> -->
-<!-- 	      <p> -->
-<!-- 		The invoked capability becomes the <em>invokee</em> -->
-<!-- 		capability until otherwise proven. -->
-<!-- 	      </p> -->
-<!-- 	    </li> -->
-<!-- 	    <li> -->
-<!-- 	      <p> -->
-<!-- 		The invoked capability named by -->
-<!-- 		<progident>IPW1</progident> is prepared -->
-<!-- 		(Section&nbsp;<xref ref="capability_prepare"/>). -->
-<!-- 	      </p> -->
-<!-- 	    </li> -->
-<!-- 	    <li> -->
-<!-- 	      <p> -->
-<!-- 		A pass is made over the typed item words to process -->
-<!-- 		items of types <progident>epiditem_t</progident>, -->
-<!-- 		<progident>capitem_t</progident>,  -->
-<!-- 		<progident>bufitem_t</progident>, -->
-<!-- 		and -->
-<!-- 		<progident>rcvcapitem_t</progident>. If a -->
-<!-- 		<progident>epiditem_t</progident> is found, the -->
-<!-- 		invoker's <progident>process.rcvEpID</progident> field -->
-<!-- 		is updated. Typed items of type -->
-<!-- 		<progident>bufitem_t</progident>, and -->
-<!-- 		<progident>rcvcapitem_t</progident> are copied to the -->
-<!-- 		invoker's <progident>rcvParam[]</progident> vector. -->
-<!-- 	      </p> -->
-<!-- 	      <p> -->
-<!-- 		During this pass, if the invoked capability is not of -->
-<!-- 		type Entry, the first <progident>capitem_t</progident> -->
-<!-- 		becomes the <em>invokee</em> capability. -->
-<!-- 	      </p> -->
-<!-- 	    </li> -->
-<!-- 	    <li> -->
-<!-- 	      <p> -->
-<!-- 		The invokee capability is prepared. If (after prepare) -->
-<!-- 		this capability is not of type Entry, or if a -->
-<!-- 		protected payload match is required and fails, there is no -->
-<!-- 		invokee. -->
-<!-- 	      </p> -->
-<!-- 	    </li> -->
-<!-- 	    <li> -->
-<!-- 	      <p> -->
-<!-- 		The process capability contained in the invokee entry -->
-<!-- 		point is prepared. If (after prepare), this capability -->
-<!-- 		is not a process capability, there is no invokee. -->
-<!-- 	      </p> -->
-<!-- 	    </li> -->
-<!-- 	    <li> -->
-<!-- 	      <p> -->
-<!-- 		If the invokee process is not now in the -->
-<!-- 		<em>receiving</em> state, the invoker is enqueued -->
-<!-- 		until the invokee enters the receiving start. On -->
-<!-- 		wakeup, invocation will re-start at step&nbsp;<xref -->
-<!-- 		ref="ipc_start"/>. -->
-<!-- 	      </p> -->
-<!-- 	      <p> -->
-<!-- 		If the invokee process and the current process are the -->
-<!-- 		same, and the IPW0.RP field is set (1), the invokee -->
-<!-- 		is deemed to be in the <em>receiving</em> state. -->
-<!-- 	      </p> -->
-<!-- 	    </li> -->
-<!-- 	    <li> -->
-<!-- 	      <p> -->
-<!-- 		If an invokee exists, the invokee is locked. -->
-<!-- 	      </p> -->
-<!-- 	    </li> -->
-<!-- 	    <li> -->
-<!-- 	      <p> -->
-<!-- 		If an invokee exists, and their -->
-<!-- 		<progident>IPW0.AC</progident> bit is set (1), the -->
-<!-- 		invokee <progident>rcvParam[]</progident> vector is -->
-<!-- 		traversed to find and lock all capability pages that -->
-<!-- 		will contain output capability parameters. -->
-<!-- 	      </p> -->
-<!-- 	    </li> -->
-<!-- 	    <li> -->
-<!-- 	      <p> -->
-<!-- 		If an invokee exists, and their -->
-<!-- 		<progident>IPW0.AS</progident> bit is set (1), the -->
-<!-- 		invokee <progident>rcvParam[]</progident> vector is -->
-<!-- 		traversed to find and lock all capability pages that -->
-<!-- 		will contain output capability parameters. -->
-<!-- 	      </p> -->
-<!-- 	    </li> -->
-
-<!-- 	    <li> -->
-<!-- 	      <p> -->
-<!-- 		The invoked capability named by -->
-<!-- 		<progident>IPW1</progident> is examined, and several -->
-<!-- 		mutually exclusive sanity conditions are checked: -->
-<!-- 	      </p> -->
-<!-- 	      <p> -->
-<!-- 		<em>Some of these are not right</em> -->
-<!-- 	      </p> -->
-<!-- 	      <ul> -->
-<!-- 		<li> -->
-<!-- 		  <p> -->
-<!-- 		    <leadin>Kernel-Implemented</leadin> If the invoked -->
-<!-- 		    capability is a non-entry capability, send-phase -->
-<!-- 		    processing continues at step&nbsp;<xref -->
-<!-- 		      ref="cap_args"/>. -->
-<!-- 		  </p> -->
-<!-- 		</li> -->
-<!-- 		<li> -->
-<!-- 		  <p> -->
-<!-- 		    <leadin>Invalid Endpoint</leadin> If the invoked -->
-<!-- 		    capability is an Entry capability whose endpoint -->
-<!-- 		    contains a Null capability in its recipient slot, -->
-<!-- 		    the send phase terminates successfully and -->
-<!-- 		    processing proceeds to the receive phase of the -->
-<!-- 		    system call. -->
-<!-- 		  </p> -->
-<!-- 		</li> -->
-<!-- 		<li> -->
-<!-- 		  <p> -->
-<!-- 		    <leadin>Invokee Receiving</leadin> If the -->
-<!-- 		    invokee is receiving on the invoked endpoint, send -->
-<!-- 		    phase processing continues at step <xref -->
-<!-- 		    ref="ipc_block_move"/>. -->
-<!-- 		  </p> -->
-<!-- 		  <p> -->
-<!-- 		    An invokee is deemed to be receiving on an -->
-<!-- 		    endpoint if the invokee is in the <em>receiving</em> -->
-<!-- 		    state, and either: -->
-<!-- 		  </p> -->
-<!-- 		  <ul> -->
-<!-- 		    <li> -->
-<!-- 		      <p> -->
-<!-- 			The invokee's <progident>IPW0.cw</progident> -->
-<!-- 			bit is clear (0), <em>or</em> -->
-<!-- 		      </p> -->
-<!-- 		    </li> -->
-<!-- 		    <li> -->
-<!-- 		      <p> -->
-<!-- 			The invokee's <progident>rcvEpID</progident> -->
-<!-- 			value matches the endpoint ID value stored in -->
-<!-- 			the invoked endpoint object. -->
-<!-- 		      </p> -->
-<!-- 		    </li> -->
-<!-- 		  </ul> -->
-<!-- 		</li> -->
-<!-- 		<li> -->
-<!-- 		  <p> -->
-<!-- 		    <leadin>Not receiving, Non-Blocking Send</leadin> -->
-<!-- 		    If the <progident>IPW0.NB</progident> bit is set -->
-<!-- 		    (1), the send phase terminates successfully and -->
-<!-- 		    processing proceeds to the receive phase of the -->
-<!-- 		    sytem call. -->
-<!-- 		  </p> -->
-<!-- 		</li> -->
-<!-- 		<li> -->
-<!-- 		  <p> -->
-<!-- 		    <leadin>Not Receiving, Blocking Send</leadin> the -->
-<!-- 		    invoker blocks until the invokee becomes -->
-<!-- 		    available. -->
-<!-- 		  </p> -->
-<!-- 		</li> -->
-<!-- 	      </ul> -->
-<!-- 	    </li> -->
-<!-- 	    <li id="ipc_block_move"> -->
-<!-- 	      <p> -->
-<!-- 		If the invokee's <progident>IPW0.AS</progident> bit is -->
-<!-- 		clear(0), send processing continues at step <xref -->
-<!-- 		ref="cap_args"/>, and no page faults will be incurred -->
-<!-- 		by either invoker or invokee.  Otherwise: -->
-<!-- 	      </p> -->
-<!-- 	      <ol> -->
-<!-- 		<li> -->
-<!-- 		  <p> -->
-<!-- 		    The invokee's <progident>OPW0.TS</progident> bit -->
-<!-- 		    and the invokee's <progident>OPW0.t</progident> -->
-<!-- 		    field are zeroed. -->
-<!-- 		  </p> -->
-<!-- 		</li> -->
-<!-- 		<li> -->
-<!-- 		  <p> -->
-<!-- 		    The invoker-specified indirect strings are -->
-<!-- 		    transferred in sequence to the locations specified -->
-<!-- 		    by the invokee's buffer registers. -->
-<!-- 		  </p> -->
-<!-- 		  <p> -->
-<!-- 		    Page faults incurred in the invoker address space, if -->
-<!-- 		    any, are delivered to the invoker. These faults are -->
-<!-- 		    logically delivered before the start of the system -->
-<!-- 		    call. -->
-<!-- 		  </p> -->
-<!-- 		  <p> -->
-<!-- 		    Page faults incurred in the invokee address space are -->
-<!-- 		    conditionally delivered depending on the invoker's -->
-<!-- 		    <progident>IPW0.NB</progident> value: -->
-<!-- 		  </p> -->
-<!-- 		  <ul> -->
-<!-- 		    <li> -->
-<!-- 		      <p> -->
-<!-- 			If the invoker -->
-<!-- 			<progident>IPW0.NB</progident> is set (1): -->
-<!-- 		      </p> -->
-<!-- 		      <ul> -->
-<!-- 			<li> -->
-<!-- 			  <p>The current string item transfer terminates.</p> -->
-<!-- 			</li> -->
-<!-- 			<li> -->
-<!-- 			  <p>The invokee's  -->
-<!-- 			    <progident>OPW0.TS</progident> bit is set (1).</p> -->
-<!-- 			</li> -->
-<!-- 			<li> -->
-<!-- 			  <p>The send phase completes and execution resumes -->
-<!-- 			    with the receive phase.</p> -->
-<!-- 			</li> -->
-<!-- 		      </ul> -->
-<!-- 		    </li> -->
-<!-- 		    <li> -->
-<!-- 		      <p> -->
-<!-- 			Otherwise, a page fault exception is delivered to -->
-<!-- 			the invokee. This exception is logically delivered -->
-<!-- 			prior to the start of the system call. -->
-<!-- 		      </p> -->
-<!-- 		    </li> -->
-<!-- 		  </ul> -->
-<!-- 		  <p> -->
-<!-- 		    If a transferred string would overflow the limit -->
-<!-- 		    encoded in a non-continued receive buffer, the -->
-<!-- 		    remainder of the transmitted string is discarded -->
-<!-- 		    and the invokee's <progident>OPW0.TS</progident> -->
-<!-- 		    bit is set (1).  String transfer resumes with the -->
-<!-- 		    next transmitted string.  It is the responsibility -->
-<!-- 		    of the receiver to validate that received string -->
-<!-- 		    lengths are consistent with the requirements of -->
-<!-- 		    the application-defined protocol. -->
-<!-- 		  </p> -->
-<!-- 		  <p> -->
-<!-- 		    A receive buffer containing a string item having a -->
-<!-- 		    zero length indicates that no further strings will -->
-<!-- 		    be accepted. This allows an IDL compiler to avoid -->
-<!-- 		    saving and restoring buffer registers that are not -->
-<!-- 		    used by the current invocation. Transmitted string -->
-<!-- 		    items at and beyond this receive buffer will be -->
-<!-- 		    truncated and the <progident>OPW0.TS</progident> -->
-<!-- 		    bit will be set (1). -->
-<!-- 		  </p> -->
-<!-- 		  <p> -->
-<!-- 		    As each invoker indirect string is processed, the -->
-<!-- 		    corresponding string item parameter word -->
-<!-- 		    <progident>IPW<em>i</em></progident> is copied to -->
-<!-- 		    the invokee's output parameter word -->
-<!-- 		    <progident>OPW<em>i</em></progident>. The -->
-<!-- 		    invoker's source address is replaced in the output -->
-<!-- 		    parameter word with the actual length received -->
-<!-- 		    (this supports overrun detection).  On exit, the -->
-<!-- 		    invokee's <progident>OPW0.t</progident> field will -->
-<!-- 		    give the number of transmitted string items. -->
-<!-- 		  </p> -->
-<!-- 		</li> -->
-<!-- 	      </ol> -->
-<!-- 	    </li> -->
-<!-- 	    <li id="cap_args"> -->
-<!-- 	      <p> -->
-<!-- 		The invokee's <progident>OPW0.c</progident> and -->
-<!-- 		<progident>OPW0.SC</progident> fields are zeroed. -->
-<!-- 	      </p> -->
-<!-- 	      <p> -->
-<!-- 		If <progident>IPW0.SC</progident> is clear (0), -->
-<!-- 		send-phase processing processing proceeds to -->
-<!-- 		step&nbsp;<xref ref="ipc_untyped_params"/>. No -->
-<!-- 		capability-related exceptions will be incurred by the -->
-<!-- 		invoker or the invokee. -->
-<!-- 	      </p> -->
-<!-- 	      <p> -->
-<!-- 		Otherwise, the argument capabilities designated by the -->
-<!-- 		invoker's <progident>sndCap[0,<em>IPW0.c</em>]</progident> -->
-<!-- 		are marshalled.  If a transmitted capability is sent -->
-<!-- 		from the address space, marshalling may cause -->
-<!-- 		exceptions to be delivered to the invoker. These -->
-<!-- 		exceptions are logically delivered prior to the start -->
-<!-- 		of the system call. -->
-<!-- 	      </p> -->
-<!-- 	      <p> -->
-<!-- 		The invokee's receive capability locations specified -->
-<!-- 		in the invokee -->
-<!-- 		<progident>rcvCap[0,<em>c</em>]</progident> registers -->
-<!-- 		are now checked for necessary access rights. The value -->
-<!-- 		of <em>c</em> is the maximum capability index sent by -->
-<!-- 		the invoker, specified in the invoker's -->
-<!-- 		<progident>IPW0.c</progident> field.  Page faults -->
-<!-- 		incurred during this check are conditionally delivered -->
-<!-- 		depending on the invoker's -->
-<!-- 		<progident>IPW0.NB</progident> value, according to the -->
-<!-- 		same rules using for receiver-side string buffer -->
-<!-- 		faults, except that the invokee's -->
-<!-- 		<progident>OPW0.TC</progident> bit is set to indicate -->
-<!-- 		that capability arguments have been truncated. Send -->
-<!-- 		phase execution continues at step&nbsp;<xref -->
-<!-- 		ref="ipc_cap_copy"/>. -->
-<!-- 	      </p> -->
-<!-- 	    </li> -->
-<!-- 	    <li id="ipc_cap_copy"> -->
-<!-- 	      <p> -->
-<!-- 		Argument capabilities to successfully validated -->
-<!-- 		capability destinations are transferred to the -->
-<!-- 		invokee-designated locations. The invokee's -->
-<!-- 		<progident>OPCW0.c</progident> field is updated to -->
-<!-- 		indicate the number of capabilities received, and the -->
-<!-- 		invokee's <progident>OPCW0.c</progident> field is set -->
-<!-- 		to indicate the index of the highest capability -->
-<!-- 		transferred. If <progident>OPCW0.TC</progident> has -->
-<!-- 		been set, this will be the index of the capability -->
-<!-- 		whose transfer could not be performed. -->
-<!-- 	      </p> -->
-<!-- 	    </li> -->
-<!-- 	    <li id="ipc_untyped_params"> -->
-<!-- 	      <p> -->
-<!-- 		The untyped parameter arguments up to the index -->
-<!-- 		specified by the invoker IPW0.c field are copied to -->
-<!-- 		the invokee with the following modifications: -->
-<!-- 	      </p> -->
-<!-- 	      <ul> -->
-<!-- 		<li> -->
-<!-- 		  <p> -->
-<!-- 		    The invokee's <progident>OPW0</progident> value -->
-<!-- 		    will contain the values indicated in the preceding -->
-<!-- 		    steps. -->
-<!-- 		  </p> -->
-<!-- 		  <p> -->
-<!-- 		    The invokee's <progident>OPW1</progident> value -->
-<!-- 		    will contain the protected payload value of the -->
-<!-- 		    invoked entry capability. -->
-<!-- 		  </p> -->
-<!-- 		</li> -->
-<!-- 	      </ul> -->
-<!-- 	      <p> -->
-<!-- 		The invokee's <progident>rcvEpID</progident> field -->
-<!-- 		is updated to contain the endpoint ID value of the -->
-<!-- 		invoked endpoint. -->
-<!-- 	      </p> -->
-<!-- 	    </li> -->
-<!-- 	    <li id="pp_update"> -->
-<!-- 	      <p> -->
-<!-- 		If the invoked capability is an entry capability, and -->
-<!-- 		the designated endpoint's <progident>PM</progident> -->
-<!-- 		bit is set (1), the protected payload value stored in the -->
-<!-- 		endpoint is incremented. -->
-<!-- 	      </p> -->
-<!-- 	      <p> -->
-<!-- 		The kernel does not check for payload value -->
-<!-- 		overflow. It is the responsibility of the application -->
-<!-- 		to replace the receive endpoint payload overflow -->
-<!-- 		occurs. -->
-<!-- 	      </p> -->
-<!-- 	    </li> -->
-<!-- 	    <li id="ipc_state_change"> -->
-<!-- 	      <p> -->
-<!-- 		The invokee enters the <em>running</em> state. Invoker -->
-<!-- 		execution proceeds to the receive phase. -->
-<!-- 	      </p> -->
-<!-- 	    </li> -->
-<!-- 	  </ol> -->
-<!-- 	</sect2> -->
-<!-- 	<sect2> -->
-<!-- 	  <title>Receive Phase</title> -->
-<!-- 	  <ol> -->
-<!-- 	    <li> -->
-<!-- 	      <p> -->
-<!-- 		If the invoker's <progident>IPW0.NR</progident> bit is -->
-<!-- 		set (1), the invoker returns immediately with -->
-<!-- 		<progident>OPW0.TC=0</progident> -->
-<!-- 		<progident>OPW0.TS=0</progident> -->
-<!-- 		<progident>OPW0.SC=0</progident> -->
-<!-- 		<progident>OPW0.u=0</progident> -->
-<!-- 		<progident>OPW0.t=0</progident>, and -->
-<!-- 		<progident>OPW0.c=0</progident>. The invoker continues -->
-<!-- 		in the <em>running</em> state. -->
-<!-- 	      </p> -->
-<!-- 	      <p> -->
-<!-- 		If the invoker's <progident>IPW0.NR</progident> bit is -->
-<!-- 		clear (0), the invoker now enters the -->
-<!-- 		<em>receiving</em> state until an invocation is -->
-<!-- 		received. -->
-<!-- 	      </p> -->
-<!-- 	      <p> -->
-<!-- 		On exit, the output parameter words will contain the -->
-<!-- 		values indicated above in the description of the send -->
-<!-- 		phase. The system call returns to the caller with the -->
-<!-- 		caller in the <em>running</em> state. -->
-<!-- 	      </p> -->
-<!-- 	    </li> -->
-<!-- 	  </ol> -->
-<!-- 	</sect2> -->
       </sect1>
     </chapter>
     <chapter id="scheduling">
@@ -4558,13 +4077,13 @@ typedef struct {
 	    <tbody>
 	      <tr>
 		<td>EAX</td>
-		<td><progident>IPW0</progident></td>
-		<td><progident>OPW0</progident></td>
+		<td><progident>IPR0</progident></td>
+		<td><progident>OPR0</progident></td>
 	      </tr>
 	      <tr>
 		<td>EBX</td>
-		<td><progident>IPW1</progident></td>
-		<td><progident>OPW1</progident></td>
+		<td><progident>IPR1</progident></td>
+		<td><progident>OPR1</progident></td>
 	      </tr>
 	      <tr>
 		<td>ECX</td>
@@ -4578,13 +4097,13 @@ typedef struct {
 	      </tr>
 	      <tr>
 		<td>ESI</td>
-		<td><progident>IPW2</progident></td>
-		<td><progident>OPW2</progident></td>
+		<td><progident>IPR2</progident></td>
+		<td><progident>OPR2</progident></td>
 	      </tr>
 	      <tr>
 		<td>EDI</td>
-		<td><progident>IPW3</progident></td>
-		<td><progident>OPW3</progident></td>
+		<td><progident>IPR3</progident></td>
+		<td><progident>OPR3</progident></td>
 	      </tr>
 	      <tr>
 		<td>EBP</td>
@@ -4657,52 +4176,58 @@ typedef struct {
 	  </thead>
 	  <tbody>
 	    <tr>
-	      <td>IPW0</td>
+	      <td>IPR0</td>
 	      <td><progident>%eax</progident></td>
-	      <td>OPW0</td>
+	      <td>OPR0</td>
 	      <td><progident>%eax</progident></td>
 	    </tr>
 	    <tr>
-	      <td>IPW1</td>
+	      <td>IPR1</td>
 	      <td><progident>%ebx</progident></td>
-	      <td>OPW1</td>
+	      <td>OPR1</td>
 	      <td><progident>%ebx</progident></td>
 	    </tr>
 	    <tr>
-	      <td>IPW2</td>
+	      <td>IPR2</td>
 	      <td><progident>%esi</progident></td>
-	      <td>OPW2</td>
+	      <td>OPR2</td>
 	      <td><progident>%esi</progident></td>
 	    </tr>
 	    <tr>
-	      <td>IPW3</td>
+	      <td>IPR3</td>
 	      <td><progident>%edi</progident></td>
-	      <td>OPW3</td>
+	      <td>OPR3</td>
 	      <td><progident>%edi</progident></td>
 	    </tr>
 	    <tr>
-	      <td>IPW4..IPW63</td>
+	      <td>IPR4..IPR7</td>
 	      <td><em>caller stack</em></td>
-	      <td>OPW4..OPW63</td>
-	      <td><progident>upcb.OPW4..upcb.OPW63</progident></td>
+	      <td>OPR4..OPR7</td>
+	      <td><em>receiver stack</em></td>
 	    </tr>
 	    <tr>
 	      <td>invCap</td>
-	      <td><progident>%ebp</progident></td>
+	      <td><em>caller stack</em></td>
 	      <td>rcvPP</td>
-	      <td><progident>%ebp</progident></td>
+	      <td><progident>softregs.rcvPP</progident></td>
 	    </tr>
 	    <tr>
 	      <td>rcvEpID</td>
-	      <td><progident>upcb.epID</progident></td>
-	      <td>BR0..BR31</td>
-	      <td><progident>upcb.BR0..upcb.BR31</progident></td>
+	      <td><progident>softregs.epID</progident></td>
 	    </tr>
 	  </tbody>
 	</table>
+	<p>
+	  Values in the <progident>softregs</progident> structure are
+	  copied out to the receiver stack after the receive phase if
+	  IPR0.CO is set (1).
+	</p>
       </sect1>
       <sect1>
 	<title>Thread Identification</title>
+	<p>
+	  <em><font color="red">This section is stale</font></em>
+	</p>
 	<p>
 	  The first two words of the UPCB are used by the
 	  application-level runtime system to provide support for

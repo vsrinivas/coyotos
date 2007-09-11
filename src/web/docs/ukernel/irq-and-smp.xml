@@ -38,7 +38,7 @@
       </p>
     </legalnotice>
     <categories>
-      <category>dev/coyotos</category>
+      <category>dev/design</category>
     </categories>
     <synopsis>
       <p>How the kernel implementation deals with interrupts and SMP
