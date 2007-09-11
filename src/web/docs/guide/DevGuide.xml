@@ -1,0 +1,519 @@
+<?xml version="1.0"?>
+<!DOCTYPE book PUBLIC "-//EROS Group//DTD OSDoc XML V0.1//EN"
+               "http://www.coyotos.org/OSDoc/DTD/osdoc-0.1.dtd" [
+
+<!ENTITY DocVersion "0.1">
+]>
+  <book id="ukernel-spec" xmlns:xi="http://www.w3.org/2001/XInclude">
+  <docinfo>
+<!--     ptsz="12" twocolumn="yes" -->
+    <title>Coyotos Developer Guide</title>
+    <subtitle>Version &DocVersion;</subtitle>
+    <authorgroup>
+      <author>
+	<firstname>Jonathan</firstname>
+	<othername>S.</othername>
+	<surname>Shapiro</surname>
+	<degree>Ph.D.</degree>
+      </author>
+      <affiliation>
+	<orgname>The EROS Group, LLC</orgname>
+      </affiliation>
+    </authorgroup>
+    <pubdate>September 10, 2007</pubdate>
+    <copyright>
+      <year>2007</year> 
+      <holder>The EROS Group, LLC</holder>
+      <copyterms>
+	Verbatim copies of this document may be duplicated or
+	distributed in print or electronic form for non-commercial
+	purposes.
+      </copyterms>
+    </copyright>
+    <legalnotice>
+      <p>
+	THIS GUIDE IS PROVIDED ``AS IS'' WITHOUT ANY
+	WARRANTIES, INCLUDING ANY WARRANTY OF MERCHANTABILITY,
+	NON-INFRINGEMENT, FITNESS FOR ANY PARTICULAR PURPOSE, OR ANY
+	WARRANTY OTHERWISE ARISING OF ANY PROPOSAL, SPECIFICATION OR
+	SAMPLE.
+      </p>
+    </legalnotice>
+    <categories>
+      <category>dev/system</category>
+    </categories>
+    <synopsis>
+      <p>An introduction to working with Coyotos for developers and
+	integrators.</p>
+    </synopsis>
+  </docinfo>
+  <toc/>
+  <chapter>
+    <title>Introduction</title>
+    <p>
+      This book will show you how to get started with Coyotos. They
+      setting up your development machine, obtaining the source code,
+      where to get help, the tutorials, Coyotos &quot;theory of
+      operation&quot;, and so forth.
+    </p>
+    <p>
+      There are really two types of Coyotos developers:
+    </p>
+    <ul>
+      <li>
+	<p>
+	  Embedded system developers who want to know how to assemble
+	  a complete Coyotos system, including kernel, drivers, and
+	  application structure. These developers are interested in
+	  the &quot;system view&quot; of Coyotos development.
+	</p>
+      </li>
+      <li>
+	<p>
+	  Application or driver developers who have an existing
+	  Coyotos system running and want to develop a new application
+	  or utility. These developers generally will not be building
+	  a system from the ground up. Instead, they are developing
+	  applications that will be installed by the Coyotos
+	  installer.
+	</p>
+      </li>
+    </ul>
+    <p>
+      At the moment, the information in this book is biased in favor
+      of embedded system developers, but a lot of that information is
+      relevant for application developers as well. The squeaky
+      customer gets the grease and all that.
+    </p>
+  </chapter>
+  <chapter>
+    <title>Setting Up Your Development Machine</title>
+    <p>
+      The Coyotos development environment is currently supported on
+      Fedora Core 6 and Fedora 7. Some users are using other versions
+      of Linux or BSD, but this involves some extra work and we do not
+      actively support it. This page describes how to set yourself up
+      on Fedora Core.
+    </p>
+    <p>Step one: join the web site at
+      http://dev.coyotos.org. Since you are reading this, we will
+      assume that you figured that part out by yourself and moved
+      on. If you want to be notified when the source base is updated,
+      you should also subscribe to the coyotos-commit notification
+      list at http://www.eros-os.com/listinfo.
+    </p> 
+    <sect1>
+      <title>Installing the Cross Compilers</title>
+      <p>
+	The first thing to do is to install the
+	RPM package that adds the Coyotos tool repository to your
+	environment. To do this, you should (as root):
+      </p>
+      <literallayout>
+rpm -ivh http://www.eros-os.com/YUM/coyotos/7/i386/Coyotos-Repository-latest.fc7.noarch.rpm</literallayout>
+      <p>
+	If you are running Fedora Core 6, change the 7/i386 and fc7
+	parts accordingly.
+      </p>
+      <p>
+	Once this package is installed, you will be able to install
+	the Coyotos cross tools. We currently provide cross
+	compilation kits for IA-32, Coldfire, and ARM/StrongArm
+	targets [the ARM tools are not tested by us, but are actively
+	used by the CapROS team. Depending on your target of interest,
+	you should run one or more of:
+      </p>
+      <literallayout>
+yum install coyotos-i386-xenv
+yum install coyotos-m68k-xenv
+yum install coyotos-arm-xenv</literallayout>
+      <p>
+	That may take a while. Be patient. The advantage to installing
+	this way is that you will automatically receive
+	updates. Occasionally we have been known to make changes to
+	the source tree that rely on an update in the cross
+	tools. This is happening less and less often over time, but it
+	still happens once in a while.
+      </p>
+      <p>
+	If we don't supply packaged tools for your platform, the
+	altermative is to build them yourself. Instructions for this
+	will be moving here shortly. For now, they can be found at the
+	<link href="http://www.coyotos.org/docs/build/build.html">old
+	site</link>.
+      </p>
+    </sect1>
+    <sect1>
+      <title>Check Out the Source Code</title>
+      <p>
+	If you don't already have it, you will need to install
+	<em>mercurial</em>. We use mercurial for our source code
+	management. You can find information abuot how to use
+	mercurial at http://selenic.com/mercurial/wiki. There is a
+	pre-packaged version of mercurial in the Fedora repository for
+	all recent versions of Fedora. While you are installing
+	mercurial, you may also find the <em>colordiff</em> package
+	useful.
+      </p>
+      <p>
+	Checking
+      out the base Coyotos tree can be done with the following
+      command. You may wish to consider doing this within an empty
+      directory:
+      </p>
+<literallayout>
+hg clone http://dev.eros-os.com/hg/coyotos</literallayout>
+      <p>
+	If you wish, you may
+	also want to consider checking out the tutorial subtree:
+      </p>
+      <literallayout>
+cd coyotos/src
+hg clone http://dev.eros-os.com/hg/tutorial</literallayout>
+      <p>
+	The other package that is currently available is the
+	<b>ccs-xenv</b> package. It should also be cloned
+	under <b>coyotos/src</b> if you choose to check it
+	out. You don't actually need it unless you are actively
+	working on the cross tools (e.g. you are porting to a new
+	target).
+      </p>
+      <p>
+	With
+	a bit of luck, you should now be able to build the tree
+	with:
+      </p>
+<literallayout>
+cd coyotos/src
+make</literallayout>
+    </sect1>
+  </chapter>
+  <chapter>
+    <title>Tree Organization, Building, and Rebuilding</title>
+    <p>
+      The Coyotos tree is divided loosely into &quot;packages&quot;
+      (which is a terrible name). In general, the rule is that if a
+      directory <filename>mumble/</filename> appears under
+      <filename>coyotos/src</filename>, it is a self-contained
+      &quot;unit&quot; of the build. The exception to this statement
+      is the <filename>coyotos/src/build/</filename> directory, which
+      contains makefile support, scripts for installing binaries, and
+      so forth.
+    </p>
+    <p>
+      The build order and dependencies for the current subdirectories
+      of <filename>coyotos/src</filename> are:
+    </p>
+    <table width="90%" latex.center="yes" latex.colspec="lllp{3.5in}">
+      <thead>
+        <tr>
+	  <td><b>Order</b></td>
+	  <td><b>Tree</b></td>
+	  <td><b>Dependencies</b></td>
+	  <td><b>Description</b></td>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+	  <td>1</td>
+	  <td><filename>ccs-xenv/</filename></td>
+	  <td><em>none</em></td>
+	  <td>
+	    <p>
+	      This tree produces the cross compilers. It is not built
+	      automatically. If you are using Fedora as your
+	      development environment, you will probably never build
+	      this tree because you have installed the cross
+	      environment packages from our repository.
+	    </p>
+	  </td>
+        </tr>
+        <tr>
+	  <td>2</td>
+	  <td><filename>ccs/</filename></td>
+	  <td><filename>ccs-xenv/</filename></td>
+	  <td>
+	    <p>
+	      This tree produces additional build tools that are not
+	      yet ready to move into packaging. Logically,
+	      <filename>ccs/</filename> and
+	      <filename>ccs-xenv/</filename> form a single set of
+	      tools. This tree produces the
+	      <filename>capidl</filename> and
+	      <filename>mkimage</filename> tools, which are needed to
+	      generate interfaces, header files, IPC stub libraries,
+	      server demultiplexing stubs, and complete system images.
+	    </p>
+	  </td>
+        </tr>
+        <tr>
+	  <td>3</td>
+	  <td><filename>sys/</filename></td>
+	  <td><filename>ccs/</filename></td>
+	  <td>
+	    <p>
+	      Kernel source code. Relies on
+	      <filename>capidl</filename> to generate interfaces and
+	      opcode macros.
+	    </p>
+	  </td>
+        </tr>
+        <tr>
+	  <td>4</td>
+	  <td><filename>base/</filename></td>
+	  <td><filename>sys/</filename>, <filename>ccs/</filename></td>
+	  <td>
+	    <p>
+	      Core Coyotos utilities and drivers.
+	    </p>
+	  </td>
+        </tr>
+        <tr>
+	  <td>5</td>
+	  <td><filename>web/</filename></td>
+	  <td><filename>ccs/</filename></td>
+	  <td>
+	    <p>
+	      Documentation tree. Relies on the <em>presence</em> of
+	      <filename>sys/</filename> to obtain the kernel interface
+	      IDL specifications, but does not rely on
+	      <filename>sys/</filename> being compiled.
+	    </p>
+	  </td>
+        </tr>
+        <tr>
+	  <td>6</td>
+	  <td><filename>tutorial/</filename></td>
+	  <td><filename>base/</filename></td>
+	  <td>
+	    <p>
+	      Tutorial segments for various aspects of Coyotos. These
+	      rely on the utilities and drivers generated from
+	      <filename>base/</filename>. The tutorial/ tree is an
+	      optional tree. If it is not present, we will not try to
+	      build it.
+	    </p>
+	  </td>
+        </tr>
+        <tr>
+	  <td>7</td>
+	  <td><filename>var.<em>something</em></filename></td>
+	  <td><filename>base/</filename></td>
+	  <td>
+            <p>
+	      Any subdirectory of <filename>coyotos/src</filename>
+	      whose name is
+	      <filename>var.<em>something</em></filename> is assumed
+	      to contain code added by you. If one or more directories
+	      of these names are present, they will be built in
+	      alphabetical order.
+	    </p>
+	  </td>
+        </tr>
+      </tbody>
+    </table>
+    <p>
+      It is assumed that any subdirectory named
+      <filename>var.<em>something</em></filename> conform to the
+      Coyotos build system conventions. If these subtrees are
+      maintained using mercurial, our top-level makefile (the one in
+      <filename>coyotos/src</filename>) can be used to help keep them
+      up to date and to see their status.  The addition of new
+      subdirectories necessarily will drag you into the black art of
+      Makefile management, which is documented later in the
+      <em>Developer Guide</em>.
+    </p>
+    <p>
+      Output directories <filename>coyotos/host</filename> and
+      <filename>coyotos/usr</filename> are created by the build
+      process. The <filename>coyotos/host</filename> directory is
+      where tools used on the development host (from
+      <filename>ccs/</filename>) are installed. The
+      <filename>coyotos/usr</filename> directory is where all of the
+      build results are installed. The general pattern of the build is
+      that each package is built in sequence and installs its results
+      into <filename>coyotos/usr</filename> and/or
+      <filename>coyotos/host</filename> as appropriate. In
+      <em>theory</em>, it should be possible to build each subtree in
+      its proper order, delete that subtree, and then build the next
+      subtree. In practice, this would probably break a number of
+      parts of the build.
+    </p>
+    <p>
+      The <filename>web/</filename> subtree is something of an
+      unfortunate special case. It is automatically rebuilt to produce
+      pieces of the Coyotos web site. Some of the documents rely on
+      the IDL files of other trees in order to generate interface
+      documentation. At the moment, these IDL files are extracted from
+      their positions in the source tree rather than from their
+      installed locations. This is a bug that has not yet been
+      addressed.
+    </p>
+    <sect1>
+      <title>Re-Building the Tree From Scratch</title>
+      <p>
+	We are currently (perhaps I should say constantly) working to
+	improve the build process, especially in the documentation
+	subtree. As with any operating system build tree, there are
+	build order dependencies from one part of the tree to the
+	next. Not all of these are capturable in the Makefiles. The big
+	issue is that later subtrees depend on interfaces that are
+	published by earlier subtrees.
+      </p>
+      <p>
+	Because of this, the first thing you should do if you suspect you have a build problem is to rebuild the tree from scratch. The simplest way to do this is:
+      </p>
+      <literallayout>
+cd coyotos/src
+make pristine</literallayout>
+    <p>
+      This is a short-hand for the following commands:
+    </p>
+    <literallayout>
+cd coyotos/src
+make distclean    # clean out the tree and everything that has been installed
+make              # 2m37s elapsed with cold ccache, 2m16s with warm ccache</literallayout>
+      <p>
+	The Coyotos build is designed to use <filename>ccache</filename>
+	if you have it installed. The <filename>ccache</filename> tool
+	does amazing things to reduce build times, and we strongly
+	recommend it. Ironically, this leaves the documentation tree as
+	the &quot;expensive&quot; part of the build. If you are in a
+	hurry, there are a couple of things that you can do to reduce
+	build times.
+      </p>
+      <ul>
+	<li>
+	  <p>
+	    You can skip the build of the documentation tree
+	    entirely. Setting OPTIONAL_DIRS=&quot;&quot; on your make
+	    command line will skip the build of the doc/ and tutorial/
+	    subtrees.
+	  </p>
+	  <literallayout>
+make OPTIONAL_DIRS=&quot;&quot;  # 21s elapsed (warm ccache) # 45s
+elapsed (cold ccache)</literallayout>
+	</li>
+	<li>
+	  <p>
+	    You can suppress generation of PDF files by restricting the
+	    targets for OSDoc. It is the PDF files that take all of the
+	    time:
+	  </p>
+	  <literallayout>
+make OSDOC_TARGETS=&quot;%.html&quot;  # 30s elapsed (warm ccache)</literallayout>
+	</li>
+      </ul>
+      <p>
+	Please note that you should <em>never</em> change the value of
+	OPTIONAL_DIRS when you are running <filename>make
+	  clean</filename> or <filename>make distclean</filename>. If you
+	do so, those subdirectories will not be visited by the cleaning
+	process. As a result, you will not get a clean build later.
+      </p>
+    </sect1>
+    <sect1>
+      <title>Rebuilding A Particular Subtree</title>
+      <p>
+	The convention in the Coyotos tree is that typing <filename>make
+	  package</filename> from within a package subtree rebuilds that
+	subtree (from the top of the subtree) and installs its
+	output. This build process assumes (without checking) that
+	previous subtrees have been built. It also assumes that the
+	results of previous builds of the current subtree will not alter
+	the build result. This creates a requirement of convention:
+	<em>where the build of a given package requires interface
+	  specifications or mkimage component files that are provided by
+	  the same package, it should obtain these from the package source
+	  directory, not from the installed location</em>. You can also
+	type <filename>make world</filename> or <filename>make
+	  pristine</filename>, either of which will rebuild the entire
+	tree proceeding from <filename>coyotos/src</filename>. If you
+	simply type <filename>make</filename>, what happens depends on
+	your current directory. If you are sitting in
+	<filename>coyotos/src</filename>, typing
+	<filename>make</filename> is equivalent to typing <filename>make
+	  world</filename>. If you are sitting within a package subtree,
+	typing <filename>make</filename> is equivalent to typing
+	<filename>make package</filename>.
+      </p>
+      <p>
+	At this point, we need to explain one piece of the makefile
+	magic: how do the makefiles figure out where you are in the
+	subtree? In principle, you could check out your tree
+	anywhere. Two rules are applied in sequence:
+      </p>
+      <ol>
+	<li>
+	  <p>
+	    If an environment variable <envvar>COYOTOS_ROOT</envvar> is
+	    set, it will be used. <envvar>COYOTOS_ROOT</envvar> tells
+	    the build system where the top of your tree is. It is not
+	    required that the top-level directory be named
+	    <filename>coyotos/</filename>, but it will avoid confusion
+	    if you follow this convention. The tree <em>underneath</em>
+	    the <tt>${COYOTOS_ROOT}</tt> directory must follow the
+	    coyotos conventions.
+	  </p>
+	</li>
+	<li>
+	  <p>
+	    If <envvar>COYOTOS_ROOT</envvar> is not set, the build
+	    system will examine your current working directory to see if
+	    it is of the form
+	    <filename><em>some/path</em>/coyotos/src/</filename> or
+	    <filename><em>some/path</em>/coyotos/src/<em>subdirectory</em></filename>.
+	    If so, it will assume that
+	    <filename><em>some/path</em>/coyotos/src/</filename> is the
+	    top of your development tree. As a practical matter, I don't
+	    think that any of the Coyotos or EROS developers (EROS
+	    makefiles used a similar trick) have bothered to set
+	    <envvar>COYOTOS_ROOT</envvar> in the last decade.
+	  </p>
+	</li>
+      </ol>
+      <p>
+	A minor word of caution: the mechanism used to find
+	<filename><em>some/path</em>/coyotos/src/</filename> is not
+	sophisticated. If you have a directory of the form
+	<filename><em>path</em>/coyotos/src/<em>more/path</em>/coyotos/src</filename>,
+	please let us know what it does.
+      </p>
+    </sect1>
+  </chapter>
+  <chapter>
+    <title>What a Coyotos System Looks Like</title>
+    <p>
+      Viewed as a whole, a Coyotos system consists of some number of
+      running programs that are &quot;connected&quot; by
+      capabilities. The result is a graph, in which entry capabilities
+      indicate dependencies. If my program relies on yours to provide
+      some function, then my program will call yours. In order to do
+      that, my program will hold an entry capability to your
+      program. If we were to freeze the system, and draw a graph
+      showing all of the entry capabilities <em>other than</em> brand
+      capabilities (see below), we would have a picture illustrating
+      the runtime software dependency graph.
+    </p>
+    <p>
+      This graph is dynamic. New processes are created. They in turn
+      create new helper processes. Later, these processes finish,
+      tearing down some or all of the structure that they have
+      built. The dependencies that we are looking at are dynamic,
+      run-time dependencies. In a well-structured system, we would
+      find that there are no cycles in this graph. A cycle would
+      indicate a path where some program might deadlock by depending
+      on itself recursively.
+    </p>
+    <p>
+      In contrast to most other systems, Coyotos processes are not
+      built from files. Actually, it is more the other way around: the
+      &quot;file&quot; object is really an interface implemented by
+      one (or more) processes. In fact, the general pattern in Coyotos
+      is that every process implements one or more objects.
+    </p>
+    <sect1>
+      <title>Interfaces, Objects, and Permissions</title>
+    </sect1>
+  </chapter>
+</book>

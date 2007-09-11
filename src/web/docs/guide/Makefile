@@ -18,44 +18,20 @@
 # Foundation, 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 #
 
-default: package
-COYOTOS_SRC=../..
+.SUFFIXES: .xmli .idlxml
 
-CLEANLIST=dir.dev.gxml
-DIRS=build
-DIRS+=ukernel
-DIRS+=guide
-DIRS+=base
-DIRS+=misc
-DIRS+=osverify-2004
-OSDOC_XML_SRC=index
-# Only build the HTML targets in this directory...
-OSDOC_NAVCONTEXT="Docs"
-OSDOC_TARGETS=%.html
+default: package
+COYOTOS_SRC=../../..
+
+OSDOC_XML_SRC=DevGuide InsideCoyotos
+OSDOC_SBOX_SRC=$(wildcard *.sbox)
+OSDOC_FIG_SRC=$(wildcard *.fig)
 
 include $(COYOTOS_SRC)/build/make/makerules.mk
 
-all: index.html
+all:
+
 install: all
 
-dirfrag:
-	$(XSLTPROC) \
-		--stringparam url $(patsubst %.xml,%.html,$(XMLURL)) \
-		--stringparam pdfurl $(patsubst %.xml,%.pdf,$(XMLURL)) \
-		$(OSDOC_DIRENT) $(XMLURL) >> tmp.xml
-
-xmlroots:
-	for i in $(DIRS); do \
-	  make -C $$d xmlsources; \
-	done
-
-dir.dev.gxml:
-	echo "<fakeroot>" > tmp.xml
-	for i in $(foreach dir,$(DIRS),$(wildcard $(dir)/*.xml)); do \
-		$(MAKE) XMLURL="$$i" dirfrag; \
-	done
-	echo "</fakeroot>" >> tmp.xml
-	mv tmp.xml dir.dev.gxml
-
-#index.html: STYLESHEET="$(WEBROOT)/dirstyles.css"
-index.html: index.xml dir.dev.gxml $(XSL_HTML)
+devguide.ltx:
+devguide.html:

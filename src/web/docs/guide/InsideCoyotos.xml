@@ -1,0 +1,1576 @@
+<?xml version="1.0"?>
+<!DOCTYPE book PUBLIC "-//EROS Group//DTD OSDoc XML V0.1//EN"
+               "http://www.coyotos.org/OSDoc/DTD/osdoc-0.1.dtd" [
+
+<!ENTITY DocVersion "0.1">
+]>
+  <book id="ukernel-spec" xmlns:xi="http://www.w3.org/2001/XInclude">
+  <docinfo>
+<!--     ptsz="12" twocolumn="yes" -->
+    <title>Inside Coyotos</title>
+    <subtitle>Version &DocVersion;</subtitle>
+    <authorgroup>
+      <author>
+	<firstname>Jonathan</firstname>
+	<othername>S.</othername>
+	<surname>Shapiro</surname>
+	<degree>Ph.D.</degree>
+      </author>
+      <affiliation>
+	<orgname>The EROS Group, LLC</orgname>
+      </affiliation>
+    </authorgroup>
+    <pubdate>September 10, 2007</pubdate>
+    <copyright>
+      <year>2007</year> 
+      <holder>The EROS Group, LLC</holder>
+      <copyterms>
+	Verbatim copies of this document may be duplicated or
+	distributed in print or electronic form for non-commercial
+	purposes.
+      </copyterms>
+    </copyright>
+    <legalnotice>
+      <p>
+	THIS GUIDE IS PROVIDED ``AS IS'' WITHOUT ANY
+	WARRANTIES, INCLUDING ANY WARRANTY OF MERCHANTABILITY,
+	NON-INFRINGEMENT, FITNESS FOR ANY PARTICULAR PURPOSE, OR ANY
+	WARRANTY OTHERWISE ARISING OF ANY PROPOSAL, SPECIFICATION OR
+	SAMPLE.
+      </p>
+    </legalnotice>
+    <categories>
+      <category>dev/coyotos</category>
+    </categories>
+    <synopsis>
+      <p>An insider's guide to the Coyotos kernel.</p>
+    </synopsis>
+  </docinfo>
+  <toc/>
+  <preface>
+    <p>
+      These notes are an attempt to document the Coyotos system and
+      its theory of operation "from the inside". The approach is to
+      walk through the kernel from power-on through capability
+      invocation, tracing what the kernel does at each step.
+    </p>
+    <p>
+      I'm sure that these pages will get printed. For many readers
+      (myself included) that is the best way to read a long, basically
+      linear document. However, the book is an evolving document. It's
+      official home is at <link
+	href="http://www.coyotos.org">http://www.coyotos.org</link>.
+    </p>
+  </preface>
+  <part>
+    <title>A Working Tour of the Kernel</title>
+    <p>
+      This part describes the internals of the Coyotos kernel,
+      beginning at power-on and proceeding through the first
+      inter-process communication operation.
+    </p>
+    <chapter>
+      <title>Introduction</title>
+      <p>
+	These notes document the internal structure of the Coyotos
+	microkernel. They proceed by ``visiting'' the system
+	from power-on to execution of the first user instruction, and
+	continue to consider the first kernel capability invocation
+	and then the first invocation of a server-implemented
+	capability. The approach is loosely inspired by a one-week
+	lecture series on the Multics system given at MIT by Elliott
+	Organick. Each day he opened his seminar with ``Today, we
+	will run the first user-mode instruction, but before we can do
+	that...'' The first day started with turning on the
+	power. By the end of the week the lecture series had covered
+	essentially all of the Multics hardware and its operating
+	system kernel.
+      </p>
+      <p>
+	The ``follow the code'' approach gives a very
+	different feel for a system than the conventional operating
+	system textbook. It is closer to the approach used in John
+	Lions' <link
+	href="http://en.wikipedia.org/wiki/Lions'_Commentary_on_UNIX_6th_Edition,_with_Source_Code"><doctitle>Commentary
+	on UNIX 6th Edition, with Source
+	Code</doctitle></link>. Mainly, the order of presentation
+	works out a bit differently. We will see if it is better,
+	worse, or merely different.
+      </p>
+      <p>
+	Coyotos is actively under development.. In consequence, this
+	book will quickly become out of date. If you find an issue of
+	that nature, please add comments to the pages identifying the
+	problem, and if possible, the fix. Also, please do not
+	hesitate to comment on any points that confuse you.
+      </p>
+      <p>
+	As with any microkernel, Coyotos incorporates a fair amount of
+	machine-dependent code. In order to walk through the system,
+	we need to choose an architecture. With some hesitation, I
+	have chosen to describe the internals of the IA-32 (i386)
+	implementation. I have chosen IA-32 because it will certainly
+	be the most common architecture on which Coyotos is run. I
+	hesitate because IA-32 is a complicated architecture, and
+	there are places where this will force me to diverge into
+	discussion of IA-32's (alleged) features. There is no such
+	thing as a free lunch.
+      </p>
+      <p>
+	Where  appropriate,  I will  also  interject discussion  about
+	considerations for non-IA32 architectures.
+      </p>
+      <p>
+	To give a sense of scale, Coyotos remains a relatively small
+	kernel. Coyotos remains a fairly small kernel. At this
+	writing, the IA-32 implementation is 12,956 source lines of
+	code, of which 4,738 lines are machine-dependent. Of those,
+	615 are assembly lines. There are people who say that human
+	programmers can keep roughly 10,000 lines of code in their
+	head, and beyond that things get too big to understand. This,
+	of course, is a rough number that is heavily influenced by
+	code organization (is it well-modularized?), idiomatic
+	conventions (assertions and ``boiler plate'' do not
+	count), the complexity of code interdependencies, and the tool
+	used to count the lines. Empirically, the current Coyotos
+	kernel is of a size that mortals can comprehend.
+      </p>
+      <sect1>
+	<title>Why This Approach</title>
+	<p>
+	  Why is this an interesting &mdash; or even useful &mdash; way
+	  of looking at an operating system? Operaintg system textbooks
+	  have come to have a fairly well-established structure. What is
+	  better or different about this one?
+	</p>
+	<p>
+	  Let me answer with an example. Every conventional operating
+	  system textbook includes a chapter on memory management
+	  &amp;mdash; which is to say, memory allocation policy. If
+	  you look at the better textbooks, you will find that they
+	  all end up saying the same thing: the <link
+	  href="http://en.wikipedia.org/wiki/Buddy_memory_allocation">buddy
+	  system</link> is the best memory allocator to use. I defy
+	  you to find even one production kernel that uses a buddy
+	  system allocator for kernel memory. These days they all use
+	  something called the <link
+	  href="http://en.wikipedia.org/wiki/Slab_allocator">slab
+	  allocator</link>, but even before that nobody used the buddy
+	  system. So why did the textbooks say this obviously wrong
+	  thing? Well, the buddy system really is the best allocator,
+	  <em>provided</em> you are handling an infinite stream of
+	  allocation requests consisting of random allocation
+	  sizes. What's wrong with this picture is that operating
+	  systems have a small, well-known set of <em>particular</em>
+	  sizes that they allocate, and they allocate lots of
+	  those. The buddy allocator claim is right, but for an
+	  irrelevant set of assumptions. When you have actually
+	  <u>built</u> an operating system, or looked at it from the
+	  inside, it is perfectly apparent that this assumption is
+	  irrelevant.
+	</p>
+	<p>
+	  There are some lessons to take away from this:
+	</p>
+	<ol>
+	  <li>
+	    <p>
+	      Always ask what the assumptions are behind a conclusion.
+	    </p>
+	  </li>
+	  <li>
+	    <p>
+	      Always reality-check the assumptions.
+	    </p>
+	  </li>
+	  <li>
+	    <p>
+	      Don't believe that a statement is right just because it
+	      comes from somebody famous. In that case, the culprit
+	      was probably Avi Silberschatz. Avi certianly
+	      <em>has</em> built real operating systems, but he
+	      sometimes lets his understanding of theory override what
+	      he knows from reality.
+	    </p>
+	  </li>
+	</ol>
+	<p>
+	  As the old joke goes: the difference between theory and
+	  practice is that in theory there is no difference between
+	  theory and practice, but in practice there is.
+	</p>
+	<p>
+	  Well, enough rambling. On to Coyotos and its code.
+	</p>
+      </sect1>
+    </chapter>
+    <chapter>
+      <title>Peculiarities of the Coyotos Design</title>
+      <p>
+	As you read through the Coyotos code, there are some things
+	about its structure that you will need to know. This section
+	briefly documents them.
+      </p>
+      <sect1>
+	<title>Coyotos is a Microkernel</title>
+	<p>
+	  Coyotos is a microkernel. There is a great deal of
+	  conventional operating system function that is <em>not</em>
+	  implemented by the kernel. This function is critical to have
+	  a complete, functional operating system, and it is certainly
+	  critical to understanding the behavior of any Coyotos system
+	  as a whole. For the most part, however, there is no reason
+	  for this code to run in the hardware's
+	  ``supervisor'' mode. Supervisor mode allows code to
+	  do absolutely <em>anything</em>. That is too much power for
+	  a large body of code to wield safely. Indeed, the existing
+	  Coyotos kernel is teetering at (some would say past) the
+	  limit on the amount of code that can safely be run in
+	  supervisor mode &amp;mdash; simply because it is teetering
+	  at the limits of what the human (well, the software
+	  developer, which is only approximately the same thing) head
+	  can manage at one time.
+	</p>
+	<p>
+	  Some things that you will <em>not</em> find in the Coyotos
+	  kernel:
+	</p>
+	<ul>
+	  <li>
+	    <p>
+	      A file system. All management of higher-level
+	      abstractions is handled by user-level code.
+	    </p>
+	  </li>
+	  <li>
+	    <p>
+	      Device drivers. All device handling is done at user
+	      level. This, by the way, is a debatable design
+	      choice. There are some compelling reasons to implement
+	      drivers in the kernel, primarily motivated by issues of
+	      <em>copy elimination</em>. We will discuss this late in
+	      the book.
+	    </p>
+	  </li>
+	  <li>
+	    <p>
+	      Security policy. The kernel implements protection
+	      primitives (in the form of capabilities), but not
+	      security policy. Security policy is implemented by
+	      user-level code.
+	    </p>
+	  </li>
+	  <li>
+	    <p>
+	      Networking suport. Coyotos has a TCP/IP stack. By now
+	      you can probably figure out for yourself where that is
+	      implemented...
+	    </p>
+	  </li>
+	</ul>
+	<p>
+	  What you <em>will</em> find in the kernel:
+	</p>
+	<ul>
+	  <li>
+	    <p>
+	      Implementations of the system's ``primitive''
+	      objects. By ``objects,'' we mean objects in the
+	      sense of operating systems: memory pages, processes, and
+	      so forth.
+	    </p>
+	  </li>
+	  <li>
+	    <p>
+	      The implementation of capabilities, which provides both
+	      the primitive mechanism for naming and the primitive
+	      mechanism for protection.
+	    </p>
+	  </li>
+	  <li>
+	    <p>
+	      Interprocess communications. In most microkernels this
+	      is called IPC. In Coyotos this is folded in to the the
+	      capability mechanism.
+	    </p>
+	  </li>
+	</ul>
+      </sect1>
+      <sect1>
+	<title>Coyotos is a Capability System</title>
+	<p>
+	  Coyotos is a capability system. It's basic mechanism for
+	  naming and protection is something called a
+	  <em>capability</em>. In contrast to many other capability
+	  systems, Coyotos is a ``pure'' capability system,
+	  because capabilities are the <em>only</em> mechanism for
+	  naming and invoking objects or services. Conceptually, the
+	  kernel implements only one system call: <b>invoke
+	  capbility</b>. In practice, the kernel implements two
+	  additional system calls <b>load capability</b> and
+	  <b>store capability</b>. These simulate
+	  instructions that general-purpose computing hardware does
+	  not provide.
+	</p>
+	<p>
+	  In the literature, you will often find a capability
+	  described as an (object, permissions) pair. This is
+	  unfortunate, because we want the term ``object'' to
+	  mean something else, and we would like
+	  ``permissions'' to be something that we can relate
+	  more directly to programming languages and the lambda
+	  calculus. In the programming languages world, an object
+	  consists of some representation state and a set of methods
+	  that perform operations which optionally reference that
+	  representation state. The intution we want is that a
+	  capability names an object in the programming languages
+	  sense of the word ``object.'' Unfortunately, the
+	  operating system community is equally sure about what an
+	  ``object'' means. It is a page, a process, a file,
+	  and so forth. Both views are right; they simply speak at
+	  different levels of abstraction. The problem is that the
+	  bridge between these levels of abstraction is the
+	  capability. As a compromise, we recommend the view that a
+	  capability consists of a (representation-object, method-set)
+	  pair. This is impossibly cumbersome to say, so we will often
+	  fall back on the (object, permissions) intuition. When we
+	  do, remember that <em>permissions</em> is really a
+	  short-hand for ``a set of permitted methods.'' Also,
+	  be careful about the term <em>object</em>. When we speak of
+	  ``invoking an object,'' we mean an object in the
+	  programming languages sense. When we speak of a
+	  ``capability designating an object,'' we may mean
+	  <em>either </em>an object in the operating system sense
+	  <em>or</em> an object in the programming languages
+	  sense. Hopefully it will be clear from context. The
+	  important point is to be aware that the term is overloaded.
+	</p>
+	<blockquote>
+	  <p>
+	    We have tried various ways to disentangle this term. None
+	    were very satisfactory. The confusion of overloading the
+	    term <em>object</em> seems to be less than the confusion
+	    of trying to introduce a new term.
+	  </p>
+	</blockquote>
+	<p>
+	  The reason that Coyotos uses capabilities as its primitive
+	  mechanism of protection has to do with security: it allows
+	  applications to limit the flow of authority in the
+	  system. We use the term <em>permission</em> to mean
+	  ``the authorization to directly perform an operation on
+	  an object.'' We use the term <em>authority</em> to mean
+	  ``the transitive effect that a process might have on a
+	  system, including all of the operations that it might
+	  perform in the future based on the permissions that it
+	  currently wields <em>or can transitively obtain</em>. In
+	  most systems, permissions are determined primarily by who is
+	  running a program (the <em>principal</em>). In capability
+	  systems, permission is determined by the capabilities that a
+	  process possesses. Because of this, capability system
+	  designs are greatly concerned with both the initial
+	  arrangement of capabilities and objects and the ways in
+	  which that arrangement can evolve. Coyotos is a pure
+	  capability system. The kernel simply doesn't implement any
+	  notion of principal at all. All access decisions are made on
+	  the basis of capabilities. Possessing a capability is a
+	  necessary <u>and sufficient</u> proof of authority to
+	  perform the operations permitted by that capability on the
+	  object that it designates.
+	</p>
+      </sect1>
+      <sect1>
+	<title>Coyotos is Persistent</title>
+	<p>
+	  While the current implementation does not (yet) implement
+	  persistence, Coyotos is designed to be a persistent
+	  system. Like its predecessor <link
+	  href="http://www.eros-os.org">EROS</link>, Coyotos has the
+	  ability to save the entire running state of the system to
+	  disk at any time. This creates an inversion of
+	  responsibilities in comparison to a conventional kernel. For
+	  example, the <em>process</em> structure of a conventional
+	  kernel is a kernel data structure that lives in main
+	  memory. It is owned by the kernel, created by the kernel,
+	  managed by the kernel, and reclaimed by the kernel.
+	</p>
+	<p>
+	  In Coyotos, a process is managed by the kernel, but it is a
+	  <em>disk-based</em> data structure that is created,
+	  destroyed, and owned by some user (more precisely: by a
+	  storage allocator called by a program). In order to execute
+	  a process, the Coyotos kernel ``borrows'' its state
+	  from the disk-based object. At any time, the kernel may be
+	  called on to put that state back into its on-disk form so
+	  that it can be written out to the disk. This is true for
+	  every other major kernel object type as well. This imposes
+	  some constraints on how the kernel is allowed to manipulate
+	  objects, and on the dependency relationships that it is
+	  required to maintain. You will find that every kernel object
+	  that has state (some kernel services have no state, but are
+	  considered ``ojects by courtesy'') divides cleanly into
+	  two parts: the persistent state, which lives within the
+	  <progident>state</progident> field of the object, and
+	  other fields that are used by the kernel to keep track of
+	  the object at run time. These other fields are not saved
+	  when the object is written out.
+	</p>
+	<p>
+	  Because the Coyotos kernel is required to be able to write
+	  out all of the major kernel objects on demand, we often say
+	  that Coyotos kernel memory is a cache of the
+	  ``official'' state, which lives on the disk.
+	</p>
+      </sect1>
+      <sect1>
+	<title>Coyotos is Transactional</title>
+	<p>
+	  The EROS system, which was the predecessor of Coyotos, was
+	  strictly transactional. Every EROS system call happens as a
+	  single unit of operation. Control enters the kernel,
+	  resources are gathered, a ``commit point'' is
+	  reached, and the operation proceeds without interruption
+	  unti it completes. Afte the commit point occurs, the
+	  operation is required to complete or to panic the system
+	  . Failures after the commit point indicate a deep kernel
+	  logic error. Prior to the commit point, no modifications to
+	  externally visible system state are required. The kernel is
+	  entitled to load and clear caches before the commit
+	  point. It can mark objects dirty (thereby allowing them to
+	  be modified after the commit point). It can convert their
+	  representation from one format to another. It cannot
+	  actually modify them in any semantically observable way.
+	</p>
+	<p>
+	  A corollary to this is that any EROS system call can be
+	  abandoned prior to the commit point without any damage to
+	  kernel integrity. Think of this as a form of exception
+	  handling: any kernel path can ``throw'' before the
+	  commit point, but not after. In practice, locks must be
+	  released and the current transaction ID must be abandoned,
+	  but that is it. In the EROS implementation, this is
+	  accomplished by cleaning up a small number of global
+	  variables,&nbsp; re-setting the kernel stack pointer to
+	  point to the top of the kernel stack, and branching to a
+	  well-known ``figure out what to do next'' entry
+	  point. From a code-reading perspective, there are two
+	  implications to this:
+	</p>
+	<ul>
+	  <li>
+	    <p>
+	      No state should ever go on the stack that requires any
+	      sort of cleanup, because if procedure
+	      <progident>f()</progident> calls procedure
+	      <progident>g()</progident>, control may never return to
+	      <progident>f()</progident> and cleanup may never occur.
+	    </p>
+	  </li>
+	  <li>
+	    <p>
+	      The nominal return values of procedures indicate what
+	      happens if things succeed. If things fail and the
+	      current transaction is aborted or restarted, procedure
+	      returns will not happen at all.
+	    </p>
+	  </li>
+	</ul>
+	<p>
+	  A second corollary to this is that any system state can be
+	  reconstructed by some purely sequential sequence of system
+	  calls and user-mode instructions. That is, the system
+	  evolution is serializable. Unfortunately, it is impossible
+	  to preserve this model in pure form on a multiprocessor. As
+	  an example, consider a string copy. When address spaces are
+	  suitably shared, is possible for a second processor to
+	  observe a string that has been partially copied by a first
+	  processor. As a result, serializability is lost.
+	</p>
+	<p>
+	  Once the purely serializable transactional model is lost, it
+	  is desirable for performance reasons to look for ways to
+	  optimize. In some cases, it is good enough to say that the
+	  results are not fully defined until the operation completes,
+	  and that partial results may appear from operations that
+	  <em>never</em> complete. We will look at some examples of
+	  this in the discussion of capability invocation. Coyotos
+	  preserves the EROS model in spirit, but it aggressively
+	  exploits these sorts of ``partially defined''
+	  operations for performance. In each case, it is necessary to
+	  specify why the optimizing short cut is safe with respect to
+	  the original model, and we will do so. If you catch us
+	  <em>failing</em> to do so, it is a mistake, and you should
+	  ask about it by posting a comment on the appropriate page.
+	</p>
+	<p>
+	  From the kernel perspective, there is an important
+	  consequence of a transactional kernel design: there is no
+	  per-process kernel stack. When a process becomes blocked in
+	  the kernel it does not hold resources. On resumption, it
+	  will restart its current system call from scratch. Because
+	  of this, it has no state on the stack that needs to be
+	  preserved. Coyotos requires a stack for each CPU, but that
+	  stack is owned by the CPU, not the process.
+	</p>
+      </sect1>
+    </chapter>
+    <chapter>
+      <title>From Power-On to kernel_main</title>
+      <p>
+	Traditionally, the first instruction of a UNIX binary is
+	labeled by the symbol <progident>_start</progident>. Actually,
+	the leading '_' may or may not be present, depending on your
+	linker. In any case, a great deal happens between the time
+	that the hardware powers on and the time we arrive at the
+	start symbol of the Coyotos kernel:
+      </p>
+      <ul>
+	<li>
+	  <p>
+	    The BIOS runs, sizing your memory, initializing the system
+	    memory controller and interrupt controller (we hope, but
+	    not always) to sane states, possibly running the network
+	    boot ROM to load your kernel, or possibly loading the
+	    first sector of your boot loader from disk (or these days,
+	    from a USB key, CF card, or SD card).
+	  </p>
+	</li>
+	<li>
+	  <p>
+	    The boot loader (in our case, <em>grub</em>) executes,
+	    collecting various information from the BIOS that may or
+	    may not turn out to be useful later. It is <em>grub</em>
+	    that establishes most of the initial conditions that apply
+	    when Coyotos is started.
+	  </p>
+	</li>
+      </ul>
+      <p>
+	Within the Coyotos source tree (coyotos/src), the kernel
+	source tree lives in the sys/ subdirectory. The kernel build
+	makes use of the IDL compiler, so it is necessary to build the
+	ccs/ subtree before building the sys/ subtree. Most of what we
+	are about to discuss occurs in the file <link
+	href="http://dev.eros-os.com/hg/coyotos/file/tip/src/sys/arch/i386/kernel/boot.S">arch/i386/kernel/boot.S</link>. You
+	may find it convenient to have a copy of that ready to hand
+	while you read.
+      </p>
+      <sect1>
+	<title>Postcards from the Boot Loader</title>
+	<p>
+	  By the time control reaches the kernel at
+	  <progident>_start</progident>, the <em>grub</em> boot loader
+	  has placed the IA-32 processor in protected mode, and has
+	  established 4 gigabyte segment limits for both code and
+	  data. Grub has loaded the kernel to its linker-specified
+	  load address (on IA-32: 0x100000, or 1 megabyte). It has
+	  also loaded a second file using the grub ``module''
+	  directive. This second file contains the <em>initial system
+	  image</em>, which is a serialized form of all the objects
+	  which exists when the system initially starts running.
+	</p>
+	<p>
+	  At system startup on a multiprocessor, only one CPU has been
+	  enabled. The BIOS has elected this CPU as the
+	  ``master'' CPU. Any other CPUs that are present on
+	  the system are quiescent. We will refer to this CPU as
+	  ``cpu0.'' Of course, on a uniprocessor cpu0 is the
+	  only CPU that there is.
+	</p>
+	<p>
+	  The situation bequeathed to us by <em>grub</em> is
+	  delicate. We know that it has established various initial
+	  conditions and collected various information. Unfortunately,
+	  we don't know where <em>grub</em> has placed this
+	  information in memory. This means that we cannot allocate
+	  any memory until we figure out where grub has put things. In
+	  particular, we cannot reserve space for either a kernel
+	  stack or an initial kernel memory mapping structure. We know
+	  that <em>grub</em> has established a map for us somewhere,
+	  but the <em>grub</em> specification does not tell us where
+	  this might be. The Coyotos kernel linker script <link
+	  href="http://dev.eros-os.com/hg/coyotos/file/tip/src/sys/arch/i386/kernel/ldscript.S"><filename>arch/i386/kernel/ldscript.S</filename></link>
+	  has pre-reserved space for these things. We need to get out
+	  from under these unknowns as quickly as we can, but there
+	  are some things that we need to do first.
+	</p>
+	<p>
+	  To make matters really fun, there is some delicacy that we
+	  have imposed on ourselves. Long-standing convention on IA-32
+	  is that the kernel resides in the uppermost portion of the
+	  address space, typically starting at 0xC000000 (3
+	  gigabytes). Most IA-32 machines don't have that much
+	  physical memory, so we cannot load the kernel at that
+	  address directly. What we do instead is to <em>link</em> the
+	  kernel starting at 0xC0100000 (3 gigabytes plus 1 megabyte),
+	  but <em>load</em> the kernel starting at 0x10000 (1
+	  megabyte). This has implications:
+	</p>
+	<ul>
+	  <li>
+	    <p>
+	      Coyotos will not run on an IA-32 machine with less than
+	      1 megabyte of memory (or at least, not the way we
+	      normally compile it).
+	    </p>
+	  </li>
+	  <li>
+	    <p>
+	      Until we can build a virtual memory map for the kernel,
+	      we need to restrict ourselves to purely
+	      position-independent instructions, because any attempt
+	      to reference an absolute address is going to try to make
+	      that reference at the official address above 3
+	      gigabytes, and we don't yet have a mapping there.
+	    </p>
+	  </li>
+	</ul>
+	<p>
+	  At various points in <link
+	  href="http://dev.eros-os.com/hg/coyotos/file/tip/src/sys/arch/i386/kernel/ldscript.S"><filename>arch/i386/kernel/ldscript.S</filename></link>
+	  you will see the symbol KVA being subtracted from a symbol
+	  address. KVA is a macro that tells us what the linker's
+	  notion of the base virtual address was. Subtracting it
+	  allows us to correct from linked addresses to loaded
+	  addresses where we need to. Confusing? Definitely. We are
+	  going to get out of this confused as quickly as possible,
+	  but we need to build a kernel virtual map before we can do
+	  that.
+	</p>
+      </sect1>
+      <sect1>
+	<title>Zeroing the BSS Region</title>
+	<p>
+	  The first thing we need to do is to zero the
+	  <progident>bss</progident> region. When applications run, it
+	  is the responsibility of the paging subsystem (or the
+	  application loader) to make sure that the
+	  <progident>bss</progident> region is zeroed. A kernel must
+	  do this for itself. Further, we want to do this before we
+	  touch any global variables, because some of those variables
+	  may live in the <progident>bss</progident> section. If we
+	  write to them and <em>then</em> zero the
+	  <progident>bss</progident> section, we will end up zeroing
+	  anything we have written. To zero the
+	  <progident>bss</progident> region we need to use the
+	  <progident>%eax</progident> register. Unfortunately grub has
+	  left some information there that we do not yet want to lose,
+	  so we need to move that value out of the way
+	  first. Immediately after clearing the
+	  <progident>bss</progident> area, we can save the information
+	  provided by <em>grub</em> into global variables (being
+	  careful to make the KVA adjustment). We will use this
+	  information later.
+	</p>
+      </sect1>
+      <sect1>
+	<title>Processor Identification and PAE Mode</title>
+	<p>
+	  The beauty of the IA-32 family of processors is that there
+	  are so many variants to choose from. Later processors
+	  support features that earlier machines do not. There are
+	  four features that we want to use if we can:
+	</p>
+	<ul>
+	  <li>
+	    <p>
+	      Large page support will allow us to map the kernel with
+	      a much smaller number of TLB entries. This has a very
+	      significant impact on kernel performance, so we want to
+	      use this feature if it is available.
+	    </p>
+	  </li>
+	  <li>
+	    <p>
+	      Global page support allows mappings for the kernel to
+	      remain resident in the TLB across TLB flushes. This also
+	      has a significant impact on kernel perfomance.
+	    </p>
+	  </li>
+	  <li>
+	    <p>
+	      Later processors implement a ``no-execute''
+	      hardware protection. The IA-32 family supports
+	      <em>two</em> memory mapping models: legacy (the original
+	      two-level scheme) and PAE (a three-level scheme). The
+	      no-execute feature is only available in PAE mode, and
+	      then only on later processors. Unfortunately, it is not
+	      simple to switch between legacy and PAE mode later, so
+	      we need to figure out early whether PAE mode is
+	      available and use it from the beginning.
+	    </p>
+	  </li>
+	  <li>
+	    <p>
+	      We want to enable the extended hardware debugging
+	      features if present. Later, this will allow us to use
+	      hardware watchpoints and breakpoints for debugging.
+	    </p>
+	  </li>
+	</ul>
+	<p>
+	  To figure out which subset of these features is available,
+	  we need to do a moderately convoluted exercise in processor
+	  feature identification. IA-32 processor identification is
+	  now a subject for a long Intel technical note. At this
+	  stage, we want to do the bare minimum. If you are following
+	  along in boot.S, the instruction marking the end of this
+	  sequence is the
+	  <progident>jnz&nbsp;setup_pae_map</progident>. At that
+	  point, we have made a decision about the availability of the
+	  PAE features, and we will proceed to build the appropriate
+	  type of mapping table.
+	</p>
+	<p>
+	  Note that the current startup code enables PAE mode without
+	  checking whether the no-execute (NX) feature is present on
+	  the hardware. This is a bug. The PAE mapping mode is slower
+	  and more complicated than the legacy mapping mode. While it
+	  <em>does</em> provide some new features, none of these are
+	  used by Coyotos, and we probably should not be enabling PAE
+	  unless we are actually going to get some value out of it.
+	</p>
+      </sect1>
+      <sect1>
+	<title>Primordial Kernel Map, Switch to Linked Address</title>
+	<p>
+	  Now that the processor has been identified, we can begin
+	  weaning ourselves from the initial configuration provided by
+	  <em>grub</em>. The first step is to build a memory map of
+	  our own at a known location. The kernel has pre-reserved
+	  space for a single page table, a single page directory, and
+	  a page directory page table (PDPT). The last is used only in
+	  PAE mode. We will initialize a full page table of
+	  mappings. In the legacy mapping mechanism, this will map the
+	  lowest 4 megabytes of memory. In the&nbsp; PAE mapping
+	  mechanism, this will map the lowest 2 megabytes of
+	  memory. We will construct two aliases for this region: one
+	  at 0x00000000 (which is where we are presently running) and
+	  the other at 0xC000000 (which is where we are linked). We
+	  will load this map onto the processor and enable the virtual
+	  address translation hardware.
+	</p>
+	<p>
+	  This is a very sloppy mapping. We have no idea whether the
+	  machine actually has 2 or 4 megabytes of memory, but we are
+	  going to be re-building this map later in any case. The
+	  reason we want this early mapping is so that we can start
+	  running at our properly linked address.
+	</p>
+	<p>
+	  Once the mapping is established, we perform a jump register
+	  to <progident>drop_low_map</progident>. Note that for the
+	  first time we do <em>not</em> correct the destination
+	  address by subtracting KVA from it. The purpose of this jump
+	  is to change the program counter to be running at our proper
+	  virtual address. Having done so, we remove the low-memory
+	  mapping at virtual address 0x0, reload the hardware mapping
+	  table pointer to flush the hardware TLB, and re-initialize
+	  the kernel stack pointer&nbsp; After all of this we can
+	  <em>finally</em> call C code!
+	</p>
+	<p>
+	  Eventually, the primordial kernel map will serve as our
+	  fall-back mapping structure &amp;mdash; the one we use when
+	  we cannot identify an appropriate user-mode mapping to
+	  run. This mapping will contain only kernel mappings.
+	</p>
+      </sect1>
+      <sect1>
+	<title>Transition to C</title>
+	<p>
+	  Having established a mapping structure that allows us to do
+	  so, we transition to C code by calling
+	  <progident>kern_main()</progident>.
+	</p>
+      </sect1>
+      <sect1>
+	<title>kernel_main: Starting the First Process</title>
+	<p>
+	  In application programs, the <progident>main()</progident>
+	  procedure surrounds the entire execution of the program. If
+	  <progident>main()</progident> exits, so does the
+	  application. This is not true in many kernels, and it is not
+	  true in Coyotos. Operating system kernels are event-driven
+	  systems. They respond to interrupts and exceptions (system
+	  calls are generally a special form of exception), do
+	  something, and return control to some user process. Because
+	  of this, the role of the kernel's equivalent to
+	  <progident>main() </progident>is to get the system
+	  initialized and start the first process.
+	</p>
+	<p>
+	  In Coyotos, we do not use the traditional function name
+	  main() because its signature is not appropriate. The
+	  <progident>kern_main()</progident> procedure accepts no
+	  arguments and returns no results &mdash; in fact, it never
+	  returns at all. If you look at the code in <link
+	  href="http://dev.eros-os.com/hg/coyotos/file/tip/src/sys/kernel/kern_main.c"><filename>sys/kernel/kern_main.c</filename></link>.
+	  you will find that the last action is to call
+	  <progident>sched_dispatch_something()</progident>. As we
+	  will see in detail later, the
+	  <progident>sched_dispatch_something()</progident> procedure
+	  never returns. If necessary, it will run an idle loop until
+	  some process is ready to run. In practice, the call from
+	  <progident>kern_main()</progident> is the <em>first</em>
+	  call to <progident>sched_dispatch_something()</progident>,
+	  and the initial system image contains many processes that
+	  are ready to run.
+	</p>
+	<note>
+	  <p>
+	    When you see a statement like ``the initial system
+	    image contains many processed that are ready to run,''
+	    you should immediately ask: well, what if it doesn't?
+	    Perhaps the initial system image is broken. How does ths
+	    system behave if there is nothing to do? Is this statement
+	    a requirement, or does it merely describe the expected
+	    case?
+	  </p>
+	  <p>
+	    In fact it is not a requirement. If there are no processes
+	    to run, the call to
+	    <progident>sched_dispatch_something()</progident> will
+	    simply idle the current CPU and loop forever. Arguably,
+	    the <progident>kern_main()</progident> procedure should
+	    complain in this unlikely case. The existing behavior is
+	    correct, but without a diagnostic it may be mysterious.
+	  </p>
+	</note>
+	<p>
+	  The <progident>kern_main()</progident> procedure calls, in
+	  sequence, <progident>arch_init()</progident>,
+	  <progident>obhdr_stallQueueInit()</progident>,
+	  <progident>cache_init()</progident>, and
+	  <progident>arch_cache_init()</progident> before calling
+	  <progident>sched_dispatch_something()</progident>. These
+	  procedures respectively perform architecture-dependent
+	  initialization, initialize the object stall queues, set up
+	  the data structures for the kernel object cache, give the
+	  architecture-specific code a chance to do additional cache
+	  setup, and then dispatch the first process. We will need to
+	  look at each of these steps in turn, but first we need to
+	  pause to describe some of the internal logic of the Coyotos
+	  kernel.
+	</p>
+      </sect1>
+    </chapter>
+    <chapter>
+      <title>The Kernel Memory Map</title>
+      <p>
+	The first action taken by <progident>arch_init()</progident>
+	is to initialize the <em>transmap</em>. We have a previously
+	reserved (at link time) page table. We zero it and install it
+	at a known address
+	(<progident>TRANSMAP_WINDOW_VA</progident>). The question is:
+	what is a <em>transmap</em> and why to we need one? To answer
+	that, we first need to talk about the kernel's virtual and
+	physical memory maps and our strategies for managing them.
+      </p>
+      <sect1>
+	<title>Managing Physical Memory</title>
+	<p>
+	  The IA-32 has been through a fair amount of evolution. Early
+	  PCs were limited to 640 kilobytes of RAM, so the BIOS ROM
+	  was placed just below the 1 megabyte addressable limit. As
+	  later machines came to support more memory, logic was
+	  introduced in the memory controller hardware to ``skip'' the
+	  BIOS ROM region. Some controllers have that logic, others do
+	  not. Other portions of the physical memory map are taken up
+	  by the PCI bus and the video subsytem. How much depends on
+	  your video card. If you go out and buy two of the latest and
+	  greatest video cards with 512 megabyte graphics memories,
+	  you are going to devote more than a gigabyte of your
+	  <em>physical</em> address space to mapping those regions
+	  across the PCI bus. In addition, you will lose part of the
+	  physical address space to the PCI configuration
+	  areas. Install 4 gigabytes of memory on a machine like that
+	  and on most hardware you will actually get to use a bit
+	  under 3 gigabytes &mdash; the rest will be hidden behind PCI
+	  card memory.
+	</p>
+	<p>
+	  Or maybe not. A few of the very latest motherboards have
+	  memory controllers and BIOS logic that will relocate that
+	  memory to appear above 4 gigabytes. Note that you cannot
+	  address that memory unless you are using PAE mode
+	  mappings. The problem here is that there is a lot being done
+	  behind the scenes by the BIOS as it brings up your machine,
+	  and we really don't want to have to fool around with the
+	  low-level memory controller chipset if we can avoid
+	  it. Fortunately the BIOSes that can do these tricks provide
+	  interfaces we can query to find out what happened. We also
+	  want to support earlier BIOSes. There are a surprising
+	  number of people out there who are still running i486
+	  processors or first-generation Pentiums. Coyotos runs just
+	  fine on these systems. We do not support the i386, because
+	  it lacks a memory protection feature that we really need.
+	</p>
+	<p>
+	  In any case, the point is that the physical map is not
+	  something that we can hard-code. We need to find out how it
+	  is layed out from the BIOS, and then we need to take care to
+	  allocate physical memory from regions that are actually
+	  populated on the current machine. Finally, we want to mark
+	  certain physical memory locations as &quot;reserved&quot;,
+	  because they contain information generated by the BIOS that
+	  we will later want to use from application level. Examples
+	  of such locations include the basic and extended BIOS data
+	  area, the APM and ACPI configuration data areas, the various
+	  locations where pieces of the BIOS ROM are mapped into the
+	  physical address space, and so forth. Finally, we want to
+	  make sure that the locations where the kernel code, data,
+	  and stack live are not allocated later by, say, the kernel
+	  heap management code. It would not be good to overwrite the
+	  kernel!
+	</p>
+	<sect2>
+	  <title>The PhysMem Allocator</title>
+	  <p>
+	    To handle all of this Coyotos implements a physical memory
+	    allocation subsystem in <link
+	    href="http://dev.eros-os.com/hg/coyotos/file/tip/src/sys/kernel/kern_PhysMem.c"><filename>kernel/kern_PhysMem.c</filename></link>
+	    and <link
+	    href="http://dev.eros-os.com/hg/coyotos/file/tip/src/sys/kerninc/PhysMem.h"><filename>kerninc/PhysMem.h</filename></link>. This
+	    is a simple, fixed-size table of region allocation
+	    records. For each region, the allocator keeps track of the
+	    memory region <em>class</em> and the memory region
+	    <em>use</em>. The <em>class</em> tells us what type of
+	    memory exists at a location (ROM, RAM, NVRAM, valid but
+	    undefined). The <em>use</em> tells us how this memory is
+	    currently being used (if at all). For example,
+	    <progident>pmu_KMAP</progident> tells us that the memory
+	    region consists of pages that define the kernel virtual
+	    map. Both of these are documented in the header file. The
+	    <progident>pmc_UNUSED</progident> allocation class is
+	    reserved to mean that the table entry is not presently
+	    being used for anything. Entries in the pmem_table are
+	    maintained sorted by start address, with all entries of
+	    class <progident>pmc_UNUSED</progident> kept at the end of
+	    the table. Adjacent entries having the same class and use
+	    are consolidated into a single entry whenever
+	    possible. The PhysMem allocator tracks both the
+	    <em>existence</em> and the <em>allocation</em> of physical
+	    memory. Here is how it works.
+	  </p>
+	  <p>
+	    Initially, the allocator has no knowledge of physical
+	    memory structure. Very early in the
+	    <progident>arch_init()</progident> procedure we will
+	    initialize the allocator by calling
+	    <progident>pmem_init()</progident>. This tells it what the
+	    addressable physical range is. If we are using the legacy
+	    mapping hardware, we can address up to 4 gigabytes of
+	    physical memory. If we are using the PAE mapping
+	    mechanism, we can address up to 64 gigabytes of physical
+	    memory. The call to <progident>pmem_init()</progident>
+	    establishes an initial physical memory allocation record
+	    whose class is <progident>pmc_ADDRESSABLE</progident> and
+	    whose current use is <progident>pmu_AVAIL</progident>.
+	  </p>
+	  <p>
+	    Once the addressable range is established, the
+	    architecture-dependent initialization code will start to
+	    define what portion of the physically addressable range is
+	    actually backed by physical memory, where various ROM
+	    chips live, and so forth. This is done by performing calls
+	    to <progident>pmem_AllocRegion()</progident>, specifying
+	    the appropriate memory class and use for each call (see
+	    <progident>config_physical_memory()</progident> in <link
+	    href="http://dev.eros-os.com/hg/coyotos/file/tip/src/sys/arch/i386/kernel/init.c"><filename>arch/i386/kernel/init.c</filename></link>). In
+	    addition to adding regions for each memory device
+	    identified by the BIOS, this code adds regions for the
+	    BIOS data area and the extended BIOS data area. Some
+	    BIOSes already report these regions. Others do not. If the
+	    physical memory allocator is asked to allocate a region
+	    that is already allocated with the same class and use, it
+	    ignores the second allocation.
+	  </p>
+	  <p>
+	    Earlier, I stated that <em>grub</em> had collected various
+	    information for us. We need to allocate storage so that we
+	    have a place to put that information, but we would like to
+	    avoid the misfortune of allocating that storage from the
+	    memory areas that <em>grub</em> has set up. We therefore
+	    go through and allocate these physical regions as well. We
+	    will release them later after we have copied the
+	    <em>grub</em>-supplied information to a safe
+	    place. Dealing with that is the purpose of
+	    <progident>arch_cache_init()</progident>.
+	  </p>
+	</sect2>
+	<sect2>
+	  <title>Allocating Physical Memory</title>
+	  <p>
+	    The other parts of the physical memory allocator interface
+	    support memory allocation (as opposed to definition). In
+	    order to be allocatable, a memory region must have class
+	    <progident>pmc_RAM</progident> and use
+	    <progident>pmu_AVAIL</progident>.The
+	    <progident>pmem_Available()</progident> determines how
+	    many units of physical memory having a particular size and
+	    alignment and falling between a specified base and bound
+	    address are available to be allocated. The caller may
+	    optionally specify that <em>contiguous</em> units are
+	    required. The <progident>pmem_AllocBytes()</progident>
+	    procedure can be used to allocate storage that
+	    <progident>pmem_Available()</progident> has indicated is
+	    available. Regions returned by
+	    <progident>pmem_AllocBytes()</progident> are always
+	    contiguous. These calls will be used by the kernel heap
+	    manager to allocate backing store for the kernel heap.
+	  </p>
+	  <note>
+	    <title>Bug</title>
+	    <p>
+	      at present, the code in kern_PhysMem.c is not
+	      multiprocessor-safe, because no locks are taken. This is
+	      a bug, because driver code may need to define new
+	      physical memory regions later, and those calls may be
+	      made after multiprocessing is enabled. The current logic
+	      assumes that the entire valid physical memory map can be
+	      defined at system startup. Because drivers are not in
+	      the kernel, we are unable to determine the requirements
+	      of attached cards and peripherals.
+	    </p>
+	  </note>
+	  <p>
+	    By the end of physical memory initialization, we have
+	    defined the entire physical map that is available for
+	    allocation by the kernel. We may later add device memory,
+	    but the kernel should not use that memory for
+	    general-purpose allocation. It would be an awkward mistake
+	    if, say, GPT structures got allocated from the frame
+	    buffer!
+	  </p>
+	  <note>
+	    <p>
+	      There is an exception to this statement: hot-plug
+	      memory. The current implementation does not have enough
+	      infrastructure to support hot-pluggable memory cards
+	      such as are seen on high-end multiprocessors. Adding
+	      support for that is straightforward, but it requires
+	      some logic in the physical memory allocator that we do
+	      not currently provide.
+	    </p>
+	  </note>
+	</sect2>
+      </sect1>
+      <sect1>
+	<title>The Kernel Virtual Map</title>
+	<p>
+	  Now that we have a picture of what is happening at the
+	  physical memory layer, we need to look at the
+	  <em>virtual</em> memory organization. As part of that, we
+	  need to look at the ``theory of operation'' for how Coyotos
+	  handles memory mapping in general.
+	</p>
+	<sect2>
+	  <title>Theory of Operation</title>
+	  <p>
+	    There are several challenges that a virtual mapping design
+	    needs to address. The two biggest ones are virtual
+	    crowding and multiprocessing. Neither of these issues is
+	    archit
+	  </p>
+	  <sect3>
+	    <title>Virtual Crowding</title>
+	    <p>
+	      On IA-32, the application owns the [0x0,0xBFFFFFFF]
+	      region of the address space. The kernel owns, at most,
+	      the [0xC0000000,0xFFFFFFFF] range (which is 1
+	      gigabyte). On implementations that support the ``small
+	      spaces'' optimization, the kernel may have a bit less
+	      than that. Machines with more than a gigabyte of main
+	      memory are pretty common these days, so it is obvious
+	      that the kernel cannot just map the entire physical
+	      memory into the kernel portion of the virtual address
+	      space. Actually, kernel virtual memory is very
+	      constrained on this platform, because there is a second
+	      factor to consider.
+	    </p>
+	    <p>
+	      An IA-32 machine can have up to 64 gigabytes of physical
+	      memory. Very few machines actually have this much, but
+	      in principle it is possible. If we want to support a
+	      memory this large, we need a book-keeping structure for
+	      each of these pages. The book-keeping structure tells us
+	      the OID associated with each page frame, the current
+	      allocation count, and so forth. The Coyotos per page
+	      book-keeping structure
+	      (<progident>MemHeader</progident>) is about 48 bytes. 64
+	      gigabytes works out to 16,777,216 pages, each requiring
+	      a <progident>MemHeader</progident> structure. While the
+	      pages themselves do not need to be mapped into the
+	      kernel, the <progident>MemHeader</progident> structures
+	      <em>do</em> need to be mapped. For a fully loaded
+	      system, the <progident>MemHeader</progident> structures
+	      alone will require 805,306,368 bytes of virtual
+	      memory. The good news is that we have 1,073,741,824
+	      bytes of virtual space available. The bad news is that
+	      there are a whole bunch of <em>other</em> things that
+	      need to go into that space. Realistically, the current
+	      Coyotos kernel can cleanly support roughly 32 gigabytes
+	      of physical memory or perhaps a bit more. Beyond that we
+	      would either need to start using the remaining memory as
+	      a disk cache or we would need to run the kernel in its
+	      own addess space. At present, the implementation simply
+	      ignores any physical memory that is above what we can
+	      actually handle.
+	    </p>
+	    <p>
+	      But you begin to see the problem. In addition to the
+	      object management structures for pages, we need to keep
+	      other kernel objects &mdash; processes, GPTs, endpoints,
+	      and so forth &mdash; in virtual memory as well.
+	    </p>
+	  </sect3>
+	  <sect3>
+	    <title>Multiprocessing</title>
+	    <p>
+	      The other major design concern in designing the memory
+	      map is multiprocessing. Can multiple processors use a
+	      common virtual map? The answer is driven by several
+	      factors:
+	    </p>
+	    <ul>
+	      <li>
+		<p>
+		  CPU-local storage. Each CPU requires some amount of
+		  private storage. At a minimum, each CPU needs to be
+		  able to build temporary mappings independent of the
+		  others, and each requires a separate notion of the
+		  ``current process.''
+		</p>
+	      </li>
+	      <li>
+		<p>
+		  Hardware coupling. On some hardware, sharing memory
+		  across processor clusters is expensive. The current
+		  implementation is designed to support tightly
+		  coupled and closely coupled hardware
+		  implementations. An effective implementation for a
+		  loosely coupled machine is possible, but it requires
+		  a different implementation.
+		</p>
+	      </li>
+	      <li>
+		<p>
+		  Hardware bugs. There are bugs in the multiprocessing
+		  logic on many IA-32 implementations, and some of
+		  them interact with the memory mapping subsystem. In
+		  particular, if two processors attempt to update the
+		  accessed/used bits of a page table entry at the same
+		  time, the results can be entertaining. Fortunately
+		  this behavior can be suppressed by software.
+		</p>
+	      </li>
+	    </ul>
+	    <p>
+	      Concerning CPU-local storage, there are basically two
+	      possible designs:
+	    </p>
+	    <ul>
+	      <li>
+		<p>
+		  All CPUs share the same map. Each somehow retains a
+		  pointer to its per-CPU state, all of which is
+		  gathered into a single data structure somewhere.
+		</p>
+	      </li>
+	      <li>
+		<p>
+		  CPUs have distinct memory maps. These maps agree
+		  except for a small number of places that are
+		  CPU-local.
+		</p>
+	      </li>
+	    </ul>
+	    <p>
+	      Coyotos adopts the ``shared map'' approach. All CPU's
+	      run out of the same map. Each CPU has a pointer to its
+	      CPU-local storage that is maintained at the bottom of
+	      the stack.
+	    </p>
+	    <p>
+	      To be more precise, any CPU can run in any map, and the
+	      kernel portion of the map is shared in the sense that
+	      all of the page tables for the kernel portion of the
+	      mapping are shared in common across all per-process
+	      mapping trees.
+	    </p>
+	    <p>
+	      In the Coyotos IA-32 implementation, each CPU has the
+	      following bits of CPU-local storage:
+	    </p>
+	    <ul>
+	      <li>
+		<p>
+		  A per-CPU stack.
+		</p>
+	      </li>
+	      <li>
+		<p>
+		  A current process pointer
+		</p>
+	      </li>
+	      <li>
+		<p>
+		  A current CPU pointer
+		</p>
+	      </li>
+	      <li>
+		<p>
+		  A region of the TransMap that is used exclusively by
+		  that CPU. In effect, each CPU has its own TransMap
+		  structure, but all of those TransMaps live within a
+		  common page table.
+		</p>
+	      </li>
+	    </ul>
+	    <p>
+	      To repeat something that I said earlier, Coyotos kernel
+	      stacks are per-CPU, not per-Process. This means that the
+	      association between a kernel stack and its CPU is
+	      long-lived.
+	    </p>
+	    <note>
+	      <p>
+		At present, Coyotos includes the necessary mechanism
+		to declare and reference CPU-local storage, but it
+		does not actually implement the necessary mechanisms
+		to access this storage on a per-CPU basis. The seeds
+		of the support can be seen in <link
+		href="http://dev.eros-os.com/hg/coyotos/file/tip/src/sys/kerninc/CPU.h"><filename>kerninc/ccs.h</filename></link>,
+		but the implementation is incomplete.
+	      </p>
+	    </note>
+	  </sect3>
+	</sect2>
+	<sect2>
+	  <title>The Kernel Map</title>
+	  <p>
+	    With all of that as preamble, here is what the IA-32
+	    kernel virtual map looks like in greater detail:
+	  </p>
+	  <p>
+
+	  <table width="90%" latex.colspec="lllp{2in}"
+	    latex.long="yes" align="center">
+	    <thead>
+	      <tr>
+		<td><b>Base</b></td> <td><b>Bound</b></td>
+		<td><b>Start</b></td> <td><b>Description</b></td>
+	      </tr>
+	    </thead>
+	    <tbody>
+	      <tr>
+		<td>0x0</td> <td>0x100000</td> <td>&nbsp;</td>
+		<td>Flat map of low physical memory. Used only for
+		BIOS access</td>
+	      </tr>
+	      <tr>
+		<td><progident>_start</progident>=0x100000</td>
+		<td><progident>_etext</progident></td> <td>&nbsp;</td>
+		<td>Kernel code</td>
+	      </tr>
+	      <tr>
+		<td><progident>_extext</progident></td>
+		<td><progident>_erodata</progident></td>
+		<td>&nbsp;</td> <td>Kernel read-only data</td>
+	      </tr>
+	      <tr>
+		<td><progident>_syscallpg</progident></td>
+		<td><progident>_esyscallpg</progident></td> 
+		<td>Page boundary</td>
+		<td>
+		  <p>
+		    System call trampoline page. This page will be
+		    mapped at a published location within upper memory
+		    so that applications can use the most efficient
+		    system call entry mechanism available on the
+		    platform.
+		  </p>
+		</td>
+	      </tr>
+	      <tr>
+		<td><progident>__cpu_data_start</progident></td>
+		<td><progident>__cpu_data_end</progident></td>
+		<td>Page boundary</td> <td>Per-CPU data area.</td>
+	      </tr>
+	      <tr>
+		<td><progident>KernPageDir</progident></td>
+		<td><progident>KernPageDir</progident>+0x1000</td>
+		<td>Page boundary</td> <td>Kernel page directory</td>
+	      </tr>
+	      <tr>
+		<td><progident>KernPageTable</progident></td>
+		<td><progident>KernPageTable</progident>+0x1000</td>
+		<td>Page boundary</td> <td>Kernel page table</td>
+	      </tr>
+	      <tr>
+		<td
+		valign="top"><progident>TransientMap</progident></td>
+		<td valign="top"><progident>_end_maps</progident></td>
+		<td valign="top">Page boundary</td> <td
+		valign="top">Page table for transient maps</td>
+	      </tr>
+	      <tr>
+		<td valign="top"><progident>kstack_lo</progident></td>
+		<td valign="top"><progident>kstack_hi</progident></td>
+		<td valign="top">Page boundary</td> <td
+		valign="top">CPU0 stack</td>
+	      </tr>
+	      <tr>
+		<td valign="top"><progident>_pagedata</progident></td>
+		<td
+		valign="top"><progident>_epagedata</progident></td>
+		<td valign="top">Page boundary</td> <td
+		valign="top">Data region for page-sized data items
+		(presently empty)</td>
+	      </tr>
+	      <tr>
+		<td valign="top"><progident>_data</progident></td> <td
+		valign="top"><progident>_end</progident></td> <td
+		valign="top">Page boundary</td> <td
+		valign="top">Kernel data and BSS</td>
+	      </tr>
+	      <tr>
+		<td valign="top"><progident>_end</progident></td> <td
+		valign="top">0xFF400000 (<em>bound)</em></td> <td
+		valign="top">&nbsp;</td> <td valign="top">Kernel
+		heap</td>
+	      </tr>
+	      <tr>
+		<td valign="top">0xFF400000</td> <td
+		valign="top">0xFF800000</td> <td
+		valign="top">&nbsp;</td> <td valign="top">Additional
+		CPU stacks (not yet implemented)</td>
+	      </tr>
+	      <tr>
+		<td valign="top">0xFF800000</td> <td
+		valign="top">0xFFC00000</td> <td
+		valign="top">&nbsp;</td> <td valign="top">TransMap
+		window</td>
+	      </tr>
+	      <tr>
+		<td valign="top">0xFFC00000</td> <td
+		valign="top"><em>top of memory</em></td> <td
+		valign="top">&nbsp;</td> <td valign="top">IPC
+		Destination window (not yet implemented)</td>
+	      </tr>
+	    </tbody>
+	  </table>
+
+	</p>
+	  <p>
+	    Everything shown between&nbsp;
+	    <progident>_start</progident> and
+	    <progident>_end</progident> is determined by the kernel
+	    linker <link
+	    href="http://dev.eros-os.com/hg/coyotos/file/tip/src/sys/arch/i386/kernel/ldscript.S"><filename>script
+	    arch/i386/kernel/ldscript.S</filename></link>. The reserved regions
+	    in the uppermost portion of the map are deternined by
+	    constants defined in <link
+	    href="http://dev.eros-os.com/hg/coyotos/file/tip/src/sys/arch/i386/kernel/target-hal/config.h"><filename>arch/i386/kernel/target-hal/config.h</filename></link>.
+	  </p>
+	  <p>
+	    Of these various locations, only the location of the
+	    system call trampoline page is archticturally visible to
+	    applications, and we will probably need to rearrange the
+	    map when we start to use that. All of the rest can be
+	    adjusted without impacting application compatibility.
+	  </p>
+	  <p>
+	    The table shows a kernel page directory. When we run with
+	    the pre-PAE mapping logic, each application will have its
+	    own page directory. In pre-PAE execution, the Kernel Page
+	    Directory page will be used when there is no per-process
+	    directory that is appropriate. In PAE mode, this kernel
+	    page directory covers the 1 gigabyte region owned by the
+	    kernel. All per-process PDPT structures will reference
+	    this directory, and there is a Kernel PDPT that is used
+	    when no per-process mapping table is appropriate.
+	  </p>
+	  <p>
+	    The table shows a single kernel page table. Obviously this
+	    will not be enough as the kernel heap grows beyond the
+	    0xC0200000 (PAE: 2 megabyte) or 0xC0400000 (non-PAE: 4
+	    megabyte) boundary. As that occurs, additional pages will
+	    be allocated from physical memory to serve as additional
+	    page tables. These are not normally mapped into the kernel
+	    address space. Coyotos manipulates the kernel mapping
+	    tables using the <em>transmap</em> mechanism (see below).
+	  </p>
+	  <p>
+	    Note that the kernel heap is dynamically sized. This
+	    presents a potential problem. In non-PAE execution,
+	    application page directories are initially created by
+	    making a copy of the kernel page directory, thereby
+	    incorporating a complete set of kernel mappings. Heap
+	    growth can require that an additional page table be
+	    allocated to map the heap. This occurs frequently during
+	    system initialization, but that is before any per-process
+	    page directory is created, so it does not create any
+	    problems. Unfortunately, <em>drivers</em> can later come
+	    along and announce new regions of physical memory to the
+	    kernel. These may force the kernel to allocate
+	    <progident>MemHeader</progident> structures, which come
+	    from the heap. If the heap grows as a result, and a new
+	    kernel page table gets allocated, the individual
+	    per-process page directories may no longer be up to
+	    date. In the current implementation, the kernel avoids
+	    this by pre-reserving a bounded number of
+	    <progident>MemHeader</progident> structures for later driver
+	    use (this number can be adjusted on the kernel command
+	    line). A better solution would have the kernel page fault
+	    handler ``fix'' the per-process page directories by
+	    copying the missing entries from the master kernel page
+	    directory as needed.
+	  </p>
+	</sect2>
+	<sect2>
+	  <title>The TransMap</title>
+	  <p>
+	    Finally we arrive at the <em>transmap</em>. The purpose of
+	    the transmap is to allow the kernel to build mappings
+	    dynamically so that it can access data which is not
+	    ordinarily mapped into the kernel. Typically this happens
+	    when the kernel manipulates pages or capability pages, but
+	    it also can happen when the kernel manipulates mapping
+	    tables.
+	  </p>
+	  <sect3>
+	    <title>Purpose of the Transmap</title>
+	    <p>
+	      The <em>transmap</em> is a page of memory that is mapped
+	      simultaneously as a page table and as a data page. Viewed
+	      as a page table, it specifies 512 (PAE) or 1024 (non-PAE)
+	      mapping entries for the virtual address region beginning
+	      at 0xFF800000. Viewed as a data page, it can be found at
+	      the address associated with the symbol
+	      <progident>TransientMap</progident>. The
+	      <progident>TransientMap</progident> symbol has no
+	      intrinsic type. Depending on the mapping mode that is
+	      currently in use by the hardware, we will cast it to one
+	      of the types <progident>IA32_PTE&nbsp;*</progident> or
+	      <progident>IA32_PAE&nbsp;*</progident>, which are the
+	      types for the respective types of page table entries for
+	      the two mapping modes. We will then use this pointer to
+	      update the mapping table, which allows us to construct
+	      temporary mappings.
+	    </p>
+	    <p>
+	      Whenever the kernel needs to manipulate the content of a
+	      data page, capability page, or mapping table, the protocol
+	      is to call <progident>TRANSMAP_MAP(<em>pa</em>,<em>ptr
+		  type</em>)</progident>. The supplied physical address must
+	      be page aligned, and the return value is the assigned
+	      virtual address. When the mapping is no longer needed,
+	      <progident>TRANSMAP_UNMAP(<em>va</em>)</progident> is
+	      called, passing the previously returned virtual
+	      address. The unmap operation marks the virtual address as
+	      ``available for re-mapping, but not yet cleared from the
+	      TLB.''
+	    </p>
+	    <p>
+	      The <em>transmap</em> page is shared across CPUs. Each
+	      CPU has a dedicated region of the <em>transmap</em>
+	      providing 32 slots where pages can be mapped on a
+	      transient basis. This allows the current implementation to
+	      support up to 16 processors. Obviously, the size of the
+	      <em>transmap</em> could be extended at need. Our view as
+	      designers is that above 16 CPUs the memory hierarchy of
+	      the machine tends to switch to a more pronounced NUMA
+	      architecture, and the entire model of a shared kernel map
+	      needs to be re-examined.
+	    </p>
+	  </sect3>
+	  <sect3>
+	    <title>Lazy TLB Consistency</title>
+	    <p>
+	      The general rule is to flush the TLB when a mapping is
+	      removed. For application mappings this is absolutely
+	      required. For kernel mappings, the true constraint is
+	      more subtle: we must not re-use any transient mapping if
+	      it might still reside in the hardware TLB. For kernel
+	      mappings, we can impose an invariant requiring that no
+	      transient mapping be used after it is unmapped. This
+	      creates an opportunity for an optimization that may
+	      initially seem like a bug.
+	    </p>
+	    <p>
+	      The transmap implementation can be found in <link
+		href="http://dev.eros-os.com/hg/coyotos/file/tip/src/sys/arch/i386/kernel/transmap.c"><filename>arch/i386/kernel/transmap.c</filename></link>.
+		When an
+		unmap is performed, the corresponding TLB entry is not
+		flushed immediately. If you examine the implementation
+		of the <progident>transmap_map()</progident>, you will
+		see that it initially attempts to allocate entries
+		from <progident>TransMetaMap</progident>.
+		<progident>TransMetaMap</progident> indicates which
+		entries are available (corresponding bit set to 1) for
+		allocation. In order to be available, an entry must be
+		free and we must know that it cannot be resident in
+		the local TLB.  Initially all entries are available.
+	    </p>
+	    <p>
+	      If the allocator cannot find an entry in
+	      <progident>TransMetaMap</progident>, it locates an entry
+	      in <progident>TransReleased</progident> and uses
+	      that. The <progident>TransReleased</progident> map
+	      indicates which entries have been unmapped
+	      (corresponding bit set to 1) but not yet flushed from
+	      the TLB. The allocator flushes the entry selectively and
+	      re-uses it.
+	    </p>
+	    <p>
+	      The reason for this approach is that we are making a
+	      bet. We are betting that an address space switch will be
+	      performed soon in any case. When that occurs, any
+	      entries in <progident>TransReleased</progident> can be
+	      migrated to <progident>TransMetaMap</progident>
+	      immediately. Note that some system calls do not flush
+	      the TLB at all.
+	    </p>
+	    <p>
+	      Finally, note that entries in the transmap are
+	      <em>never</em> shared across CPUs. Invalidating TLB
+	      entries is expensive, but invalidating them across all
+	      CPUs in a multiprocessor is glacial. This is why the
+	      transmap is divided into separate regions for the
+	      entries of each CPU.
+	    </p>
+	  </sect3>
+	  <sect3>
+	    <title>Data Cache Locality</title>
+	    <p>
+	      On some processor implementations, including recent AMD
+	      64-bit processors, TLB loads proceed through the data
+	      cache. The data cache is subject to an inter-processor
+	      coherency protocol. For this reason, it is desirable to
+	      choose the number of per-CPU transmap entries in such a
+	      way that they will occupy an integral multiple of cache
+	      lines. This will ensure that the respective entries will
+	      be allocated exclusively to the proper CPU by the
+	      hardware cache coherency protocol, and later will avoid
+	      contention because no other CPU will reference the
+	      entry.
+	    </p>
+	  </sect3>
+	  <sect3>
+	    <title>Other Implementations</title>
+	    <p>
+	      The implementation of the <em>transmap</em> is part of the
+	      hardware abstraction layer. On machines where the entire
+	      physical memory space can be mapped into the kernel
+	      virtual region, the transmap can be implemented using a
+	      constant offset mechanism, and no manipulation of the
+	      hardware map is required.
+	    </p>
+	  </sect3>
+	</sect2>
+      </sect1>
+    </chapter>
+  </part>
+</book>
