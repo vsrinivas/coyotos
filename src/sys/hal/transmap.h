@@ -63,17 +63,12 @@ void transmap_unmap(kva_t va);
 
 #define TRANSMAP_UNMAP(va) transmap_unmap((kva_t) va)
 
-/** @brief Release all transient mappings, as when exiting to an
- * application address space under conditions where the TLB is
- * getting flushed anyway.
+/** @brief Advise the transmap logic that the TLB has been flushed.
  *
- * This function does NOT flush the TLB! It is a book-keeping function
- * used to update the allocation bitmap used by the transmap
- * implementation. In theory, this shouldn't be necessary at all,
- * since the transient mappings should have been explicitly released
- * by the path before yielding.
+ * This has the effect of marking all currently unallocated transmap
+ * entries released.
  */
-void transmap_flush();
+void transmap_advise_tlb_flush();
 
 
 #endif /* HAL_TRANSMAP_H */

@@ -222,6 +222,7 @@ vm_switch_curcpu_to_map(Mapping *map)
   GNU_INLINE_ASM("mov %0,%%cr3"
 		 : /* No output */
 		 : "r" (map->pa));
+  transmap_advise_tlb_flush();
 }
 
 /** @brief Make the mapping @p m undiscoverable by removing it from

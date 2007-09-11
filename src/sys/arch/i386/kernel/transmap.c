@@ -84,12 +84,12 @@ transmap_init()
 }
 
 void
-transmap_flush()
+transmap_advise_tlb_flush()
 {
   DEBUG_TRANSMAP printf("Transmap: flushed\n");
 
-  MY_CPU(TransMetaMap) = ~0u;
-  MY_CPU(TransReleased) = 0u;
+  MY_CPU(TransMetaMap) |= MY_CPU(TransReleased);
+  MY_CPU(TransReleased) = 0;
 }
 
 kva_t
