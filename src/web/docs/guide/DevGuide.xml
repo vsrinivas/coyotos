@@ -147,45 +147,68 @@ yum install coyotos-arm-xenv</literallayout>
       <title>Check Out the Source Code</title>
       <p>
 	If you don't already have it, you will need to install
-	<em>mercurial</em>. We use mercurial for our source code
+	<command>mercurial</command>. We use mercurial for our source code
 	management. You can find information abuot how to use
 	mercurial at http://selenic.com/mercurial/wiki. There is a
 	pre-packaged version of mercurial in the Fedora repository for
 	all recent versions of Fedora. While you are installing
-	mercurial, you may also find the <em>colordiff</em> package
+	mercurial, you may also find the <command>colordiff</command> package
 	useful.
       </p>
-      <p>
-	Checking
-      out the base Coyotos tree can be done with the following
-      command. You may wish to consider doing this within an empty
-      directory:
-      </p>
+      <sect2>
+	<title>Set Up Mercurial</title>
+	<p>
+	  The Coyotos makefiles rely on the <command>mercurial</command>
+	  <command>fetch</command> extension. You may also want to
+	  enable the <command>gpg</command> extension. Both extensions
+	  ship with <command>mercurial</command> out of the box. To
+	  enable these, create a file <filename>.hgrc</filename> under
+	  your home directory that enables the extention. Here is an
+	  example of a minimal <filename>.hgrc</filename> file:
+	</p>
+	<literallayout>
+[ui]
+username=Danny Developer &lt;danny@coderworks.org&gt;
+editor=vi
+
+[extensions]
+hgext.fetch=
+hgext.gpg=</literallayout>
+      </sect2>
+      <sect2>
+	<title>Getting the Code</title>
+	<p>
+	  Checking
+	  out the base Coyotos tree can be done with the following
+	  command. You may wish to consider doing this within an empty
+	  containing directory:
+	</p>
 <literallayout>
 hg clone http://dev.eros-os.com/hg/coyotos</literallayout>
-      <p>
-	If you wish, you may
-	also want to consider checking out the tutorial subtree:
-      </p>
-      <literallayout>
+	<p>
+	  If you wish, you may
+	  also want to consider checking out the tutorial subtree:
+	</p>
+	<literallayout>
 cd coyotos/src
 hg clone http://dev.eros-os.com/hg/tutorial</literallayout>
-      <p>
-	The other package that is currently available is the
-	<b>ccs-xenv</b> package. It should also be cloned
-	under <b>coyotos/src</b> if you choose to check it
-	out. You don't actually need it unless you are actively
-	working on the cross tools (e.g. you are porting to a new
-	target).
-      </p>
-      <p>
-	With
-	a bit of luck, you should now be able to build the tree
-	with:
-      </p>
-<literallayout>
+	<p>
+	  The other package that is currently available is the
+	  <b>ccs-xenv</b> package. It should also be cloned
+	  under <b>coyotos/src</b> if you choose to check it
+	  out. You don't actually need it unless you are actively
+	  working on the cross tools (e.g. you are porting to a new
+	  target).
+	</p>
+	<p>
+	  With
+	  a bit of luck, you should now be able to build the tree
+	  with:
+	</p>
+	<literallayout>
 cd coyotos/src
 make</literallayout>
+      </sect2>
     </sect1>
   </chapter>
   <chapter>
