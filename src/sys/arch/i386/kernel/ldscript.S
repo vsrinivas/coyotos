@@ -74,15 +74,15 @@ SECTIONS
    * CPU-private.
    */
 
-  __cpu_private_start = .;
-  __cpu_private_data_start = .;
+  __cpu_start = .;
+  __cpu_data_start = .;
   .data.percpu :
       AT( ADDR(.data.percpu) - KVA )
       {
         *(.data.percpu) 
         . = ALIGN(COYOTOS_PAGE_SIZE);
       }
-  __cpu_private_data_end = .;
+  __cpu_data_end = .;
 
   . = ALIGN(COYOTOS_PAGE_SIZE);
   __begin_maps = .;

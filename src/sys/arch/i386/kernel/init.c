@@ -62,8 +62,8 @@ extern uint32_t _start[];
 extern uint32_t _etext[];
 extern uint32_t __syscallpg[];
 extern uint32_t __esyscallpg[];
-extern uint32_t __cpu_private_data_start[];
-extern uint32_t __cpu_private_data_end[];
+extern uint32_t __cpu_data_start[];
+extern uint32_t __cpu_data_end[];
 extern uint32_t _pagedata[];
 extern uint32_t _end[];
 extern uint32_t _bss_end[];
@@ -383,8 +383,8 @@ config_physical_memory(void)
   pmem_AllocRegion(KVTOP(__syscallpg), KVTOP(__esyscallpg),
 		   pmc_RAM, pmu_KERNEL,
 		   "Syscall page");
-  pmem_AllocRegion(KVTOP(__cpu_private_data_start), 
-		   KVTOP(__cpu_private_data_end),
+  pmem_AllocRegion(KVTOP(__cpu_data_start), 
+		   KVTOP(__cpu_data_end),
 		   pmc_RAM, pmu_KERNEL,
 		   "CPU private data");
   pmem_AllocRegion(KVTOP(__begin_maps), KVTOP(__end_maps), pmc_RAM, pmu_KERNEL,
