@@ -203,6 +203,15 @@ extern bool cap_rewrite_deprepared(capability *cap);
 /** @brief Deprepare this capability prior to object pageout. */
 extern void cap_deprepare(capability *cap);
 
+/** @brief Called before modifying a handler capability; wakes any
+ * sleepers.
+ *
+ * @p cap is the capability which will be replaced.
+ *
+ * This is used to help forward progress, not for any security benefit.
+ */
+extern void cap_handlerBeingOverwritten(capability *cap);
+
 /**
  * @brief Prepare a capability for invocation
  *

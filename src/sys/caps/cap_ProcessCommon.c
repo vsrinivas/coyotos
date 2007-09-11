@@ -178,12 +178,8 @@ void cap_ProcessCommon(InvParam_t *iParam)
       capability *pSlot = 0;
       switch (slot) {
       case coyotos_Process_cslot_handler:
-	/* We may be asleep waiting for our handler to become available.
-	 * Unblock ourselves just in case, to give a chance at the new
-	 * handler.
-	 */
-	sq_Unsleep(p);
 	pSlot = &p->state.handler;
+	cap_handlerBeingOverwritten(pSlot);
 	break;
       case coyotos_Process_cslot_addrSpace:
 	rm_whack_process(p);

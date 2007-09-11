@@ -274,6 +274,13 @@ void cap_GPT(InvParam_t *iParam)
       }
 
       GPT *toGPT = (GPT *) iParam->iCap.cap->u2.prepObj.target;
+
+      /* Someone may be sleeping on this handler; to help with forward
+       * progress, wake them up.  This has no effect on our security
+       * guarantees. 
+       */
+      if (toGPT->state.ha && slot == GPT_HANDLER_SLOT)
+	cap_handlerBeingOverwritten(&toGPT->state.cap[slot]);
       
       sched_commit_point();
 

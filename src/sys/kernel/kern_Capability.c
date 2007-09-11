@@ -294,11 +294,11 @@ cap_weaken(capability *cap)
     return;
   case ct_GPT:
   case ct_CapPage:
-    cap->restr = CAP_RESTR_RO | CAP_RESTR_WK;
+    cap->restr |= CAP_RESTR_RO | CAP_RESTR_WK;
     return;
 
   case ct_Page:
-    cap->restr = CAP_RESTR_RO;
+    cap->restr |= CAP_RESTR_RO;
     return;
 
   default:
@@ -307,6 +307,18 @@ cap_weaken(capability *cap)
     cap_init(cap);
   return;
   }
+}
+
+void 
+cap_handlerBeingOverwritten(capability *cap)
+{
+  cap_prepare(cap);
+  if (cap->type != ct_Process)
+    return;
+
+  Process *p = (Process *)cap->u2.prepObj.target;
+  obhdr_wakeAll(&p->hdr);
+  sq_WakeAll(&p->rcvWaitQ, false);
 }
 
 void
