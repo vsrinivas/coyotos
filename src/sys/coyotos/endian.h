@@ -1,7 +1,7 @@
 #ifndef __ENDIAN_H__
 #define __ENDIAN_H__
 /*
- * Copyright (C) 2007, Jonathan S. Shapiro.
+ * Copyright (C) 2007, The EROS Group, LLC.
  *
  * This file is part of the Coyotos Operating System.
  *

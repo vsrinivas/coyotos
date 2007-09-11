@@ -1,5 +1,5 @@
 #
-# Copyright (C) 2005, 2006, Jonathan S. Shapiro.
+# Copyright (C) 2005, 2006, The EROS Group, LLC.
 #
 # This file is part of the COYOTOS Operating System runtime library.
 #
