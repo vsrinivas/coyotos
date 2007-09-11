@@ -1,5 +1,5 @@
 #
-# Copyright (C) 2004, Jonathan S. Shapiro.
+# Copyright (C) 2004, The EROS Group, LLC.
 #
 # This file is part of the Coyotos Operating System.
 #
