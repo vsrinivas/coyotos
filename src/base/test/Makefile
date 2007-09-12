@@ -21,7 +21,7 @@
 default: package
 COYOTOS_SRC=../..
 
-DIRS=testConstructor
+DIRS=testConstructor testHandler
 
 include $(COYOTOS_SRC)/build/make/makerules.mk
 
