@@ -29,8 +29,6 @@
 #include "coyotos.TargetInfo.h"
 
 /** @brief Set up the stack pointer.
- *
- * @bug assumes that stacks grow downward.
  */
 uintptr_t __rt_stack_pointer __attribute__((section(".data"))) =
   coyotos_TargetInfo_small_stack_pointer;
