@@ -16,8 +16,6 @@ module SimpleProc {
 
   export def proc = new Process(PrimeBank);
 
-  export def capPage = new CapPage(PrimeBank);
-
   // Set up a reply endpoint for this process:
   def ep = new Endpoint(PrimeBank);
   ep.recipient = proc;
@@ -25,7 +23,7 @@ module SimpleProc {
 
   proc.capReg[1] = ep;
 
-  export def setupSpace(proc, fileName) {
+  export def setupSpace(proc, fileName, capPage) {
     def img = loadimage(PrimeBank,fileName);
 
     // Add a capability page, because some tests want that:

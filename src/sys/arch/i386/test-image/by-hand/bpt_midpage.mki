@@ -1,7 +1,7 @@
 module bpt_midpage {
   import sp = SimpleProc;
 
-  sp.setupSpace(sp.proc, "bpt_midpage.exe");
+  sp.setupSpace(sp.proc, "bpt_midpage.exe", NullCap());
 }
 
 // Local Variables:

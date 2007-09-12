@@ -1,7 +1,7 @@
 module hlt {
   import sp = SimpleProc;
 
-  sp.setupSpace(sp.proc, "hlt.exe");
+  sp.setupSpace(sp.proc, "hlt.exe", NullCap());
 
   print *sp.proc.addrSpace;
 }

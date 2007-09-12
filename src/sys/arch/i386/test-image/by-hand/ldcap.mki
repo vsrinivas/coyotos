@@ -1,9 +1,10 @@
 module ldcap {
   import sp = SimpleProc;
 
-  sp.setupSpace(sp.proc, "ldcap.exe");
+  def capPage = new CapPage(PrimeBank);
+  capPage[0] = sp.proc;  // give it something to load
 
-  sp.capPage[0] = sp.proc;  // give it something to load
+  sp.setupSpace(sp.proc, "ldcap.exe", capPage);
 
   // We REALLY want to be able to say something like
   // the following, but mkimage does not support this.

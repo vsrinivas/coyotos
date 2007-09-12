@@ -1,7 +1,7 @@
 module into {
   import sp = SimpleProc;
 
-  sp.setupSpace(sp.proc, "into.exe");
+  sp.setupSpace(sp.proc, "into.exe", NullCap());
 
   print *sp.proc.addrSpace;
 }

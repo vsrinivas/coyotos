@@ -1,7 +1,7 @@
 module openrcv {
   import sp = SimpleProc;
 
-  sp.setupSpace(sp.proc, "openrcv.exe");
+  sp.setupSpace(sp.proc, "openrcv.exe", NullCap());
 }
 
 // Local Variables:

@@ -1,7 +1,7 @@
 module klog {
   import sp = SimpleProc;
   
-  sp.setupSpace(sp.proc, "klog.exe");
+  sp.setupSpace(sp.proc, "klog.exe", NullCap());
 
   def replyEP = new Endpoint(PrimeBank);
   replyEP.recipient = sp.proc;

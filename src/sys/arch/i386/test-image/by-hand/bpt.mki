@@ -1,7 +1,7 @@
 module bpt {
   import sp = SimpleProc;
 
-  sp.setupSpace(sp.proc, "bpt.exe");
+  sp.setupSpace(sp.proc, "bpt.exe", NullCap());
 }
 
 // Local Variables:

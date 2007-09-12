@@ -1,9 +1,11 @@
 module stcap {
   import sp = SimpleProc;
 
-  sp.setupSpace(sp.proc, "stcap.exe");
+  def capPage = new CapPage(PrimeBank);
+  capPage[0] = sp.proc;  // give it something to overwrite
 
-  sp.capPage[0] = sp.proc;  // give it something to overwrite
+  sp.setupSpace(sp.proc, "stcap.exe", capPage);
+
 }
 
 // Local Variables:
