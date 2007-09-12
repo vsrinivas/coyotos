@@ -47,6 +47,7 @@ PAGE_ALIGN static ia32_GateDescriptor IdtTable[NUM_TRAP+NUM_IRQ];
 
 static void irq_SetHardwareVector(int, void (*)(void), bool isUser);
 
+#define DEBUG_PAGEFAULT if (0)
 
 /** @brief Software-level interrupt dispatch mechanism. */
 struct IntVecInfo IntVecEntry[NUM_TRAP+NUM_IRQ];
@@ -273,8 +274,9 @@ void PageFault(Process *inProc, fixregs_t *saveArea)
   LOG_EVENT(ety_PageFault, inProc, e, addr);
 
   /** @bug wait;  should we be using current instead of inProc? */
-  printf("Page fault trap va=0x%08p, errorCode 0x%x\n", saveArea->ExceptAddr,
-	 saveArea->Error);
+  DEBUG_PAGEFAULT
+    printf("Page fault trap va=0x%08p, errorCode 0x%x\n", saveArea->ExceptAddr,
+	   saveArea->Error);
 
   if (e & PAGEFAULT_ERROR_RSV)
     fatal("PageFault due to non-zero reserved bits");
@@ -310,12 +312,15 @@ void PageFault(Process *inProc, fixregs_t *saveArea)
   bool wantExec = NXSupported && (e & PAGEFAULT_ERROR_ID);
   bool wantWrite = (e & PAGEFAULT_ERROR_RW);
 
-  printf("do_pageFault(proc=0x%p, va=0x%08x, %s, %s)\n", inProc, addr,
-	 wantWrite ? "wantWrite" : "0", wantExec ? "wantExec" : "0");
+  DEBUG_PAGEFAULT
+    printf("do_pageFault(proc=0x%p, va=0x%08x, %s, %s)\n", inProc, addr,
+	   wantWrite ? "wantWrite" : "0", wantExec ? "wantExec" : "0");
 
   do_pageFault(inProc, addr, wantWrite, wantExec);
 
-  printf("do_pageFault(...) done\n");
+  DEBUG_PAGEFAULT
+    printf("do_pageFault(...) done\n");
+
   vm_switch_curcpu_to_map(inProc->mappingTableHdr);
 }
 
