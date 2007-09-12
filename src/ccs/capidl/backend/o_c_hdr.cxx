@@ -3134,8 +3134,8 @@ output_c_template(GCPtr<Symbol> globalScope, BackEndFn fn)
   out << "_IDL_GRAND_SERVER_UNION gsu;\n"
       << "\n"
       << "gsu.icw = 0;\n"
-      << "gsu.sndPtr = 0;\n"
-      << "gsu.sndLen = 0;\n"
+      << "gsu.pb.sndPtr = 0;\n"
+      << "gsu.pb.sndLen = 0;\n"
       << "gsu.pb.u.invCap = CR_RETURN;\n"
       << "\n"
       << "for(;;) {\n";
