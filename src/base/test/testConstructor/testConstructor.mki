@@ -1,9 +1,11 @@
 module testConstructor {
    import cons = coyotos.Constructor;
    import rt = coyotos.RunTime;
+   import util = coyotos.Util;
 
    def image = loadimage(PrimeBank, "testConstructor");
-   def proc = rt.make_running_process(PrimeBank, weaken(image.space), image.pc);
+   def proc = util.make_running_process(PrimeBank, 
+					weaken(image.space), image.pc);
 
    export capreg REG {
       METACON = rt.REG.APP0 + 4,

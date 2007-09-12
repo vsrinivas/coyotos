@@ -39,6 +39,7 @@
 module coyotos.SpaceBank {
    import TargetInfo = coyotos.TargetInfo;
    import rt = coyotos.RunTime;
+   import util = coyotos.Util;
 
    /* The Spacebank verifier is a PrimeBank endpoint with all restrictions */
    export def Verifier = enter(PrimeBankEndpoint, 0xffffffff);
@@ -51,7 +52,7 @@ module coyotos.SpaceBank {
 				noexec(new Page(PrimeBank)),
 				TargetInfo.small_stack_page_addr);
 
-   def spacebank = rt.make_running_process(PrimeBank, aSpace, image.pc);
+   def spacebank = util.make_running_process(PrimeBank, aSpace, image.pc);
 
    /* Register assignments for SpaceBank; only exported so that they can
     * be used by spacebank.c.
