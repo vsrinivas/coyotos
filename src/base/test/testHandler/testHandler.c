@@ -111,24 +111,22 @@ HANDLE_coyotos_Cap_getType(uint64_t *out, ISE *ise)
   return (RC_coyotos_Cap_OK);
 }
 
-static uint64_t 
+static void
 HANDLE_coyotos_ProcessHandler_handle(caploc_t proc,
 				     coyotos_Process_FC faultCode,
 				     uint64_t faultInfo,
 				     struct IDL_SERVER_Environment *_env)
 {
   log_message("ProcessHandler\n");
-  return RC_coyotos_Cap_OK;
 }
 
-static uint64_t 
+static void
 HANDLE_coyotos_MemoryHandler_handle(caploc_t proc,
 				    coyotos_Process_FC faultCode,
 				    uint64_t faultInfo,
 				    struct IDL_SERVER_Environment *_env)
 {
   log_message("MemoryHandler\n");  
-  return RC_coyotos_Cap_OK;
 }
 
 /* The IDL_SERVER_Environment structure type is something

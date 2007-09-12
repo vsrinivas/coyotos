@@ -24,10 +24,10 @@ interface ProcessHandler extends Cap {
   /// Note that in contrast to MemoryHandler.handle, the process
   /// capability provided here is a full-strength capability.
   ///
-  /// The capability supplied in the reply slot at the time of upcall
-  /// from the kernel will be the Null capability. Merely replying in
-  /// the conventional way is @em not sufficient to restart the
-  /// faulted process.
-  void handle(Process proc, Process.FC faultCode, 
-	      unsigned long long faultInfo);
+  /// Note that this is a oneway method; no reply is expected.  The
+  /// capability supplied in the reply slot at the time of upcall will
+  /// be the Null capability. Merely replying in the conventional way is
+  /// @em not sufficient to restart the faulted process.
+  oneway void handle(Process proc, Process.FC faultCode, 
+		     unsigned long long faultInfo);
 };
