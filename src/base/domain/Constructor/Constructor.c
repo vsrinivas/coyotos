@@ -92,7 +92,8 @@ IDL_Environment _IDL_E = {
 
 IDL_Environment * const IDL_E = &_IDL_E;
 
-bool cap_is_confined(caploc_t cap)
+static bool 
+cap_is_confined(caploc_t cap)
 {
   bool result;
   bool isMe;
@@ -159,14 +160,14 @@ HANDLE_coyotos_Cap_getType(uint64_t *out, ISE *_env)
     *out = IKT_coyotos_Constructor;
   else
     *out = IKT_coyotos_Verifier;
-  return (0);
+  return RC_coyotos_Cap_OK;
 }
 
 static uint64_t
 HANDLE_coyotos_Constructor_isYieldConfined(bool *out, ISE *_env)
 {
   *out = isConfined;
-  return (0);
+  return RC_coyotos_Cap_OK;
 }
 
 static uint64_t
@@ -175,6 +176,7 @@ HANDLE_coyotos_Constructor_create(caploc_t bank, caploc_t sched,
 				  ISE *_env)
 {
   bool success = false;
+
   if (!coyotos_SpaceBank_verifyBank(CR_SPACEBANK, bank, &success, 
 				   IDL_E) ||
       !success) {
@@ -255,7 +257,7 @@ HANDLE_coyotos_Constructor_create(caploc_t bank, caploc_t sched,
   /* Do not return to our caller; we've handed CR_RETURN to our new child */
   _env->haveReturn = 0;
 
-  return (0);
+  return RC_coyotos_Cap_OK;
 }
 
 static uint64_t
@@ -267,7 +269,7 @@ HANDLE_coyotos_Constructor_getVerifier(caploc_t retVal, ISE *_env)
 				     IDL_E))
     return RC_coyotos_Cap_RequestError;
 
-  return 0;
+  return RC_coyotos_Cap_OK;
 }
 
 static uint64_t
@@ -283,7 +285,7 @@ HANDLE_coyotos_Verifier_verifyYield(caploc_t cap, bool *result, ISE *_env)
     return IDL_E->errCode;
   }
   *result = identifyResult;
-  return (0);
+  return RC_coyotos_Cap_OK;
 }
 
 static uint64_t 
@@ -297,7 +299,7 @@ HANDLE_coyotos_Builder_setHandler(caploc_t handler, ISE *_env)
 
   cap_copy(CR_YIELD_HANDLER, handler);
 
-  return (0);
+  return RC_coyotos_Cap_OK;
 }
 
 static uint64_t 
@@ -311,7 +313,7 @@ HANDLE_coyotos_Builder_setSpace(caploc_t space, ISE *_env)
 
   cap_copy(CR_YIELD_ADDRSPACE, space);
 
-  return (0);
+  return RC_coyotos_Cap_OK;
 }
 
 static uint64_t 
@@ -351,7 +353,7 @@ HANDLE_coyotos_Builder_setTool(uint32_t slot, caploc_t tool, ISE *_env)
   if (!coyotos_AddressSpace_setSlot(CR_BUILD_TOOLS, slot, tool, IDL_E))
     return IDL_E->errCode;
 
-  return (0);
+  return RC_coyotos_Cap_OK;
 }
 
 static uint64_t 
@@ -369,7 +371,7 @@ HANDLE_coyotos_Builder_seal(caploc_t _retVal, ISE *_env)
 
   isSealed = 1;
 
-  return (0);
+  return RC_coyotos_Cap_OK;
 }
 
 
@@ -424,6 +426,7 @@ ProcessRequests(struct IDL_SERVER_Environment *_env)
   /* check to see if we were pre-sealed */
   if (class != coyotos_Discrim_capClass_clNull) {
     isSealed = 1;
+
     /* no message to send;  we were pre-sealed */
     _env->haveReturn = 0;
   } else {
@@ -449,8 +452,8 @@ ProcessRequests(struct IDL_SERVER_Environment *_env)
 			       coyotos_Memory_restrictions_readOnly,
 			       CR_YIELD_PROTOSPACE,
 			       IDL_E) ||
-	!coyotos_AddressSpace_copyFrom(CR_TOOLS, 
-				       CR_YIELD_TOOLS,
+	!coyotos_AddressSpace_copyFrom(CR_BUILD_TOOLS,
+				       CR_TOOLS, 
 				       CR_NULL,
 				       IDL_E) ||
 	!coyotos_Memory_reduce(CR_BUILD_TOOLS, 
@@ -472,7 +475,7 @@ ProcessRequests(struct IDL_SERVER_Environment *_env)
     gsu.pb.sndCap[0] = CR_REPLY0;
     _env->haveReturn = 1;
   }
-  
+
   /* set up unchanging recieve state */
   gsu.pb.rcvCap[0] = CR_RETURN;
   gsu.pb.rcvCap[1] = CR_ARG(0);
@@ -485,10 +488,10 @@ ProcessRequests(struct IDL_SERVER_Environment *_env)
   gsu.pb.sndPtr = 0;
 
   for(;;) {
-    gsu.icw &= (IPW0_NR_MASK|IPW0_LDW_MASK|IPW0_LSC_MASK
-        |IPW0_SG|IPW0_SP|IPW0_SC|IPW0_EX);
-    gsu.icw |= IPW0_MAKE_NR(sc_InvokeCap)|IPW0_RP|IPW0_RC
-       |IPW0_MAKE_LRC(3)|IPW0_NB|IPW0_CO;
+    gsu.icw &= (IPW0_LDW_MASK|IPW0_LSC_MASK
+        |IPW0_SG|IPW0_SP|IPW0_RC|IPW0_SC|IPW0_EX);
+    gsu.icw |= IPW0_MAKE_NR(sc_InvokeCap)|IPW0_RP|IPW0_AC
+        |IPW0_MAKE_LRC(3)|IPW0_NB|IPW0_CO;
 
     gsu.pb.u.invCap = (_env->haveReturn)? CR_RETURN : CR_NULL;
 
@@ -531,7 +534,7 @@ ProcessRequests(struct IDL_SERVER_Environment *_env)
     }
   }
  fail:
-
+	
   (void) coyotos_SpaceBank_destroyBankAndReturn(CR_SPACEBANK, 
 						CR_RETURN,
 						IDL_E->errCode, 
@@ -544,5 +547,5 @@ main(int argc, char *argv[])
 {
   ProcessRequests(&constructor_ISE);
 
-  return (0);
+  return 0;
 }

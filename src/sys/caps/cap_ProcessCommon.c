@@ -290,7 +290,8 @@ void cap_ProcessCommon(InvParam_t *iParam)
 
       p->state.faultCode = faultCode;
       p->state.faultInfo = faultInfo;
-
+      p->issues |= pi_Faulted;
+	
       iParam->opw[0] = InvResult(iParam, 0);
       return;
     }
@@ -415,7 +416,7 @@ void cap_ProcessCommon(InvParam_t *iParam)
 
       proc_ensure_exclusive(p);
 
-      bug("need to invalidate address space");
+      rm_whack_process(p);  // whack our address space
       obhdr_dirty(&p->hdr);
 
       sched_commit_point();

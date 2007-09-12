@@ -18,36 +18,26 @@
  * Foundation, 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  */
 
-/** @file
- * @brief SpaceBank runtime interaction file
- *
- * The job of this file is to mediate between SpaceBank and the runtime
- * system, mostly by having the runtime system get out of the way.
- */
+module testConstructor {
+   import cons = coyotos.Constructor;
+   import rt = coyotos.RunTime;
+   import util = coyotos.Util;
 
-#include "SpaceBank.h"
-#include "coyotos.TargetInfo.h"
+   def image = loadimage(PrimeBank, "testConstructor");
+   def proc = util.make_running_process(PrimeBank, 
+					weaken(image.space), image.pc);
 
-/** @brief Set up the stack pointer.
- */
-uintptr_t __rt_stack_pointer __attribute__((section(".data"))) =
-  coyotos_TargetInfo_small_stack_pointer;
+   export capreg REG {
+      METACON = rt.REG.APP0 + 4,
+      BANK,
+      SCHED,
+      RUNTIME,
+      KERNLOG,
+      TMP
+   };
 
-/** @brief prevent the runtime hook from foiling us */
-uintptr_t __rt_runtime_hook __attribute__((section(".data"))) = 0;
-
-/** @brief We never exit. */
-int
-atexit(void (*func)(void))
-{
-  return (0);
+   proc.capReg[REG.METACON] = cons.MetaConstructor;
+   proc.capReg[REG.BANK] = new Bank(PrimeBank);
+   proc.capReg[REG.KERNLOG] = KernLog();
 }
 
-/** @brief We never exit. */
-void
-exit(int status)
-{
-  assert(0);
-  for (;;)
-    ;
-}

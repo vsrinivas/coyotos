@@ -168,9 +168,9 @@ void cap_Endpoint(InvParam_t *iParam)
   case OC_coyotos_Endpoint_makeEntryCap:
   case OC_coyotos_Endpoint_makeAppNotifier:
     {
-      INV_REQUIRE_ARGS(iParam, 0);
+      uint32_t pp = get_iparam32(iParam);
 
-      uintptr_t pp = get_pw(iParam->invoker, 2);
+      INV_REQUIRE_ARGS(iParam, 0);
 
       sched_commit_point();
 

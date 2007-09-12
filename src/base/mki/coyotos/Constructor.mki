@@ -52,7 +52,7 @@
  *     *value*.
  */
 module coyotos.Constructor {
-  /* import the modules we'll need */
+  import util = coyotos.Util;
   import rt = coyotos.RunTime;
   import sb = coyotos.SpaceBank;
   
@@ -115,7 +115,7 @@ module coyotos.Constructor {
   /* There's a chicken-and-egg problem with the metaconstructor;  we allocate
    * its process early, and set it up late, to get around the issue.
    */
-  def metacon_proc = rt.make_running_process(PrimeBank, cons_space, cons_pc);
+  def metacon_proc = util.make_running_process(PrimeBank, cons_space, cons_pc);
   
   def constructor_brand = enter(metacon_proc.capReg[rt.REG.INITEPT],
 				PP.BRAND);
@@ -149,7 +149,7 @@ module coyotos.Constructor {
     proc.brand = constructor_brand;
     
     /* Set up the base capability registers not initialized by 
-     * rt.make_bare_process()
+     * util.make_bare_process()
      */
     proc.capReg[rt.REG.TOOLS] = primordial_tools;
     proc.capReg[rt.REG.RUNTIME] = NullCap();
@@ -174,7 +174,7 @@ module coyotos.Constructor {
    */
   export def create_small(src_bank, file, handler) {
     def bank = new Bank(src_bank);
-    def proc = rt.make_running_process(src_bank, cons_space, cons_pc);
+    def proc = util.make_running_process(src_bank, cons_space, cons_pc);
     
     def image = loadimage(bank, file);
     
@@ -193,7 +193,7 @@ module coyotos.Constructor {
    */
   export def create(src_bank, as, pc, handler) {
     def bank = new Bank(src_bank);
-    def proc = rt.make_running_process(src_bank, cons_space, cons_pc);
+    def proc = util.make_running_process(src_bank, cons_space, cons_pc);
     
     return setup(bank, proc, as, pc, handler);
   }

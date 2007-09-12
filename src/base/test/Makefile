@@ -19,8 +19,9 @@
 #
 
 default: package
-COYOTOS_SRC=..
+COYOTOS_SRC=../..
 
-DIRS=lib domain idl mki test
+DIRS=testConstructor testHandler
 
-include $(COYOTOS_SRC)/build/make/pkgrules.mk
+include $(COYOTOS_SRC)/build/make/makerules.mk
+

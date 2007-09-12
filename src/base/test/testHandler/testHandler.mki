@@ -18,36 +18,29 @@
  * Foundation, 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  */
 
-/** @file
- * @brief SpaceBank runtime interaction file
- *
- * The job of this file is to mediate between SpaceBank and the runtime
- * system, mostly by having the runtime system get out of the way.
- */
+module testHandler {
+   import rt = coyotos.RunTime;
+   import util = coyotos.Util;
 
-#include "SpaceBank.h"
-#include "coyotos.TargetInfo.h"
+   def handler = util.make_ironman_process(PrimeBank, "testHandler");
 
-/** @brief Set up the stack pointer.
- */
-uintptr_t __rt_stack_pointer __attribute__((section(".data"))) =
-  coyotos_TargetInfo_small_stack_pointer;
+   export capreg APP {
+      KERNLOG = rt.REG.APP0 + 4
+   };
 
-/** @brief prevent the runtime hook from foiling us */
-uintptr_t __rt_runtime_hook __attribute__((section(".data"))) = 0;
+   export enum {
+      PP_ProcessHandler = 0,
+      PP_MemoryHandler = 1
+   };
 
-/** @brief We never exit. */
-int
-atexit(void (*func)(void))
-{
-  return (0);
-}
+   handler.capReg[APP.KERNLOG] = KernLog();
 
-/** @brief We never exit. */
-void
-exit(int status)
-{
-  assert(0);
-  for (;;)
-    ;
+   def child1 = util.make_ironman_process(PrimeBank, "testProg");
+   child1.handler = enter(handler.capReg[rt.REG.INITEPT],
+	PP_ProcessHandler);
+
+   def child2 = util.make_ironman_process(PrimeBank, "testProg");
+   child2.addrSpace.cap[15] = enter(handler.capReg[rt.REG.INITEPT], 
+	PP_MemoryHandler);
+   child2.addrSpace.ha = 1;
 }

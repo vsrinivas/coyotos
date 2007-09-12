@@ -66,7 +66,7 @@ const InvParameterBlock_t self_call_setSlot_handler = {
 };
 
 const InvParameterBlock_t self_call_setSpaceAndPC = {
-  .pw[0] = MY_IPW0(2, 1),
+  .pw[0] = MY_IPW0(3, 1),
   .pw[1] = OC_coyotos_Process_setSpaceAndPC,
   .pw[2] = coyotos_Process_cslot_handler,
   .u.invCap = CR_SELF,

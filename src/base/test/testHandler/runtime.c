@@ -18,15 +18,9 @@
  * Foundation, 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  */
 
-/** @file
- * @brief SpaceBank runtime interaction file
- *
- * The job of this file is to mediate between SpaceBank and the runtime
- * system, mostly by having the runtime system get out of the way.
- */
-
-#include "SpaceBank.h"
 #include "coyotos.TargetInfo.h"
+
+#include <inttypes.h>
 
 /** @brief Set up the stack pointer.
  */
@@ -47,7 +41,8 @@ atexit(void (*func)(void))
 void
 exit(int status)
 {
-  assert(0);
+  *(uint32_t *)0 = 0;
+
   for (;;)
     ;
 }
