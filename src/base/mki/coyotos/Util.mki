@@ -23,6 +23,7 @@
  */
 module coyotos.Util {
   import rt = coyotos.RunTime;
+  import TargetInfo = coyotos.TargetInfo;
 
   /* Allocate a bare-bones process, and set up its capRegs. 
    *
@@ -78,5 +79,20 @@ module coyotos.Util {
     proc.faultInfo = pc;
 
     return proc;
+  }
+
+  /*
+   * Make an iron-man process;  one with a pre-allocated stack, and where
+   * no runtime initialization will be made.
+   */
+  export def make_ironman_process(bank, file) {
+    def image = loadimage(bank, file);
+
+    def aSpace = insert_subspace(bank,
+				 image.space,
+				 noexec(new Page(bank)),
+				 TargetInfo.small_stack_page_addr);
+
+    return make_running_process(bank, aSpace, image.pc);
   }
 }

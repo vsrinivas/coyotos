@@ -44,15 +44,7 @@ module coyotos.SpaceBank {
    /* The Spacebank verifier is a PrimeBank endpoint with all restrictions */
    export def Verifier = enter(PrimeBankEndpoint, 0xffffffff);
 
-   def image = loadimage(PrimeBank, "coyotos/SpaceBank");
-
-   /* add a page for the stack */
-   def aSpace = insert_subspace(PrimeBank, 
-				image.space, 
-				noexec(new Page(PrimeBank)),
-				TargetInfo.small_stack_page_addr);
-
-   def spacebank = util.make_running_process(PrimeBank, aSpace, image.pc);
+   def spacebank = util.make_ironman_process(PrimeBank, "coyotos/SpaceBank");
 
    /* Register assignments for SpaceBank; only exported so that they can
     * be used by spacebank.c.
