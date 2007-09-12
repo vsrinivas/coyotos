@@ -63,10 +63,12 @@ module coyotos.SpaceBank {
      TMPPAGE,
      ADDRSPACE,
      RANGE,	     /* Range key */
+     KERNLOG,	    /* log key for debugging output */
      INITGPT        /* initial GPT for bootstrapping */
    };
 
    /* Set up spacebank's application registers */
    spacebank.capReg[APP.RANGE] = Range();
+   spacebank.capReg[APP.KERNLOG] = KernLog();
    spacebank.capReg[APP.INITGPT] = new GPT(PrimeBank);
 }

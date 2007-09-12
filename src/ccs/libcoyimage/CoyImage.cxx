@@ -388,7 +388,7 @@ bankid_t
 CoyImage::BankCapToBankID(const capability& bankCap)
 {
   GCPtr<CiEndpoint> ep = GetEndpoint(bankCap);
-  return ep->v.endpointID;
+  return ep->v.endpointID - 1;
 }
 
 /** @brief Return the bank from which an object was allocated.

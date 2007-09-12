@@ -42,6 +42,7 @@
 /* Turn constants defined in .mki file into usable capability registers */
 
 #define CR_RANGE	coyotos_SpaceBank_APP_RANGE
+#define CR_KERNLOG	coyotos_SpaceBank_APP_KERNLOG
 #define CR_INITGPT	coyotos_SpaceBank_APP_INITGPT
 #define CR_ADDRSPACE	coyotos_SpaceBank_APP_ADDRSPACE
 #define CR_TMP1		coyotos_SpaceBank_APP_TMP1
