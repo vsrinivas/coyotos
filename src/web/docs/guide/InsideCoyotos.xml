@@ -140,14 +140,14 @@
 	<title>Why This Approach</title>
 	<p>
 	  Why is this an interesting &mdash; or even useful &mdash; way
-	  of looking at an operating system? Operaintg system textbooks
+	  of looking at an operating system? Operating system textbooks
 	  have come to have a fairly well-established structure. What is
 	  better or different about this one?
 	</p>
 	<p>
 	  Let me answer with an example. Every conventional operating
 	  system textbook includes a chapter on memory management
-	  &amp;mdash; which is to say, memory allocation policy. If
+	  &mdash; which is to say, memory allocation policy. If
 	  you look at the better textbooks, you will find that they
 	  all end up saying the same thing: the <link
 	  href="http://en.wikipedia.org/wiki/Buddy_memory_allocation">buddy
@@ -227,7 +227,7 @@
 	  a large body of code to wield safely. Indeed, the existing
 	  Coyotos kernel is teetering at (some would say past) the
 	  limit on the amount of code that can safely be run in
-	  supervisor mode &amp;mdash; simply because it is teetering
+	  supervisor mode &mdash; simply because it is teetering
 	  at the limits of what the human (well, the software
 	  developer, which is only approximately the same thing) head
 	  can manage at one time.
@@ -431,7 +431,7 @@
 	  single unit of operation. Control enters the kernel,
 	  resources are gathered, a ``commit point'' is
 	  reached, and the operation proceeds without interruption
-	  unti it completes. Afte the commit point occurs, the
+	  until it completes. After the commit point occurs, the
 	  operation is required to complete or to panic the system
 	  . Failures after the commit point indicate a deep kernel
 	  logic error. Prior to the commit point, no modifications to
@@ -772,7 +772,7 @@
 	</p>
 	<p>
 	  Eventually, the primordial kernel map will serve as our
-	  fall-back mapping structure &amp;mdash; the one we use when
+	  fall-back mapping structure &mdash; the one we use when
 	  we cannot identify an appropriate user-mode mapping to
 	  run. This mapping will contain only kernel mappings.
 	</p>
@@ -821,7 +821,7 @@
 	<note>
 	  <p>
 	    When you see a statement like ``the initial system
-	    image contains many processed that are ready to run,''
+	    image contains many processes that are ready to run,''
 	    you should immediately ask: well, what if it doesn't?
 	    Perhaps the initial system image is broken. How does ths
 	    system behave if there is nothing to do? Is this statement
@@ -1377,7 +1377,7 @@
 	  </p>
 	  <p>
 	    Of these various locations, only the location of the
-	    system call trampoline page is archticturally visible to
+	    system call trampoline page is architecturally visible to
 	    applications, and we will probably need to rearrange the
 	    map when we start to use that. All of the rest can be
 	    adjusted without impacting application compatibility.
