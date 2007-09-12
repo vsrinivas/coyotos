@@ -155,6 +155,9 @@ kmap_EnsureCanMap(kva_t va, const char *descrip)
 void 
 kmap_map(kva_t va, kpa_t pa, uint32_t perms)
 {
+  /* Note that we do not purport to run on i386. PCD bit was supported
+     on 486 and later, so no need to filter KMAP_NC. */
+
   assert(KPA_IS_PAGE_ADDRESS(pa));
 
   DEBUG_VM
@@ -188,6 +191,7 @@ kmap_map(kva_t va, kpa_t pa, uint32_t perms)
 
     pgtbl[lndx].bits.V = (perms ? 1 : 0);
     pgtbl[lndx].bits.W = (perms & KMAP_W) ? 1 : 0;
+    pgtbl[lndx].bits.PCD = (perms & KMAP_NC) ? 1 : 0;
     pgtbl[lndx].bits.PGSZ = 0;
     pgtbl[lndx].bits.ACC = 1;
     pgtbl[lndx].bits.DIRTY = 1;
@@ -221,6 +225,7 @@ kmap_map(kva_t va, kpa_t pa, uint32_t perms)
 
     pgtbl[lndx].bits.V = (perms ? 1 : 0);
     pgtbl[lndx].bits.W = (perms & KMAP_W) ? 1 : 0;
+    pgtbl[lndx].bits.PCD = (perms & KMAP_NC) ? 1 : 0;
     pgtbl[lndx].bits.PGSZ = 0;
     pgtbl[lndx].bits.ACC = 1;
     pgtbl[lndx].bits.DIRTY = 1;

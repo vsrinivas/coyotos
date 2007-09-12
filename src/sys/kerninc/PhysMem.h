@@ -83,6 +83,7 @@ enum PmemClass {
   pmc_RAM,	    /**<! @brief Allocatable RAM region. */
   pmc_NVRAM,	    /**<! @brief Non-volatile RAM region. */
   pmc_ROM,	    /**<! @brief ROM region. */
+  pmc_DEV,	    /**<! @brief Memory-mapped hardware device. */
 };
 typedef enum PmemClass PmemClass;
 

@@ -23,10 +23,14 @@
 #include <stdbool.h>
 #include <hal/kerntypes.h>
 
+/** @brief True if we should attempt to use local APIC.
+ */
+extern bool lapic_works;
+
 /** @brief True if implementation has a redundant 8259 legacy PIC that
  * must be disabled before the local APIC is enabled.
  *
- * Set conditionally in apic.c:acpi_count_cpus()
+ * Set conditionally in acpi.c:acpi_find_MADT()
  */
 extern bool lapic_requires_8259_disable;
 
@@ -36,6 +40,7 @@ extern bool lapic_requires_8259_disable;
  * own local APIC. Value will be zero if there is no local APIC.
  */
 extern kpa_t lapic_pa;
+extern volatile uint32_t *lapic_va;
 
 /** @brief Return true if the system has a local APIC that is actually
  * in use by us.

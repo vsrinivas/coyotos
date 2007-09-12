@@ -83,9 +83,12 @@
  *
  * This should be selected to fall *below* any other magic virtual
  * addresses.
+ *
+ * For IA-32, we re-map the local APIC at 0xFF000000, so don't go
+ * above that.
  */
 
-#define HEAP_LIMIT_VA            0xFF400000
+#define HEAP_LIMIT_VA            0xFF000000
 
 /** @brief Virtual base address of transient map. MUST be a multiple of 4M */
 #define TRANSMAP_WINDOW_KVA 0xFF800000

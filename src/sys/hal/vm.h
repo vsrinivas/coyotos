@@ -33,9 +33,10 @@
  *
  * *****************************************************************/
 
-#define KMAP_R 0x1u
-#define KMAP_W 0x2u
-#define KMAP_X 0x4u
+#define KMAP_R  0x1u
+#define KMAP_W  0x2u
+#define KMAP_X  0x4u
+#define KMAP_NC 0x8u		/* non-cacheable */
 
 /** @brief Ensure that a given kernel address is mappable.
  *

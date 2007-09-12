@@ -49,6 +49,7 @@
 #include "GDT.h"
 #include "TSS.h"
 #include "IRQ.h"
+#include "PIC.h"
 // #include "acpi.h"
 #include "cpu.h"
 #include "hwmap.h"
@@ -273,6 +274,9 @@ process_command_line()
 
   if (cmdline_find_option(cmdline, "dbgwait") != 0)
     process_dbgwait();
+
+  if (cmdline_find_option(cmdline, "lapic") != 0)
+    lapic_works = true;
 }
 
 /** @brief Initialize physical memory.
