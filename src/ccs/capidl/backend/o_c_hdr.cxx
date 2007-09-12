@@ -1879,14 +1879,12 @@ emit_server_op_out_marshall(GCPtr<Symbol> s, UniParams& args, INOstream& out)
   out << "_params->server_out._icw = "
       << "IPW0_SP|IPW0_MAKE_NR(sc_InvokeCap)|IPW0_MAKE_LDW("
       << args.nReg - 1
-      << ")\n";
+      << ");\n";
   if (args.caps.size()) {
-    out << "    |IPW0_SC|IPW0_MAKE_LSC("
+    out << "_params->server_out._icw |= IPW0_SC|IPW0_MAKE_LSC("
 	<< args.caps.size() - 1
-	<< ")\n";
+	<< ");\n";
   }
-  out << ";\n";
-  out << "\n";
 }
 
 static void
@@ -1993,7 +1991,8 @@ emit_cleanup_call(GCPtr<Symbol> s, ArgInfo& args, INOstream& out)
   if (args.out.indirectBytes == 0)
     return;
 
-  out << "_cleanup(\n";
+  out << "\n"
+      << "_cleanup(\n";
   {
     out.more();
 
@@ -2111,7 +2110,12 @@ emit_server_op_demarshall_proc(GCPtr<Symbol> s, ArgInfo& args, INOstream& out)
   out << "{\n";
   {
     out.more();
-    out << "\n";
+    out << "/* FIX: Need to sanity check input argument counts in ldw, lsc, SC.\n"
+	<< " * Can only do a partial check on sndLen, because there may be a variable\n"
+	<< " * component to that.\n"
+	<< " */\n"
+	<< "\n";
+
 
     /* Ironically, the string based parameters are easier to deal with
        than the register based parameters, because they can be passed
@@ -3130,24 +3134,52 @@ output_c_template(GCPtr<Symbol> globalScope, BackEndFn fn)
   out << "_IDL_GRAND_SERVER_UNION gsu;\n"
       << "\n"
       << "gsu.icw = 0;\n"
+      << "gsu.sndPtr = 0;\n"
+      << "gsu.sndLen = 0;\n"
+      << "gsu.pb.u.invCap = CR_RETURN;\n"
       << "\n"
       << "for(;;) {\n";
   out.more();
-  out << "gsu.icw &= (IPW0_NR_MASK|IPW0_LDW_MASK|IPW0_LSC_MASK\n"
+  out << "gsu.icw &= (IPW0_LDW_MASK|IPW0_LSC_MASK\n"
       << "    |IPW0_SG|IPW0_SP|IPW0_SC|IPW0_EX);\n"
-      << "gsu.icw |= IPW0_MAKE_NR(sc_InvokeCap)|IPW0_RP|IPW0_RC\n"
-      << "   |IPW0_MAKE_LRC(3)|IPW0_NB|IPW0_CO;\n"
+      << "gsu.icw |= IPW0_MAKE_NR(sc_InvokeCap)|IPW0_RP|IPW0_AC\n"
+      << "    |IPW0_MAKE_LRC(3)|IPW0_NB|IPW0_CO;\n"
       << "\n"
-      << "gsu.pb.u.invCap = 0; /* NULL cap */;\n"
-      << "gsu.pb.rcvCap[0] = CAPREG_RETURN;\n"
-      << "gsu.pb.rcvCap[1] = CAPREG_ARGCAP(1);\n"
-      << "gsu.pb.rcvCap[2] = CAPREG_ARGCAP(2);\n"
-      << "gsu.pb.rcvCap[3] = CAPREG_ARGCAP(3);\n"
+      << "gsu.pb.rcvCap[0] = CR_RETURN;\n"
+      << "gsu.pb.rcvCap[1] = CR_ARG0;\n"
+      << "gsu.pb.rcvCap[2] = CR_ARG1;\n"
+      << "gsu.pb.rcvCap[3] = CR_ARG2;\n"
       << "gsu.pb.rcvBound = (sizeof(gsu) - sizeof(gsu.pb));\n"
       << "gsu.pb.rcvPtr = ((char *)(&gsu)) + sizeof(gsu.pb);\n"
       << "\n"
       << "invoke_capability(&gsu.pb);\n"
       << "\n"
+      << "/* Re-establish defaults. Note we rely on the handler proc\n"
+      << " * to decide how MANY of these caps will be sent by setting ICW.SC\n"
+      << " * and ICW.lsc fields properly.\n"
+      << " */\n"
+      << "gsu.pb.sndCap[0] = CR_REPLY0;\n"
+      << "gsu.pb.sndCap[1] = CR_REPLY1;\n"
+      << "gsu.pb.sndCap[2] = CR_REPLY2;\n"
+      << "gsu.pb.sndCap[3] = CR_REPLY3;\n"
+      << "\n"
+      << "/* We rely on the (de)marshaling procedures to set sndLen to zero\n"
+      << " * if no string is to be sent. We cannot zero it preemptively here\n"
+      << " * because sndLen is an IN parameter telling how many bytes we got.\n"
+      << " * Set sndPtr to zero so that we will fault if this is mishandled.\n"
+      << " */\n"
+      << "gsu.pb.sndPtr = 0;\n"
+      << "\n"
+      << "if ((gsu.icw & IPW0_SC) == 0) {\n";
+  out.more();
+  out << "/* Protocol violation -- reply slot unpopulated. */\n"
+      << "gsu.icw = 0;\n"
+      << "gsu.pb.sndLen = 0;\n"
+      << "continue;\n";
+  out.less();
+  out << "}\n";
+
+  out << "\n"
       << "switch(choose_if(gsu.pb.epID, gsu.pb.u.pp)) {\n";
 
   server_template_symdump(globalScope, out, emit_active_if_switch_cases);
@@ -3161,6 +3193,7 @@ output_c_template(GCPtr<Symbol> globalScope, BackEndFn fn)
 	<< "  IPW0_MAKE_LDW((sizeof(gsu.except)/sizeof(uintptr_t))-1)\n"
 	<< "  |IPW0_EX|IPW0_SP;\n"
 	<< "gsu.except.exceptionCode = RC_coyotos_Cap_UnknownRequest;\n"
+	<< "gsu.pb.sndLen = 0;\n"
 	<< "break;\n";
     out.less();
     out << "}\n";
