@@ -1,5 +1,5 @@
 #
-# Copyright (C) 2007, The EROS Group, LLC.
+# Copyright (C) 2007, Jonathan S. Shapiro.
 #
 # This file is part of the Coyotos Operating System.
 #
@@ -19,8 +19,9 @@
 #
 
 default: package
-COYOTOS_SRC=..
+COYOTOS_SRC=../..
 
-DIRS=lib domain idl mki test
+DIRS=testConstructor
 
-include $(COYOTOS_SRC)/build/make/pkgrules.mk
+include $(COYOTOS_SRC)/build/make/makerules.mk
+

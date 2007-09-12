@@ -1,0 +1,21 @@
+module testConstructor {
+   import cons = coyotos.Constructor;
+   import rt = coyotos.RunTime;
+
+   def image = loadimage(PrimeBank, "testConstructor");
+   def proc = rt.make_running_process(PrimeBank, weaken(image.space), image.pc);
+
+   export capreg REG {
+      METACON = rt.REG.APP0 + 4,
+      BANK,
+      SCHED,
+      RUNTIME,
+      KERNLOG,
+      TMP
+   };
+
+   proc.capReg[REG.METACON] = cons.MetaConstructor;
+   proc.capReg[REG.BANK] = new Bank(PrimeBank);
+   proc.capReg[REG.KERNLOG] = KernLog();
+}
+
