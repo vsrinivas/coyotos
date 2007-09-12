@@ -73,7 +73,7 @@ cap_KernLog(InvParam_t *iParam)
 	dupStr[len] = 0;
 
 	/** @bug This is all moderately delicate */
-	printf("%s", dupStr);
+	printf("%s\r", dupStr);
       }
       else {
 	InvErrorMessage(iParam, RC_coyotos_Cap_NoAccess);

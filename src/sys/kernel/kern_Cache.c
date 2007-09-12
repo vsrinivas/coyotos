@@ -719,6 +719,7 @@ cache_clear_object(ObjectHeader *ob)
 
       /** @bug Do we need to keep any flags bits? Execution model bit? */
       memset(&p->state, 0, sizeof(p->state));
+      p->state.runState = PRS_FAULTED;
       break;
     }
   case ot_Endpoint:
