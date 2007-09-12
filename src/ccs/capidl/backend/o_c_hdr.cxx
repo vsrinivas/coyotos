@@ -534,7 +534,7 @@ emit_marshall_decl(GCPtr<Symbol> s, INOstream& out, ArgInfo& args)
   out << "typedef union {\n";
   out.more();
 
-  /* Emit the input argument structure. */
+  /* Emit the client input argument structure. */
   {
     out << "struct {\n";
     out.more();
@@ -606,7 +606,7 @@ emit_marshall_decl(GCPtr<Symbol> s, INOstream& out, ArgInfo& args)
 	  out << "caploc_t   _sndCap" <<  i << ";\n";
       }
     }
-    /* Reply caps */
+    /* Receive caps */
     for (size_t i = 0; i < MAX_CAP_REG; i++) 
       out << "caploc_t   _rcvCap" <<  i << ";\n";
 
@@ -633,7 +633,111 @@ emit_marshall_decl(GCPtr<Symbol> s, INOstream& out, ArgInfo& args)
     out.less();
     out << "} in;\n";
   }
-  /* Emit the output argument structure. */
+
+  /* Emit the server request input argument structure. Regrettably
+   * this is not quite the same as the client version, because the
+   * capability register locations change. */
+  {
+    out << "struct {\n";
+    out.more();
+
+    /* Parameter words */
+    out << "uintptr_t  _icw;   /* _pw0 */\n";
+    out << "uintptr_t  _opCode; /*_pw1 */\n";
+
+    size_t regArgWords = FIRST_IN_DATA_REG;
+    for (size_t i = 0; i < args.in.regs.size(); i++) {
+      GCPtr<Symbol> child = args.in.regs[i];
+      size_t align = child->alignof(*targetArch);
+      size_t db = child->directSize(*targetArch);
+      size_t dr = round_up(db, targetArch->wordBytes);
+      dr /= targetArch->wordBytes;
+
+      assert(dr > 0);
+
+#ifdef REGISTER_ALIGN_BY_HOLE
+      {
+	size_t curAlign = regArgWords * targetArch->wordBytes;
+	assert (align <= (2 * targetArch->wordBytes));
+
+	while (curAlign < align) {
+	  out << "uintptr_t  _pw" << regArgWords << ";\n";
+
+	  regArgWords++;
+	  curAlign = regArgWords * targetArch->wordBytes;
+	}
+      }
+#endif
+
+      if (dr == 1) {
+	output_c_type(child->type, out);
+	out << "  " << child->name;
+	output_c_type_trailer(child->type, out);
+	out << "; /* _pw" << regArgWords << " */\n";
+	
+	if (db < targetArch->wordBytes)
+	  out << "uintptr_t  :0; /* pad to word */\n";
+      }
+      else {
+	output_c_type(child->type, out);
+	out << "  " << child->name;
+	output_c_type_trailer(child->type, out);
+	out << "; /* _pw" << regArgWords 
+	    << ".._pw" << regArgWords + (dr-1) << " */\n";
+      }
+
+      regArgWords += dr;
+    }
+    for (; regArgWords < MAX_DATA_REG; regArgWords++)
+      out << "uintptr_t  _pw" << regArgWords << ";\n";
+
+
+    out << "caploc_t   _invCap;\n";
+
+    /* Send caps */
+    for (size_t i = 0; i < MAX_CAP_REG; i++) 
+      out << "caploc_t   _sndCap" <<  i << ";\n";
+
+    /* Receive caps */
+    out << "caploc_t   _replyCap; /* _sndCap0 */\n";
+    {
+      for (size_t i = 1; i < MAX_CAP_REG; i++) {
+	if (i <= args.in.caps.size()) {
+	  GCPtr<Symbol> child = args.in.caps[i-1];
+
+	  out << "caploc_t   " <<  child->name 
+	      << "; /* _rcvCap" << i << " */\n";
+	}
+	else
+	  out << "caploc_t   _rcvCap" <<  i << ";\n";
+      }
+    }
+
+    out << "uint32_t   _sndLen;\n";	// FIX: Should be 16 bits
+    out << "uint32_t   _rcvBound;\n";	// FIX: Should be 16 bits
+    out << "void      *_sndPtr;\n";
+    out << "void      *_rcvPtr;\n";
+    out << "uint64_t   _epID;\n";
+
+    if (args.in.strings.size()) {
+      for (size_t i = 0; i < args.in.strings.size(); i++) {
+	GCPtr<Symbol> child = args.in.strings[i];
+	output_c_type(child->type, out);
+	out << " ";
+	out << child->name;
+	output_c_type_trailer(child->type, out);
+	out << ";\n";
+      }
+    }
+
+    if (args.in.indirectBytes)
+      out << "char _indirect[" << args.in.indirectBytes << "];\n";
+
+    out.less();
+    out << "} server_in;\n";
+  }
+
+  /* Emit the client output argument structure. */
   if (s->cls != sc_oneway) {
     out << "struct {\n";
     out.more();
@@ -692,7 +796,7 @@ emit_marshall_decl(GCPtr<Symbol> s, INOstream& out, ArgInfo& args)
     /* Send caps */
     for (size_t i = 0; i < MAX_CAP_REG; i++) 
       out << "caploc_t   _sndCap" <<  i << ";\n";
-    /* Reply caps */
+    /* Receive caps */
     {
       for (size_t i = FIRST_CAP_REG; i < MAX_CAP_REG; i++) {
 	if (i < args.out.caps.size()) {
@@ -728,6 +832,103 @@ emit_marshall_decl(GCPtr<Symbol> s, INOstream& out, ArgInfo& args)
 
     out.less();
     out << "} out;\n";
+  }
+
+  /* Emit the server output argument structure. */
+  if (s->cls != sc_oneway) {
+    out << "struct {\n";
+    out.more();
+
+    out << "uintptr_t  _icw;   /* _pw0 */\n";
+
+    size_t regArgWords = FIRST_OUT_DATA_REG;
+
+    for (size_t i = 0; i < args.out.regs.size(); i++) {
+      GCPtr<Symbol> child = args.out.regs[i];
+      size_t align = child->alignof(*targetArch);
+      size_t db = child->directSize(*targetArch);
+      size_t dr = round_up(db, targetArch->wordBytes);
+      dr /= targetArch->wordBytes;
+
+      assert(dr > 0);
+
+#ifdef REGISTER_ALIGN_BY_HOLE
+      {
+	size_t curAlign = regArgWords * targetArch->wordBytes;
+	assert (align <= (2 * targetArch->wordBytes));
+
+	while (curAlign < align) {
+	  out << "uintptr_t  _pw" << regArgWords << ";\n";
+
+	  regArgWords++;
+	  curAlign = regArgWords * targetArch->wordBytes;
+	}
+      }
+#endif
+
+      if (dr == 1) {
+	output_c_type(child->type, out);
+	out << "  " << child->name;
+	output_c_type_trailer(child->type, out);
+	out << "; /* _pw" << regArgWords << " */\n";
+	
+	if (db < targetArch->wordBytes)
+	  out << "uintptr_t  :0; /* pad to word */\n";
+      }
+      else {
+	output_c_type(child->type, out);
+	out << "  " << child->name;
+	output_c_type_trailer(child->type, out);
+	out << "; /* _pw" << regArgWords 
+	    << ".._pw" << regArgWords + (dr-1) << " */\n";
+      }
+
+      regArgWords += dr;
+    }
+    for (; regArgWords < MAX_DATA_REG; regArgWords++)
+      out << "uintptr_t  _pw" << regArgWords << ";\n";
+
+    out << "uintptr_t  _pp;\n";
+
+    /* Send caps */
+    {
+      for (size_t i = FIRST_CAP_REG; i < MAX_CAP_REG; i++) {
+	if (i < args.out.caps.size()) {
+	  GCPtr<Symbol> child = args.out.caps[i];
+
+	  out << "caploc_t   " <<  child->name 
+	      << "; /* _sndCap" << i << " */\n";
+	}
+	else
+	  out << "caploc_t   _sndCap" <<  i << ";\n";
+      }
+    }
+    /* Receive caps */
+    for (size_t i = 0; i < MAX_CAP_REG; i++) 
+      out << "caploc_t   _rcvCap" <<  i << ";\n";
+
+    out << "uint32_t   _sndLen;\n";	// FIX: Should be 16 bits
+    out << "uint32_t   _rcvBound;\n";	// FIX: Should be 16 bits
+    out << "void      *_sndPtr;\n";
+    out << "void      *_rcvPtr;\n";
+    out << "uint64_t   _epID;\n";
+
+    if (args.out.strings.size()) {
+      for (size_t i = 0; i < args.out.strings.size(); i++) {
+	GCPtr<Symbol> child = args.out.strings[i];
+	output_c_type(child->type, out);
+	out << " ";
+	out << child->name;
+	output_c_type_trailer(child->type, out);
+	out << ";\n";
+      }
+    }
+
+    if (args.out.indirectBytes)
+      out << "char _indirect[" << args.out.indirectBytes << "];\n";
+
+    out.less();
+    out << "} server_out;\n";
   }
 
   /* Emit the common access structure */
@@ -1517,7 +1718,7 @@ emit_server_in_demarshall_arg(GCPtr<Symbol> s, INOstream& out)
     BigNum bound = compute_value(argBaseType->value);
     out << "__builtin_memcpy("
 	<< s->name
-	<< ", &_params.in."
+	<< ", &_params.server_in."
 	<< s->name
 	<< ", "
 	<< s->name
@@ -1533,15 +1734,15 @@ emit_server_in_demarshall_arg(GCPtr<Symbol> s, INOstream& out)
     out << "{\n";
     {
       out.more();
-      out << "_params->in." << s->name
+      out << "_params->server_in." << s->name
 	  << ".data = (typeof("
-	  << "_params->in." << s->name
-	  << ".data)) &_params->in._indirect[_inIndirNdx];\n";
-      out << "_params->in." << s->name
+	  << "_params->server_in." << s->name
+	  << ".data)) &_params->server_in._indirect[_inIndirNdx];\n";
+      out << "_params->server_in." << s->name
 	  << ".max = " << bound << ";\n";
       out << "size_t _nBytes = sizeof("
-	  << "_params->in." << s->name << ".data[0]) * "
-	  << "_params->in." << s->name << ".len;\n"
+	  << "_params->server_in." << s->name << ".data[0]) * "
+	  << "_params->server_in." << s->name << ".len;\n"
 	  << "_nBytes = IDL_ALIGN_TO(_nBytes, sizeof(uintptr_t));\n"
 	  << "_inIndirNdx += _nBytes;\n";
       out.less();
@@ -1612,19 +1813,19 @@ emit_server_out_marshall_result(GCPtr<Symbol> s, INOstream& out)
 {
   GCPtr<Symbol> argBaseType = s->type->ResolveType();
   if (argBaseType->IsSequenceType()) {
-    out << "_params->out." << s->name << " = " << s->name << ";\n";
+    out << "_params->server_out." << s->name << " = " << s->name << ";\n";
 
-    out << "_params->out." << s->name
+    out << "_params->server_out." << s->name
 	<< ".data = (typeof("
 	<< s->name
-	<< ".data)) &_params->out._indirect[_outIndirNdx];\n";
+	<< ".data)) &_params->server_out._indirect[_outIndirNdx];\n";
 
     out << "size_t _nBytes = sizeof("
 	<< s->name << ".data[0]) * "
 	<< s->name << ".len;\n";
 
     out << "__builtin_memcpy("
-	<< "&_params->out._indirect[_outIndirNdx], "
+	<< "&_params->server_out._indirect[_outIndirNdx], "
 	<< s->name
 	<< ".data, "
 	<< "_nBytes);\n";
@@ -1655,27 +1856,27 @@ emit_server_op_out_marshall(GCPtr<Symbol> s, UniParams& args, INOstream& out)
     emit_server_out_marshall_result(args.strings[i], out);
 
   if (args.strings.size() && args.indirectBytes) {
-    out << "_params->out._sndPtr = &_params->out."
+    out << "_params->server_out._sndPtr = &_params->server_out."
 	<< args.strings[0]->name << ";\n";
-    out << "_params->out._sndLen = offsetof(typeof(_params->out), _indirect) - "
+    out << "_params->server_out._sndLen = offsetof(typeof(_params->out), _indirect) - "
 	<< "offsetof(typeof(_params->out), "
 	<< args.strings[0]->name << ") + _outIndirNdx;\n";
   }
   else if (args.strings.size()) {
-    out << "_params->out._sndPtr = &_params->out."
+    out << "_params->server_out._sndPtr = &_params->server_out."
 	<< args.strings[0]->name << ";\n";
-    out << "_params->out._sndLen = sizeof(_params->out) - "
+    out << "_params->server_out._sndLen = sizeof(_params->out) - "
 	<< "offsetof(typeof(_params->out), "
 	<< args.strings[0]->name << ");\n";
   }
   else if (args.indirectBytes) {
-    out << "_params->out._sndPtr = &_params->out._indirect;\n";
-    out << "_params->out._sndLen = _outIndirNdx;\n";
+    out << "_params->server_out._sndPtr = &_params->server_out._indirect;\n";
+    out << "_params->server_out._sndLen = _outIndirNdx;\n";
   }
   else
-    out << "_params->out._sndLen = 0;\n";
+    out << "_params->server_out._sndLen = 0;\n";
 
-  out << "_params->out._icw = "
+  out << "_params->server_out._icw = "
       << "IPW0_SP|IPW0_MAKE_NR(sc_InvokeCap)|IPW0_MAKE_LDW("
       << args.nReg - 1
       << ")\n";
@@ -1719,14 +1920,14 @@ emit_server_op_handler_call(GCPtr<Symbol> s, ArgInfo& args, INOstream& out)
 	   they would otherwise not be passed by value, and the
 	   overwrite of an out parameter might clobber them. */
 	if (!baseType->IsFixSequenceType())
-	  out << "_params->in.";
+	  out << "_params->server_in.";
       }
       else {
 	/* For outbound sequence types, we establish a local temporary. We
 	   can't prep them in-place for fear of overwriting an IN
 	   parameter before it is copied. */
 	if (!baseType->IsSequenceType())
-	  out << "_params->out.";
+	  out << "_params->server_out.";
       }
 
       out << child->name << ",\n";
@@ -1742,7 +1943,7 @@ emit_server_op_handler_call(GCPtr<Symbol> s, ArgInfo& args, INOstream& out)
       if (wantPtr) out << '&';
 
       if (!baseType->IsSequenceType())
-	out << "_params->out.";
+	out << "_params->server_out.";
 
       out << "_retVal,\n";
     }
