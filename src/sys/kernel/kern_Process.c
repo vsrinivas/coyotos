@@ -257,10 +257,7 @@ proc_handle_process_fault()
   put_oparam64(&invParam, p->state.faultInfo);
   invParam.opw[0] = InvResult(&invParam, 2);
 
-  if (proc_do_upcall(&invParam)) 
-    /* This is here only until I debug through this path. */
-    bug("Do not yet know how to deliver faults to process keepers\n");
-  else
+  if (!proc_do_upcall(&invParam)) 
     /* Bad handler capability. Process ceases to execute instructions. */
     printf("Process oid=0x%016llx faults w/ no keeper (PC=0x%08p fc=%d, fi=0x%llx)\n",
 	   p->hdr.oid, 

@@ -72,7 +72,7 @@ typedef struct IDL_SERVER_Environment {
 static inline uint64_t 
 choose_if(uint64_t epID, uint32_t pp)
 {
-  if (epID != 0)
+  if (epID != 1)
     return IKT_coyotos_Cap;
   if (pp == testHandler_PP_MemoryHandler)
     return IKT_coyotos_MemoryHandler;
