@@ -1618,7 +1618,7 @@ emit_server_if_union(GCPtr<Symbol> s, INOstream& out)
     for(size_t i = 0; i < ifsym->children.size(); i++) {
       GCPtr<Symbol> child = ifsym->children[i];
 
-      if (child->cls != sc_operation)
+      if (child->cls != sc_operation && child->cls != sc_oneway)
 	continue;
 
       if (child->flags & SF_NO_OPCODE)
@@ -1651,7 +1651,7 @@ emit_server_if_dispatch_proc(GCPtr<Symbol> s, INOstream& out)
       for(size_t i = 0; i < ifsym->children.size(); i++) {
 	GCPtr<Symbol> child = ifsym->children[i];
 
-	if (child->cls != sc_operation)
+	if (child->cls != sc_operation && child->cls != sc_oneway)
 	  continue;
 
 	if (child->flags & SF_NO_OPCODE)
@@ -1836,8 +1836,13 @@ emit_server_out_marshall_result(GCPtr<Symbol> s, INOstream& out)
 static void
 emit_server_op_out_marshall(GCPtr<Symbol> s, UniParams& args, INOstream& out)
 {
-  if (s->cls == sc_oneway)
+  if (s->cls == sc_oneway) {
+    // server_out doesn't exist for oneways, so we use server_in.
+    out << "/* No reply expected, so clear _icw and sndLen */\n"
+	<< "_params->server_in._icw = 0;\n"
+	<< "_params->server_in._sndLen = 0;\n";
     return;
+  }
 
   if (args.indirectBytes) {
     out << "\n";
@@ -1893,8 +1898,7 @@ emit_server_op_handler_call(GCPtr<Symbol> s, ArgInfo& args, INOstream& out)
   std::string retType = (s->cls == sc_oneway) ? "void" : "uint64_t";
 
   if (s->cls == sc_oneway)
-    out << "uint64_t _result = 0;\n"
-	<< "(void) _handler(\n";
+    out	<< "(void) _handler(\n";
   else
     out << "uint64_t _result = _handler(\n";
 
@@ -2025,7 +2029,7 @@ emit_server_handler_decl(const std::string& nm,
     out << "IDL_SERVER_HANDLER_PREDECL ";
 
   std::string retType = (s->cls == sc_oneway) ? "void" : "uint64_t";
-  out << "uint64_t " << nm << "(\n";
+  out << retType << " " << nm << "(\n";
   out.more();
   for(size_t i = 0; i < s->children.size(); i++) {
     GCPtr<Symbol> child = s->children[i];
@@ -2136,19 +2140,20 @@ emit_server_op_demarshall_proc(GCPtr<Symbol> s, ArgInfo& args, INOstream& out)
 
     emit_server_op_handler_call(s, args, out);
 
-    out << "if (_result != RC_coyotos_Cap_OK) {\n";
-    {
-      out.more();
-      emit_cleanup_call(s, args, out);
-      out << "_params->except.icw = "
-	  << "IPW0_MAKE_LDW((sizeof(_params->except)/sizeof(uintptr_t))-1) "
-	  << "| IPW0_EX;\n"
-	  << "_params->except.exceptionCode = _result;\n"
-	  << "return;\n";
-      out.less();
+    if (s->cls != sc_oneway) {
+      out << "if (_result != RC_coyotos_Cap_OK) {\n";
+      {
+	out.more();
+	emit_cleanup_call(s, args, out);
+	out << "_params->except.icw = "
+	    << "IPW0_MAKE_LDW((sizeof(_params->except)/sizeof(uintptr_t))-1) "
+	    << "| IPW0_EX;\n"
+	    << "_params->except.exceptionCode = _result;\n"
+	    << "return;\n";
+	out.less();
+      }
+      out << "}\n";
     }
-    out << "}\n";
-
     emit_server_op_out_marshall(s, args.out, out);
 
     emit_cleanup_call(s, args, out);
