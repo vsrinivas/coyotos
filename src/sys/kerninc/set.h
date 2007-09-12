@@ -1,7 +1,7 @@
 #ifndef __KERNINC_SET_H__
 #define __KERNINC_SET_H__
 /*
- * Copyright (C) 2001, Jonathan S. Shapiro.
+ * Copyright (C) 2001, The EROS Group, LLC.
  *
  * This file is part of the Coyotos Operating System.
  *

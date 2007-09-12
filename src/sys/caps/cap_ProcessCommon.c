@@ -1,7 +1,7 @@
 /*
  * Copyright (C) 2007, The EROS Group, LLC
  *
- * This file is part of the EROS Operating System.
+ * This file is part of the Coyotos Operating System.
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -178,12 +178,8 @@ void cap_ProcessCommon(InvParam_t *iParam)
       capability *pSlot = 0;
       switch (slot) {
       case coyotos_Process_cslot_handler:
-	/* We may be asleep waiting for our handler to become available.
-	 * Unblock ourselves just in case, to give a chance at the new
-	 * handler.
-	 */
-	sq_Unsleep(p);
 	pSlot = &p->state.handler;
+	cap_handlerBeingOverwritten(pSlot);
 	break;
       case coyotos_Process_cslot_addrSpace:
 	rm_whack_process(p);

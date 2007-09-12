@@ -1,7 +1,7 @@
 #ifndef __I686_IO_H__
 #define __I686_IO_H__
 /*
- * Copyright (C) 2005, Jonathan S. Shapiro.
+ * Copyright (C) 2005, The EROS Group, LLC.
  *
  * This file is part of the Coyotos Operating System.
  *

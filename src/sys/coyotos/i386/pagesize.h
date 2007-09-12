@@ -2,7 +2,7 @@
 #define __I386_PAGESIZE_H__
 
 /*
- * Copyright (C) 2006, Jonathan S. Shapiro.
+ * Copyright (C) 2006, The EROS Group, LLC.
  *
  * This file is part of the Coyotos Operating System.
  *

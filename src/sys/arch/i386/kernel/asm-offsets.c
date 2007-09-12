@@ -1,7 +1,7 @@
 /*
  * Copyright (C) 2005, The EROS Group, LLC.
  *
- * This file is part of the EROS Operating System runtime library.
+ * This file is part of the Coyotos Operating System runtime library.
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public License

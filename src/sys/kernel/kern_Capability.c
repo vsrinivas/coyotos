@@ -1,7 +1,7 @@
 /*
- * Copyright (C) 2007, Jonathan S. Shapiro.
+ * Copyright (C) 2007, The EROS Group, LLC.
  *
- * This file is part of the EROS Operating System.
+ * This file is part of the Coyotos Operating System.
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -294,11 +294,11 @@ cap_weaken(capability *cap)
     return;
   case ct_GPT:
   case ct_CapPage:
-    cap->restr = CAP_RESTR_RO | CAP_RESTR_WK;
+    cap->restr |= CAP_RESTR_RO | CAP_RESTR_WK;
     return;
 
   case ct_Page:
-    cap->restr = CAP_RESTR_RO;
+    cap->restr |= CAP_RESTR_RO;
     return;
 
   default:
@@ -307,6 +307,18 @@ cap_weaken(capability *cap)
     cap_init(cap);
   return;
   }
+}
+
+void 
+cap_handlerBeingOverwritten(capability *cap)
+{
+  cap_prepare(cap);
+  if (cap->type != ct_Process)
+    return;
+
+  Process *p = (Process *)cap->u2.prepObj.target;
+  obhdr_wakeAll(&p->hdr);
+  sq_WakeAll(&p->rcvWaitQ, false);
 }
 
 void

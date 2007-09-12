@@ -1,7 +1,7 @@
 #ifndef LIBCOYIMAGE_CIPAGE_HXX
 #define LIBCOYIMAGE_CIPAGE_HXX
 /*
- * Copyright (C) 2007, Jonathan S. Shapiro.
+ * Copyright (C) 2007, The EROS Group, LLC.
  *
  * This file is part of the Coyotos Operating System.
  *

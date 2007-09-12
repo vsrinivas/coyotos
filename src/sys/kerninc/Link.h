@@ -1,7 +1,7 @@
 #ifndef __KERNINC_LINK_H__
 #define __KERNINC_LINK_H__
 /*
- * Copyright (C) 1998, 1999, 2005, Jonathan S. Shapiro.
+ * Copyright (C) 1998, 1999, 2005, The EROS Group, LLC.
  *
  * This file is part of the Coyotos Operating System.
  *

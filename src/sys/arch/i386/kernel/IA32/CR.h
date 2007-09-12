@@ -1,7 +1,7 @@
 #ifndef __IA32_CR_H__
 #define __IA32_CR_H__
 /*
- * Copyright (C) 2005, Jonathan S. Shapiro.
+ * Copyright (C) 2005, The EROS Group, LLC.
  *
  * This file is part of the Coyotos Operating System.
  *

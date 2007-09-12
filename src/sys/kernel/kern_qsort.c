@@ -32,7 +32,7 @@
  */
 
 /*
- * Copyright (C) 1998, 1999, Jonathan S. Shapiro.
+ * Copyright (C) 1998, 1999, The EROS Group, LLC.
  *
  * This file is part of the Coyotos Operating System.
  *
