@@ -36,21 +36,19 @@
 
 #include <string.h>
 
-#include "testHandler.h"
+#include "testAppInt.h"
 
 #include <idl/coyotos/KernLog.h>
 
 /* all of our handler procedures are static */
 #define IDL_SERVER_HANDLER_PREDECL static
 
-#include <idl/coyotos/MemoryHandler.server.h>
-#include <idl/coyotos/ProcessHandler.server.h>
+#include <idl/coyotos/AppNotice.h>
+#include <idl/test/testAppInt.server.h>
 
 typedef union {
-  _IDL_IFUNION_coyotos_MemoryHandler
-      coyotos_MemoryHandler;
-  _IDL_IFUNION_coyotos_ProcessHandler
-      coyotos_ProcessHandler;
+  _IDL_IFUNION_test_testAppInt
+      test_testAppInt;
   InvParameterBlock_t pb;
   InvExceptionParameterBlock_t except;
   uintptr_t icw;
@@ -69,18 +67,6 @@ typedef struct IDL_SERVER_Environment {
 /* You should supply a function that selects an interface
  * type based on the incoming endpoint ID and protected
  * payload */
-static inline uint64_t 
-choose_if(uint64_t epID, uint32_t pp)
-{
-  if (epID != 1)
-    return IKT_coyotos_Cap;
-  if (pp == testHandler_PP_MemoryHandler)
-    return IKT_coyotos_MemoryHandler;
-  if (pp == testHandler_PP_ProcessHandler)
-    return IKT_coyotos_ProcessHandler;
-
-  return IKT_coyotos_Cap;
-}
 
 static void
 log_message(const char *message)
@@ -93,7 +79,17 @@ log_message(const char *message)
     .max = 256, .len = len, .data = (char *)message
   };
   
-  (void) coyotos_KernLog_log(testHandler_APP_KERNLOG, str, &IDL_E);
+  (void) coyotos_KernLog_log(testAppInt_APP_KERNLOG, str, &IDL_E);
+}
+
+static uint64_t 
+choose_if(uint64_t epID, uint32_t pp)
+{
+  if (epID == -(uint64_t)1)
+    return IKT_coyotos_AppNotice;
+  if (epID == 1)
+    return IKT_test_testAppInt;
+  return 0;
 }
 
 static uint64_t
@@ -111,24 +107,23 @@ HANDLE_coyotos_Cap_getType(uint64_t *out, ISE *ise)
   return (RC_coyotos_Cap_OK);
 }
 
-static void
-HANDLE_coyotos_ProcessHandler_handle(caploc_t proc,
-				     coyotos_Process_FC faultCode,
-				     uint64_t faultInfo,
-				     struct IDL_SERVER_Environment *_env)
+static uint64_t
+HANDLE_test_testAppInt_testWhileClosedWait(ISE *ise)
 {
-  log_message("ProcessHandler\n");
+  log_message("testWhileClosedWait()");
+  coyotos_AppNotice_postNotice(testAppInt_APP_APPNOTICE, 0x2, &IDL_E);
+  log_message("testWhileClosedWait() appNotice posted");
+  return (RC_coyotos_Cap_OK);
 }
 
 static void
-HANDLE_coyotos_MemoryHandler_handle(caploc_t proc,
-				    coyotos_Process_FC faultCode,
-				    uint64_t faultInfo,
-				    struct IDL_SERVER_Environment *_env)
+HANDLE_test_testAppInt_testWhileOpenWait(ISE *ise)
 {
-  log_message("MemoryHandler\n");  
+  log_message("testWhileOpenWait()");
+  coyotos_AppNotice_postNotice(testAppInt_APP_APPNOTICE, 0x4, &IDL_E);
+  log_message("testWhileOpenWait() appNotice posted");
 }
-
+  
 /* The IDL_SERVER_Environment structure type is something
  * that you should define to hold any "extra" information
  * you need to carry around in your handlers. CapIDL code
@@ -148,11 +143,6 @@ ProcessRequests(struct IDL_SERVER_Environment *_env)
   gsu.pb.sndLen = 0;
   
   for(;;) {
-    /* we never send a reply, since we want the processes which fault to
-       stop
-    */
-    gsu.icw = 0;
-
     gsu.icw &= (IPW0_LDW_MASK|IPW0_LSC_MASK
         |IPW0_SG|IPW0_SP|IPW0_SC|IPW0_EX);
     gsu.icw |= IPW0_MAKE_NR(sc_InvokeCap)|IPW0_RP|IPW0_AC
@@ -167,7 +157,7 @@ ProcessRequests(struct IDL_SERVER_Environment *_env)
     gsu.pb.rcvPtr = ((char *)(&gsu)) + sizeof(gsu.pb);
     
     invoke_capability(&gsu.pb);
-
+    
     /* Re-establish defaults. Note we rely on the handler proc
      * to decide how MANY of these caps will be sent by setting ICW.SC
      * and ICW.lsc fields properly.
@@ -190,16 +180,13 @@ ProcessRequests(struct IDL_SERVER_Environment *_env)
       gsu.pb.sndLen = 0;
       continue;
     }
-    
+
     _env->pp = gsu.pb.u.pp;
     _env->epID = gsu.pb.epID;
-
+    
     switch(choose_if(gsu.pb.epID, gsu.pb.u.pp)) {
-    case IKT_coyotos_MemoryHandler:
-      _IDL_IFDISPATCH_coyotos_MemoryHandler(&gsu.coyotos_MemoryHandler, _env);
-      break;
-    case IKT_coyotos_ProcessHandler:
-      _IDL_IFDISPATCH_coyotos_ProcessHandler(&gsu.coyotos_ProcessHandler, _env);
+    case IKT_test_testAppInt:
+      _IDL_IFDISPATCH_test_testAppInt(&gsu.test_testAppInt, _env);
       break;
     default:
       {
@@ -218,6 +205,10 @@ int
 main(int argc, char *argv[])
 {
   ISE env;
+
+  log_message("testAppInt started;  posting notice");
+  coyotos_AppNotice_postNotice(testAppInt_APP_APPNOTICE, 0x1, &IDL_E);
+
   ProcessRequests(&env);
   return 0;
 }

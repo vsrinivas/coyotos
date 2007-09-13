@@ -1,0 +1,43 @@
+/*
+ * Copyright (C) 2007, The EROS Group, LLC
+ *
+ * This file is part of the Coyotos Operating System.
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 2,
+ * or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+ */
+
+module testAppInt {
+   import rt = coyotos.RunTime;
+   import util = coyotos.Util;
+
+   def testAppInt = util.make_ironman_process(PrimeBank, "testAppInt");
+   def testProg = util.make_ironman_process(PrimeBank, "testProg");
+
+   export capreg APP {
+      KERNLOG = rt.REG.APP0 + 4,
+      OTHER,
+      APPNOTICE
+   };
+
+   testAppInt.capReg[APP.KERNLOG] = KernLog();
+   testAppInt.capReg[APP.OTHER] = enter(testProg.capReg[rt.REG.INITEPT], 0);
+   testAppInt.capReg[APP.APPNOTICE] = AppInt(testProg.capReg[rt.REG.INITEPT],
+					   0xffffffff);
+
+   testProg.capReg[APP.KERNLOG] = KernLog();
+   testProg.capReg[APP.OTHER] = enter(testAppInt.capReg[rt.REG.INITEPT], 0);
+   testProg.capReg[APP.APPNOTICE] = AppInt(testAppInt.capReg[rt.REG.INITEPT],
+					   0xffffffff);
+}

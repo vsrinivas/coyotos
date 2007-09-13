@@ -50,14 +50,14 @@ module coyotos.SpaceBank {
     * be used by spacebank.c.
     */
    export capreg APP {
-     TMP1 = rt.REG.APP0,
-     TMP2,
-     TMP3,
-     TMPPAGE,
-     ADDRSPACE,
+     ADDRSPACE = rt.REG.APP0,
      RANGE,	     /* Range key */
      KERNLOG,	    /* log key for debugging output */
-     INITGPT        /* initial GPT for bootstrapping */
+     INITGPT,        /* initial GPT for bootstrapping */
+     TMP1,
+     TMP2,
+     TMP3,
+     TMPPAGE
    };
 
    /* Set up spacebank's application registers */

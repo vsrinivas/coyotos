@@ -34,6 +34,7 @@
 #include <kerninc/pstring.h>
 #include <kerninc/InvParam.h>
 #include <kerninc/ReadyQueue.h>
+#include <kerninc/string.h>
 #include <kerninc/util.h>
 #include <hal/transmap.h>
 #include <hal/irq.h>
@@ -729,9 +730,13 @@ proc_invoke_cap(void)
    * they will have been initialized below.
    *
    * Until otherwise proven, there is no invokee.
+   *
+   * At some point, we could just zero the "cap" fields.
    */
-  InvParam_t invParam = { p, 0 };
-
+  InvParam_t invParam;
+  INIT_TO_ZERO(&invParam);
+  invParam.invoker = p;
+  
   /*******************************************************************
    *
    *                 PHASE 1: Send

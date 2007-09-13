@@ -29,6 +29,9 @@ typedef uint64_t  coyaddr_t;
 typedef uint32_t  guard_t;
 typedef coyaddr_t archaddr_t;
 
+/* defines the size of a capability in a CapPage */
+#define COYOTOS_CAPABILITY_SIZE 16
+
 static inline uint8_t guard_l2g(guard_t g)
 {
   return (g & 0xff);
@@ -110,6 +113,8 @@ typedef stringitem64_t stringitem_t;
 #error "Invalid value for COYOTOS_HW_ADDRESS_BITS"
 #endif
 
+#define ADDR_CAPLOC(a) \
+  ((caploc_t) { .fld.ty = CAPLOC_TY_MEM, .fld.loc = ((uintptr_t)(a) >> 1) })
 #define REG_CAPLOC(t) ((caploc_t) { .fld.ty = CAPLOC_TY_REG, .fld.loc = (t) })
 #define REG_CAPREG(t) ((capreg_t) { .fld.ty = CAPLOC_TY_REG, .fld.loc = (t) })
 

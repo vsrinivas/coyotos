@@ -19,9 +19,26 @@
 #
 
 default: package
-COYOTOS_SRC=../..
+COYOTOS_SRC=../../..
+CROSS_BUILD=yes
 
-DIRS=testConstructor testHandler testAppInt
+CFLAGS+=-g -O
+
+INC=-I. -I$(COYOTOS_SRC)/../usr/include -I$(BUILDDIR)
+SOURCES=$(wildcard *.c)
+OBJECTS=$(patsubst %.c,$(BUILDDIR)/%.o,$(wildcard *.c))
+TARGETS=$(BUILDDIR)/testMalloc
 
 include $(COYOTOS_SRC)/build/make/makerules.mk
+
+install all: $(TARGETS) $(BUILDDIR)/mkimage.out
+
+$(BUILDDIR)/testMalloc: $(OBJECTS)
+	$(GCC) -small-space $(GPLUSFLAGS) $(OBJECTS) $(LIBS) $(STDLIBDIRS) -o $@
+
+# for test images
+$(BUILDDIR)/mkimage.out: $(TARGETS) testMalloc.mki
+	$(MKIMAGE) -o $@ -t $(COYOTOS_TARGET) -I. -L$(BUILDDIR) testMalloc
+
+-include $(BUILDDIR)/.*.m
 

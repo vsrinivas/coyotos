@@ -3141,7 +3141,6 @@ output_c_template(GCPtr<Symbol> globalScope, BackEndFn fn)
       << "gsu.icw = 0;\n"
       << "gsu.pb.sndPtr = 0;\n"
       << "gsu.pb.sndLen = 0;\n"
-      << "gsu.pb.u.invCap = CR_RETURN;\n"
       << "\n"
       << "for(;;) {\n";
   out.more();
@@ -3150,6 +3149,7 @@ output_c_template(GCPtr<Symbol> globalScope, BackEndFn fn)
       << "gsu.icw |= IPW0_MAKE_NR(sc_InvokeCap)|IPW0_RP|IPW0_AC\n"
       << "    |IPW0_MAKE_LRC(3)|IPW0_NB|IPW0_CO;\n"
       << "\n"
+      << "gsu.pb.u.invCap = CR_RETURN;\n"
       << "gsu.pb.rcvCap[0] = CR_RETURN;\n"
       << "gsu.pb.rcvCap[1] = CR_ARG0;\n"
       << "gsu.pb.rcvCap[2] = CR_ARG1;\n"

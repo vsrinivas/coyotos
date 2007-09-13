@@ -82,6 +82,16 @@ module coyotos.Util {
   }
 
   /*
+   * Make a small process;  it is assumed the normal initialization will
+   * be done.
+   */
+  export def make_small_process(bank, file) {
+    def image = loadimage(bank, file);
+
+    return make_running_process(bank, weaken(image.space), image.pc);
+  }
+
+  /*
    * Make an iron-man process;  one with a pre-allocated stack, and where
    * no runtime initialization will be made.
    */
