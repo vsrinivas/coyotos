@@ -31,6 +31,7 @@
 #include <coyotos/capidl.h>
 #include <coyotos/syscall.h>
 #include <coyotos/runtime.h>
+#include <coyotos/reply_Constructor.h>
 
 #include <idl/coyotos/AddressSpace.h>
 #include <idl/coyotos/Discrim.h>
@@ -59,6 +60,7 @@
 #define CR_BUILD_TOOLS		coyotos_Constructor_APP_BUILD_TOOLS
 #define CR_BUILD_PROTOSPACE 	coyotos_Constructor_APP_BUILD_PROTOSPACE
 #define CR_DISCRIM		coyotos_Constructor_APP_DISCRIM
+#define CR_SB_VERIFIER		coyotos_Constructor_APP_SB_VERIFIER
 #define CR_TMP			coyotos_Constructor_APP_TMP
 
 typedef union {
@@ -74,7 +76,7 @@ typedef union {
 } _IDL_GRAND_SERVER_UNION;
 
 bool isSealed = false;
-bool isConfined = false;
+bool isConfined = true;
 
 typedef struct IDL_SERVER_Environment {
   bool isBuilder;
@@ -95,23 +97,32 @@ IDL_Environment * const IDL_E = &_IDL_E;
 static bool 
 cap_is_confined(caploc_t cap)
 {
-  bool result;
-  bool isMe;
-  coyotos_Cap_payload_t pp;
-  unsigned long long epID;
+  bool result = false;
+  bool isMe = false;
+  coyotos_Cap_payload_t pp = 0;
+  unsigned long long epID = 0;
 
+  // is it inherently discreet?
   if (!coyotos_Discrim_isDiscreet(CR_DISCRIM, cap, &result, IDL_E))
     return false;
 
   if (result)
     return true;
 
-  // see if it is a Constructor
+  // is it the SpaceBank verifier?
+  if (!coyotos_Discrim_compare(CR_DISCRIM, cap, CR_SB_VERIFIER, &result,
+			       IDL_E))
+    return false;
+
+  if (result)
+    return true;
+
+  // Is it a Constructor?
   if (!coyotos_Process_identifyEntry(CR_SELF, cap, &pp, &epID,
 				     &isMe, &result, IDL_E))
     return false;
 
-  // if not, we're not confined.
+  // if none of the above, we're not confined.
   if (!result)
     return false;
 
@@ -119,7 +130,7 @@ cap_is_confined(caploc_t cap)
   if (pp == coyotos_Constructor_PP_Verifier)
     return true;
 
-  // but Builders can (
+  // but Builders can
   if (pp != coyotos_Constructor_PP_Constructor)
     return false;
 
@@ -177,7 +188,7 @@ HANDLE_coyotos_Constructor_create(caploc_t bank, caploc_t sched,
 {
   bool success = false;
 
-  if (!coyotos_SpaceBank_verifyBank(CR_SPACEBANK, bank, &success, 
+  if (!coyotos_SpaceBank_verifyBank(CR_SB_VERIFIER, bank, &success, 
 				   IDL_E) ||
       !success) {
     return (RC_coyotos_Cap_RequestError);
@@ -396,6 +407,110 @@ choose_if(uint64_t epID, uint32_t pp)
   }
 }
 
+bool
+initialize(void)
+{
+  /* pull out the tools we need */
+  if (!coyotos_AddressSpace_getSlot(CR_TOOLS, TOOL_DISCRIM, CR_DISCRIM, IDL_E))
+    goto fail;
+
+  if (!coyotos_AddressSpace_getSlot(CR_TOOLS, 
+				    TOOL_SPACEBANK_VERIFY,
+				    CR_SB_VERIFIER,
+				    IDL_E))
+    goto fail;
+
+  coyotos_Discrim_capClass class;
+
+  /* Check to see if we're already sealed; if the BRAND is set up, we are */
+  if (!coyotos_Discrim_classify(CR_DISCRIM, CR_YIELD_BRAND, &class, IDL_E))
+    goto fail;
+
+  if (class != coyotos_Discrim_capClass_clNull) {
+    isSealed = 1;
+
+    /* check to see if we are confined */
+    if (!cap_is_confined(CR_YIELD_PROTOSPACE) ||
+	!cap_is_confined(CR_YIELD_ADDRSPACE) ||
+	!cap_is_confined(CR_YIELD_HANDLER))
+      isConfined = false;
+
+    size_t idx = 0;
+    while (coyotos_AddressSpace_getSlot(CR_YIELD_TOOLS, idx, CR_TMP, IDL_E)) {
+      if (!cap_is_confined(CR_TMP))
+	isConfined = false;
+      idx++;
+    }
+
+    return true;  /* all set up; no need to send an entry cap */
+  }
+
+  /* We were Constructed from MetaConstructor;  set up as a Builder */
+
+  /* allocate a capPage and a Page, for ProtoSpace */
+  if (!coyotos_SpaceBank_alloc(CR_SPACEBANK,
+			       coyotos_Range_obType_otPage,
+			       coyotos_Range_obType_otCapPage,
+			       coyotos_Range_obType_otInvalid,
+			       CR_BUILD_PROTOSPACE,
+			       CR_BUILD_TOOLS,
+			       CR_NULL,
+			       IDL_E) ||
+      /* Pull out ProtoSpace, make a writable copy in CR_BUILD_PROTOSPACE,
+       * and a read-only cap to the copy in CR_YIELD_PROTOSPACE
+       */
+      !coyotos_AddressSpace_getSlot(CR_TOOLS, 
+				    TOOL_PROTOSPACE, 
+				    CR_YIELD_PROTOSPACE, 
+				    IDL_E) ||
+      !coyotos_AddressSpace_copyFrom(CR_BUILD_PROTOSPACE, 
+				     CR_YIELD_PROTOSPACE,
+				     CR_NULL,
+				     IDL_E) ||
+      !coyotos_Memory_reduce(CR_BUILD_PROTOSPACE, 
+			     coyotos_Memory_restrictions_readOnly,
+			     CR_YIELD_PROTOSPACE,
+			     IDL_E) ||
+      /* Make a writable copy of TOOLs in CR_BUILD_TOOLS, and a read-only
+       * version in CR_YIELD_TOOLS
+       */
+      !coyotos_AddressSpace_copyFrom(CR_BUILD_TOOLS,
+				     CR_TOOLS, 
+				     CR_NULL,
+				     IDL_E) ||
+      !coyotos_Memory_reduce(CR_BUILD_TOOLS, 
+			     coyotos_Memory_restrictions_readOnly,
+			     CR_YIELD_TOOLS,
+			     IDL_E) ||
+      /* Set up our brand, and allocate a Process cap as a Verifier for it */
+      !coyotos_Endpoint_makeEntryCap(CR_INITEPT, 
+				     coyotos_Constructor_PP_BRAND, 
+				     CR_YIELD_BRAND, 
+				     IDL_E) ||
+      !coyotos_SpaceBank_allocProcess(CR_SPACEBANK,
+				      CR_YIELD_BRAND,
+				      CR_VERIFIER, IDL_E) ||
+      /* Set up our Builder entry point */
+      !coyotos_Endpoint_makeEntryCap(CR_INITEPT, 
+				     coyotos_Constructor_PP_Builder, 
+				     CR_REPLY0, 
+				     IDL_E)) 
+    goto fail;
+
+
+  reply_coyotos_Constructor_create(CR_RETURN, CR_REPLY0);
+
+  return true;
+
+ fail:
+	
+  (void) coyotos_SpaceBank_destroyBankAndReturn(CR_SPACEBANK, 
+						CR_RETURN,
+						IDL_E->errCode, 
+						IDL_E);
+  return false;
+}
+
 /* The IDL_SERVER_Environment structure type is something
  * that you should define to hold any "extra" information
  * you need to carry around in your handlers. CapIDL code
@@ -410,71 +525,10 @@ ProcessRequests(struct IDL_SERVER_Environment *_env)
 {
   _IDL_GRAND_SERVER_UNION gsu;
 
-  if (!coyotos_AddressSpace_getSlot(CR_TOOLS, TOOL_DISCRIM, CR_DISCRIM, IDL_E))
-    goto fail;
-
-  coyotos_Discrim_capClass class;
-
-  if (!coyotos_Discrim_classify(CR_DISCRIM, CR_YIELD_BRAND, &class, IDL_E))
-    goto fail;
-
   /* no send phase for initial invocation */
   gsu.icw = 0;
 
   _env->haveReturn = 0;
-
-  /* check to see if we were pre-sealed */
-  if (class != coyotos_Discrim_capClass_clNull) {
-    isSealed = 1;
-
-    /* no message to send;  we were pre-sealed */
-    _env->haveReturn = 0;
-  } else {
-
-    /* allocate a capPage and a Page, for ProtoSpace */
-    if (!coyotos_SpaceBank_alloc(CR_SPACEBANK,
-				 coyotos_Range_obType_otPage,
-				 coyotos_Range_obType_otCapPage,
-				 coyotos_Range_obType_otInvalid,
-				 CR_BUILD_PROTOSPACE,
-				 CR_BUILD_TOOLS,
-				 CR_NULL,
-				 IDL_E) ||
-	!coyotos_AddressSpace_getSlot(CR_TOOLS, 
-				      TOOL_PROTOSPACE, 
-				      CR_YIELD_PROTOSPACE, 
-				      IDL_E) ||
-	!coyotos_AddressSpace_copyFrom(CR_BUILD_PROTOSPACE, 
-				       CR_YIELD_PROTOSPACE,
-				       CR_NULL,
-				       IDL_E) ||
-	!coyotos_Memory_reduce(CR_BUILD_PROTOSPACE, 
-			       coyotos_Memory_restrictions_readOnly,
-			       CR_YIELD_PROTOSPACE,
-			       IDL_E) ||
-	!coyotos_AddressSpace_copyFrom(CR_BUILD_TOOLS,
-				       CR_TOOLS, 
-				       CR_NULL,
-				       IDL_E) ||
-	!coyotos_Memory_reduce(CR_BUILD_TOOLS, 
-			       coyotos_Memory_restrictions_readOnly,
-			       CR_YIELD_TOOLS,
-			       IDL_E) ||
-	!coyotos_Endpoint_makeEntryCap(CR_INITEPT, 
-				       coyotos_Constructor_PP_BRAND, 
-				       CR_YIELD_BRAND, 
-				       IDL_E) ||
-	!coyotos_Endpoint_makeEntryCap(CR_INITEPT, 
-				       coyotos_Constructor_PP_Builder, 
-				       CR_REPLY0, 
-				       IDL_E)) 
-      goto fail;
-
-    /* send the Builder cap as the reply */
-    gsu.icw = IPW0_SP|IPW0_SC|IPW0_MAKE_LSC(0)|IPW0_MAKE_LDW(0);
-    gsu.pb.sndCap[0] = CR_REPLY0;
-    _env->haveReturn = 1;
-  }
 
   /* set up unchanging recieve state */
   gsu.pb.rcvCap[0] = CR_RETURN;
@@ -533,18 +587,14 @@ ProcessRequests(struct IDL_SERVER_Environment *_env)
       }
     }
   }
- fail:
-	
-  (void) coyotos_SpaceBank_destroyBankAndReturn(CR_SPACEBANK, 
-						CR_RETURN,
-						IDL_E->errCode, 
-						IDL_E);
-  return;
 }
 
 int
 main(int argc, char *argv[])
 {
+  if (!initialize())
+    return (0);
+
   ProcessRequests(&constructor_ISE);
 
   return 0;

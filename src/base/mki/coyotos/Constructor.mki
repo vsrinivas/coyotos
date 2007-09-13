@@ -72,18 +72,20 @@ module coyotos.Constructor {
     NEW_PROC = rt.REG.APP0,
     NEW_ENDPT,
     NEW_RENDPT,
-    VERIFIER,
+    UNUSED,
 
     YIELD_BRAND,
     YIELD_TOOLS,
     YIELD_PROTOSPACE,
     YIELD_ADDRSPACE,
     YIELD_HANDLER,
+    VERIFIER,
 
     BUILD_TOOLS,	/* writable Tools capPage cap, NULL when sealed */
     BUILD_PROTOSPACE,   /* writable ProtoSpace Page cap, NULL when sealed */
 
     DISCRIM,
+    SB_VERIFIER,
 
     TMP
   };
@@ -128,7 +130,7 @@ module coyotos.Constructor {
   primordial_tools[rt.TOOL.PROTOSPACE] = protospace;
   primordial_tools[rt.TOOL.SPACEBANK_VERIFY] = sb.Verifier;
   primordial_tools[rt.TOOL.CONSTRUCTOR_VERIFY] = Verifier;
-  primordial_tools[rt.TOOL.AUDIT_LOG] = KernLog();
+  primordial_tools[rt.TOOL.AUDIT_LOG] = NullCap();
   
   /*
    * Internal function which sets up *proc* (a running process with the
@@ -162,7 +164,16 @@ module coyotos.Constructor {
     proc.capReg[APP.YIELD_ADDRSPACE] = as;
     proc.capReg[APP.YIELD_HANDLER] = handler;
     proc.capReg[APP.YIELD_BRAND] = enter(initEpt, PP.BRAND);
-    
+
+    /* set up the verifier;  for ProtoSpace, it's just self. */    
+    if (proc.capReg[APP.YIELD_BRAND] == proc.brand) {
+      proc.capReg[APP.VERIFIER] = proc;
+    } else {
+      def verifier = new Process(bank);
+      verifier.brand = proc.capReg[APP.YIELD_BRAND];
+      proc.capReg[APP.VERIFIER] = verifier;
+    }
+
     /* Return the Constructor facet */
     return enter(initEpt, PP.Constructor);
   }
@@ -207,13 +218,10 @@ module coyotos.Constructor {
   
   /* Now we can set up the metaconstructor;  It's just a constructor whose
    * yield runs the constructor program.
+   *
+   * Because of the way we set up constructor_brand, it looks like a child
+   * of itself.
    */
   export def MetaConstructor = 
     setup(PrimeBank, metacon_proc, cons_space, cons_pc, NullCap());
-  
-  /* So that metaconstructor is identified as a constructor, we hand-overwrite
-   * its brand.
-   */
-  metacon_proc.brand = constructor_brand;
-  metacon_proc.capReg[APP.YIELD_BRAND] = constructor_brand;
 }

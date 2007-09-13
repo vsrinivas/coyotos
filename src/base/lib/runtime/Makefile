@@ -41,6 +41,8 @@ COYOTOS_OBJECTS=$(patsubst %.c,$(BUILDDIR)/%.o,$(wildcard coyotos_*.c))
 COYOTOS_OBJECTS+=$(patsubst %.S,$(BUILDDIR)/%.o,$(wildcard coyotos_*.S))
 OBJECTS=$(C_OBJECTS)
 
+HEADERS=$(RUNTIME_H) $(wildcard coyotos/*.h)
+
 GENRUNTIME=genruntime.sh
 PKG_MKIDIR=$(COYOTOS_SRC)/$(PACKAGE)/mki
 RUNTIME_MKI=$(PKG_MKIDIR)/coyotos/RunTime.mki
@@ -68,7 +70,7 @@ install: all
 	$(INSTALL) -d $(COYOTOS_ROOT)/usr/lib
 	$(INSTALL) -m 0644 $(TARGETS) $(COYOTOS_ROOT)/usr/lib
 	$(INSTALL) -d $(COYOTOS_ROOT)/usr/include/coyotos
-	$(INSTALL) -m 0644 $(RUNTIME_H) $(COYOTOS_ROOT)/usr/include/coyotos
+	$(INSTALL) -m 0644 $(HEADERS) $(COYOTOS_ROOT)/usr/include/coyotos
 
 $(RUNTIME_H): $(BUILDDIR)/coyotos.RunTime.h $(GENRUNTIME)
 	mkdir -p $(BUILDDIR)/coyotos
