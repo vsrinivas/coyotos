@@ -184,6 +184,9 @@ Endpoint *
 cap_prepare_for_invocation(InvParam_t *iParam, capability *cap, 
 			   bool willingToBlock, bool selfOK)
 {
+  if (cap == 0)
+    return NULL;
+
   HoldInfo hi;
   ObjectHeader *hdr = cap_prepAndLock(cap, &hi);
 
