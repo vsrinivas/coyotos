@@ -356,6 +356,17 @@ pf_doprint_star(InterpState& is,
 }
 
 GCPtr<Value>
+pf_fatal(PrimFnValue& pfv,
+        InterpState& is,
+        CVector<GCPtr<Value> >& args)
+{
+  GCPtr<StringValue> str = needStringArg(is, pfv.nm, args, 0);
+
+  is.errStream << is.curAST->loc << " fatal: " << str->s << '\n';
+  THROW(excpt::BadValue, "Bad interpreter result");
+}
+
+GCPtr<Value>
 pf_add(PrimFnValue& pfv,
        InterpState& is,
        CVector<GCPtr<Value> >& args)
@@ -624,6 +635,22 @@ pf_cmpe(PrimFnValue& pfv,
       return new IntValue (a->s.compare(b->s) == 0);
     case '!':
       return new IntValue (a->s.compare(b->s) != 0);
+    default:
+      THROW(excpt::BadValue, "Bad interpreter result");
+    }
+  } 
+  else if (vl->kind == Value::vk_cap && vr->kind == Value::vk_cap &&
+	(pfv.nm[0] == '=' || pfv.nm[0] == '!')) {
+    /* capabilities can only be compared for equality */
+    GCPtr<CapValue> a = vl.upcast<CapValue>();
+    GCPtr<CapValue> b = vr.upcast<CapValue>();
+
+    bool equal = (memcmp(&a->cap, &b->cap, sizeof (a->cap)) == 0);
+    switch(pfv.nm[0]) {
+    case '=':
+      return new IntValue (equal);
+    case '!':
+      return new IntValue (!equal);
     default:
       THROW(excpt::BadValue, "Bad interpreter result");
     }
@@ -1586,6 +1613,8 @@ getBuiltinEnv(GCPtr<CoyImage> ci)
 
     // UTILITY FUNCTIONS
 
+    builtins->addConstant("fatal", 
+			 new PrimFnValue("fatal", 1, 0, pf_fatal));
 
     builtins->addConstant("doprint", 
 			 new PrimFnValue("doprint", 1, 0, pf_doprint));
