@@ -101,6 +101,7 @@ cap_isEntryCap(const capability& cap)
 {
   switch(cap.type) {
   case ct_Entry:
+  case ct_AppNotice:
     return true;
   default:
     return false;

@@ -646,6 +646,7 @@ CoyImage::ValidateCap(const capability &cap,
     }
     if (cap.type != ct_Endpoint && 
 	cap.type != ct_Entry && 
+	cap.type != ct_AppNotice && 
 	cap.u1.protPayload != 0) {
       THROW(excpt::IntegrityFail,
 	    format(

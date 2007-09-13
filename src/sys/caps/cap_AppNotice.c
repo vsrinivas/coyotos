@@ -45,12 +45,12 @@ void cap_AppNotice(InvParam_t *iParam)
 
   case OC_coyotos_AppNotice_postNotice:
     {
-      INV_REQUIRE_ARGS(iParam, 1);
+      uint32_t notices = get_iparam32(iParam);
 
-      sched_commit_point();
+      INV_REQUIRE_ARGS(iParam, 0);
+
       iParam->invokee = 0;	/* method is oneway */
 
-      uint32_t notices = get_iparam32(iParam);
       notices &= iParam->iCap.cap->u1.protPayload;
 
       Endpoint *ep = (Endpoint *) iParam->iCap.cap->u2.prepObj.target;
@@ -61,11 +61,16 @@ void cap_AppNotice(InvParam_t *iParam)
       assert ((pCap->type == ct_Null) || (pCap->type == ct_Process));
   
       /* Endpoint may contain Null recipient cap if target process was
-	 destroyed. If we are willing to block, wait for fixup. */
-      if (pCap->type == ct_Null)
+	 destroyed. Drop this in that case. */
+      if (pCap->type == ct_Null) {
+      	sched_commit_point();
 	return;
+      }
 
       Process *p = (Process *)pCap->u2.prepObj.target;
+
+      obhdr_dirty(&p->hdr);
+      sched_commit_point();
 
       p->state.notices |= notices;
 
