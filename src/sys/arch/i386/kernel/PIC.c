@@ -38,10 +38,13 @@
 #include "IRQ.h"
 #include "PIC.h"
 
-bool lapic_works = false;
+bool use_apic = false;
 bool lapic_requires_8259_disable = false;
+
 kpa_t lapic_pa = 0;		/* if present, certainly won't be here */
 volatile uint32_t *lapic_va = 0;
+kpa_t ioapic_pa = 0;		/* if present, certainly won't be here */
+volatile uint32_t *ioapic_va = 0;
 
 /****************************************************************
  * 8259 SUPPORT
@@ -70,6 +73,165 @@ static uint16_t i8259_irqMask   = (uint16_t) ~0u;
 #define IO_8259_ICU2 0xA0
 #define IO_8259_ICU2_IMR 0xA1
 
+
+/* I/O APIC Register numbers */
+/** @brief I/O APIC Identitification Register */
+#define IOAPIC_ID         0
+#define   IOAPIC_ID_MASK        0x0f000000
+#define   IOAPIC_ID_SHIFT       24
+/** @brief I/O APIC Version Register */
+#define IOAPIC_VERSION    1
+#define   IOAPIC_VERSION_MASK   0xff
+#define   IOAPIC_MAXREDIR_MASK  0x00ff0000
+#define   IOAPIC_MAXREDIR_SHIFT 16
+/** @brief I/O APIC Arbitration Register */
+#define IOAPIC_ARB        2
+#define   IOAPIC_ARB_ID_MASK     0x0f000000
+#define   IOAPIC_ARB_ID_SHIFT    24
+/** @brief I/O APIC Redirection Table */
+#define IOAPIC_ARB        2
+
+#define IOAPIC_ENTRYLO(n)        (0x10+(2*n))
+#define IOAPIC_ENTRYHI(n)        (0x10+(2*n)+1)
+
+typedef struct IoAPIC_Entry {
+  union {
+    struct {
+      /** @brief Interrupt vector used for delivery (R/W) */
+      uint64_t vector : 8;
+      /** @brief Delivery mode (R/W).
+       *
+       * <table>
+       * <tr><td>Value</td>
+       *     <td>Mode</td>
+       *     <td>Meaning</td></tr>
+       * <tr><td>000</td>
+       *     <td>Fixed</td>
+       *     <td>Deliver signal on the INTR signal of all destination 
+       *         processors.</td></tr>
+       * <tr><td>001</td>
+       *     <td>Lowest Priority</td>
+       *     <td>Deliver signal on the INTR signal of the procesor
+       *         core that is executing at lowest priority among
+       *         destination processors.</td></tr>
+       * <tr><td>010</td>
+       *     <td>SMI</td>
+       *     <td>System Management Interrupt. Requires edge trigger
+       *         mode. Vector field ignored but should be zero.</td></tr>
+       * <tr><td>011</td>
+       *     <td><em>reserved</em></td></tr>
+       * <tr><td>100</td>
+       *     <td>NMI</td>
+       *     <td>Deliver signal on the NMI signal of all destination
+       *         processor cores. Vector info ignored. Always treated
+       *         as edge triggered. Should be programmed that
+       *         way.</td></tr> 
+       * <tr><td>101</td>
+       *     <td>INIT</td>
+       *     <td>Deliver signal to all processor cores listed in the
+       *         destination by asserting the INIT signal, causing
+       *         them to enter INIT state. Always treated as edge
+       *         triggered. Should be programmed that way.</tr>
+       * <tr><td>110</td>
+       *     <td><em>reserved</em></td></tr>
+       * <tr><td>111</td>
+       *     <td>ExtINT</td>
+       *     <td>Deliver to INTR signal of all destination processors
+       *         as an interrupt that originated from 8259A. Changes
+       *         INTA cycle routing. Requires edge trigger
+       *          mode.</td></tr>
+       * </table>
+       */
+      uint64_t deliverMode : 3;
+
+      /** @brief Destination mode (R/W).
+       *
+       * 0: physical, 1: logical
+       */
+      uint64_t destMode : 1;
+
+      /** @brief Delivery Status (RO)
+       *
+       * 0: idle 1: send pending
+       */
+      uint64_t deliveryStatus: 1;
+
+      /** @brief Interrupt pin polarity (R/W)
+       *
+       * 0: active high, 1: active low
+       */
+      uint64_t polarity : 1;
+
+      /** @brief Remote IRR (RO)
+       *
+       * Defined only for level triggered interrupts. Set to 1 when
+       * local APIC(s) accept the leve interrupt. Set to 0 when EOI
+       * message with matching vector is received.
+       *
+       * Read-only
+       */
+      uint64_t remoteIRR : 1;
+
+      /** @brief Trigger Mode (R/W)
+       *
+       * 1: level, 0: edge
+       */
+      uint64_t triggerMode : 1;
+
+      /** @brief Masked (R/W)
+       *
+       * 1: masked, 0: enabled
+       */
+      uint64_t masked : 1;
+
+
+      uint64_t reserved : 39; 
+
+      /** @brief if dest mode is physical, contains an APIC ID. If
+       * dest mode is logical, specifies logical destination address,
+       * which may be a @em set of processors.
+       */
+      uint64_t dest : 8;
+    } fld;
+    struct {
+      uint32_t lo;
+      uint32_t hi;
+    } raw;
+  } u;
+} IoAPIC_Entry;
+
+static inline uint32_t
+ioapic_read_reg(uint32_t reg)
+{
+  *((volatile uint32_t *) ioapic_va) = reg;
+  uint32_t val = *((volatile uint32_t *) (ioapic_va + 4));
+  return val;
+}
+
+static inline void
+ioapic_write_reg(uint32_t reg, uint32_t val)
+{
+  *((volatile uint32_t *) ioapic_va) = reg;
+  *((volatile uint32_t *) (ioapic_va + 4)) = reg;
+}
+
+static inline IoAPIC_Entry
+ioapic_read_entry(uint32_t ndx)
+{
+  IoAPIC_Entry ent;
+  ent.u.raw.lo = ioapic_read_reg(IOAPIC_ENTRYLO(ndx));
+  ent.u.raw.hi = ioapic_read_reg(IOAPIC_ENTRYHI(ndx));
+  return ent;
+}
+
+static inline void
+ioapic_write_entry(uint32_t ndx, IoAPIC_Entry ent)
+{
+  ioapic_write_reg(IOAPIC_ENTRYLO(ndx), ent.u.raw.lo);
+  ioapic_write_reg(IOAPIC_ENTRYHI(ndx), ent.u.raw.hi);
+}
+
+
 /* The now-obsolete Intel Multiprocessor Specification introduces an
  * Interrupt Mode Control Register, which is used to get the chipset
  * to re-arrange the interrupt lines back and forth between the legacy
@@ -86,32 +248,184 @@ static uint16_t i8259_irqMask   = (uint16_t) ~0u;
 #define IMCR_LAPIC_MODE 1
 
 /* Definitions of LAPIC-related registers and values */
-#define LAPIC_ID         0x020
-#define LAPIC_VERSION    0x030
-#define LAPIC_TPR        0x080	/* Task Priority Register */
-#define LAPIC_APR        0x090	/* Arbitration Priority Register */
-#define LAPIC_PPR        0x0A0	/* Processor Priority Register */
-#define LAPIC_EOI        0x0B0	/* EIO Register */
-#define LAPIC_LDR        0x0D0	/* Logical Destination Register */
-#define LAPIC_DFR        0x0E0	/* Destination Format Register */
-#define LAPIC_SVR        0x0F0	/* Spurious Interrupt Vector Register */
-#define   LAPIC_SVR_VECTOR_MASK  0x0ffu
-#define   LAPIC_SVR_ENABLE       0x100u
-#define   LAPIC_SVR_FOCUS        0x200u
-#define LAPIC_ISR        0x100	/* In-Service Register 0-255 */
-#define LAPIC_TMR        0x180	/* Trigger-Mode Register 0-255 */
-#define LAPIC_IRR        0x200	/* Interrupt Request Register 0-255 */
-#define LAPIC_ESR        0x280	/* Error Status Register */
-#define LAPIC_ICR0       0x300	/* Interrupt Command Register 0-31 */
-#define LAPIC_ICR32      0x310	/* Interrupt Command Register 32-63 */
-#define LAPIC_LVT_Timer  0x320	/* Local Vector Table (Timer) */
-#define LAPIC_PerfCntr   0x340	/* Performance Counter */
-#define LAPIC_LVT_LINT0  0x350	/* Local Vector Table (LINT0) */
-#define LAPIC_LVT_LINT1  0x360	/* Local Vector Table (LINT1) */
-#define LAPIC_LVT_ERROR  0x370	/* Local Vector Table (Error) */
-#define LAPIC_Timer_InitCount  0x380	/* Initial Count Register for Timer */
-#define LAPIC_Timer_CurCount   0x390	/* Current Count Register for Timer */
-#define LAPIC_Timer_DivideCfg  0x3E0	/* Timer Divide Configuration Register */
+/** @brief LAPIC ID register.
+ *
+ * Physical identity of this LAPIC. */
+#define LAPIC_ID            0x020
+#define   LAPIC_ID_MASK                0x0f000000
+#define   LAPIC_ID_SHIFT               24
+/** @brief LAPIC Version Register.
+ *
+ * Identifies APIC version. MAXLVT field indicates number of LVT
+ * entries. PPro had 5 LVT entries, and we don't use more than that
+ * in any case. */
+#define LAPIC_VERSION       0x030
+#define   LAPIC_VERSION_VERSION_MASK   0x000000ff
+#define     LAPIC_VERSION_LAPIC        0
+#define     LAPIC_VERSION_i8289DX      1 /* external LAPIC chip */
+#define   LAPIC_VERSION_MAXLVT_MASK    0x00ff0000
+#define   LAPIC_VERSION_MAXLVT_SHIFT   16
+/** @brief LAPIC Task Priority Register */
+#define LAPIC_TPR           0x080
+#define   LAPIC_TPR_PRIO               0xff
+/** @brief LAPIC Arbitration Priority Register */
+#define LAPIC_APR           0x090
+#define   LAPIC_ZPR_PRIO               0xff
+/** @brief LAPIC Processor Priority Register */
+#define LAPIC_PPR           0x0A0
+#define   LAPIC_PPR_PRIO               0xff
+/** @brief LAPIC EOI Register
+ *
+ * "During interrupt service routine, software shoudl indicate acceptance of
+ * lowest-priority, fixed, timer, and error interrupts by writing an
+ * arbitrary vaelu into EOI register. This allows APIC to issue next
+ * interrupt whether ISR has terminated ot not. */
+#define LAPIC_EOI           0x0B0
+/** @brief LAPIC Logical Destination Register */
+#define LAPIC_LDR           0x0D0
+#define   LAPIC_LDR_MASK               0xff000000
+#define   LAPIC_LDR_SHIFT              24
+/** @brief LAPIC Destination Format Register */
+#define LAPIC_DFR           0x0E0
+#define   LAPIC_DFR_MASK               0xf0000000
+#define   LAPIC_DFR_SHIFT              28
+/** @brief LAPIC Spurious Interrupt Vector Register. */
+#define LAPIC_SVR           0x0F0
+#define   LAPIC_SVR_VECTOR_MASK        0x0ffu
+#define   LAPIC_SVR_ENABLED            0x100u
+#define   LAPIC_SVR_FOCUS              0x200u
+/** @brief LAPIC In-Service Register 0-255
+ *
+ * Bit set when APIC accepts interrupt, cleared when the INTA cycle
+ * is issued */
+#define LAPIC_ISR           0x100
+/** @brief LAPIC Trigger Mode Register 0-255
+ *
+ * On acceptance, bit is set to 1 IFF level triggered. If level
+ * triggered, EOI is sent to all I/O APICS when soft EOI is issued. */
+#define LAPIC_TMR           0x180
+/** @brief LAPIC Interrupt Request Register 0-255 
+ *
+ * Bit set to 1 when interrupt is delivered to processor but not
+ * fully serviced yet (EOI not yet received). Highest priority bit
+ * will be set during INTA cycle, and cleared during EIO cycle.*/
+#define LAPIC_IRR           0x200
+/** @brief LAPIC Error Status Register */
+#define LAPIC_ESR           0x280
+#define   LAPIC_ESR_Send_CS_Error             0x01
+#define   LAPIC_ESR_Receive_CS_Error          0x02
+#define   LAPIC_ESR_Send_Accept_Error         0x04
+#define   LAPIC_ESR_Receive_Accept_Error      0x08
+          /* 0x10 reserved */
+#define   LAPIC_ESR_Send_Illegal_Vector       0x20
+#define   LAPIC_ESR_Receive_Illegal_Vector    0x40
+#define   LAPIC_ESR_Illegal_Register_Address  0x80
+/** @brief LAPIC Interrupt Command Register 0-31 */
+#define LAPIC_ICR0          0x300
+#define   LAPIC_ICR0_VECTOR_MASK       0x000ff
+#define   LAPIC_ICR0_DELIVER_MODE      0x00700
+#define     LAPIC_ICR0_DELIVER_FIXED     0x00000
+#define     LAPIC_ICR0_DELIVER_LOWPRIO   0x00100
+#define     LAPIC_ICR0_DELIVER_SMI       0x00200
+#define     LAPIC_ICR0_DELIVER_NMI       0x00400
+#define     LAPIC_ICR0_DELIVER_INIT      0x00500
+#define     LAPIC_ICR0_DELIVER_STARTUP   0x00600
+#define   LAPIC_ICR0_DEST_MODE         0x00800
+#define     LAPIC_ICR0_DESTMODE_PHYSICAL 0x00000
+#define     LAPIC_ICR0_DESTMODE_LOGICAL  0x00800
+#define   LAPIC_ICR0_DELIVER_PENDING   0x01000
+#define   LAPIC_ICR0_LEVEL_ASSERT      0x04000
+#define   LAPIC_ICR0_TRIGGER_MODE      0x08000
+#define     LAPIC_ICR0_TRIGGER_EDGE      0x00000
+#define     LAPIC_ICR0_TRIGGER_LEVEL     0x08000
+#define   LAPIC_ICR0_DEST_SHORTHAND    0xC0000
+#define     LAPIC_ICR0_DEST_FIELD        0x00000
+#define     LAPIC_ICR0_DEST_SELF         0x40000
+#define     LAPIC_ICR0_ALL_AND_SELF      0x80000
+#define     LAPIC_ICR0_ALL_BUT_SELF      0xC0000
+/** @brief LAPIC Interrupt Command Register 32-63 */
+#define LAPIC_ICR32         0x310
+/** @brief LAPIC Local Vector Table (Timer) */
+#define LAPIC_LVT_Timer     0x320
+/** @brief LAPIC Performance Counter */
+#define LAPIC_LVT_PerfCntr  0x340
+/** @brief LAPIC Local Vector Table (LINT0) */
+#define LAPIC_LVT_LINT0     0x350
+/** @brief LAPIC Local Vector Table (LINT1) */
+#define LAPIC_LVT_LINT1     0x360
+/** @brief LAPIC Local Vector Table (Error) */
+#define LAPIC_LVT_ERROR     0x370
+/** @brief vector number in LVT entry. */
+#define   LAPIC_LVT_VECTOR_MASK       0x000ff
+/** @brief Interrupt delivery mode.
+ *
+ * 000: fixed, 100: NMI, 111: External interrupt
+ *
+ * Present in LINT0, LINT1, PCINT only 
+ */ 
+#define   LAPIC_LVT_DELIVER_MODE      0x00700
+#define     LAPIC_LVT_DELIVER_FIXED   0x00000
+#define     LAPIC_LVT_DELIVER_NMI     0x00400
+#define     LAPIC_LVT_DELIVER_ExtINT  0x00700
+/* Bit 11 not defined */
+/** @brief Interrupt delivery status
+ *
+ * 0: idle, 1: pending.
+ */
+#define   LAPIC_LVT_DELIVER_PENDING   0x01000
+/** @brief Interrupt pin polarity.
+ *
+ * 0: active high, 1: active low
+ *
+ * LINT0, LINT1 only
+ */
+#define   LAPIC_LVT_POLARITY          0x02000
+/** @brief Remote interrupt request register
+ *
+ * Undefined for edge-triggered interrupts. Set when local APIC
+ * accepts the interrupt. Reset when an EOI command is received from
+ * the processor.
+ *
+ * LINT0, LINT1 only
+ */
+#define   LAPIC_LVT_REMOTE_IRR        0x04000
+/** @brief Interrupt trigger mode
+ *
+ * Applies when delivery mode is set to "fixed".
+ *
+ * LINT0, LINT1 only.
+ */
+#define   LAPIC_LVT_TRIGGER_MODE      0x08000
+#define     LAPIC_LVT_TRIGGER_EDGE    0
+#define     LAPIC_LVT_TRIGGER_LEVEL   1
+/** @brief Interrupt delivery masked
+ *
+ * 0: unmasked, 1: masked.
+ */
+#define   LAPIC_LVT_MASKED            0x10000
+/** @brief LVT Timer mode
+ *
+ * 0: one-shot, 1: periodic
+ */
+#define   LAPIC_LVT_TIMER_MODE        0x20000
+#define     LAPIC_LVT_TIMER_ONESHOT   0x00000
+#define     LAPIC_LVT_TIMER_PERIODIC  0x20000
+
+/** @brief Initial Count Register */
+#define LAPIC_ICR_TIMER     0x380
+/** @brief Current Count Register */
+#define LAPIC_CCR_TIMER     0x390
+/** @brief Divide Configuration Register */
+#define LAPIC_DCR_TIMER     0x3E0
+#define   LAPIC_DCR_DIVIDE_VALUE_MASK  0xf
+#define   LAPIC_DCR_DIVIDE_DIV2        0x0
+#define   LAPIC_DCR_DIVIDE_DIV4        0x1
+#define   LAPIC_DCR_DIVIDE_DIV8        0x2
+#define   LAPIC_DCR_DIVIDE_DIV16       0x3
+#define   LAPIC_DCR_DIVIDE_DIV32       0x4
+#define   LAPIC_DCR_DIVIDE_DIV64       0x5
+#define   LAPIC_DCR_DIVIDE_DIV128      0x6
+#define   LAPIC_DCR_DIVIDE_DIV1        0x7
 
 /** @brief Vector used for spurious LAPIC interrupts.
  *
@@ -130,7 +444,15 @@ static uint16_t i8259_irqMask   = (uint16_t) ~0u;
 #define   LAPIC_TIMER_VECTOR       /* ?? */
 
 
-void
+static inline uint32_t
+lapic_read_reg(uint32_t reg)
+{
+  uint32_t val = 
+    *((volatile uint32_t *) (lapic_va + (LAPIC_ID / sizeof(*lapic_va))));
+  return val;
+}
+
+static inline void
 lapic_write_reg(uint32_t reg, uint32_t val)
 {
   assert((reg % sizeof(*lapic_va)) == 0);
@@ -138,9 +460,8 @@ lapic_write_reg(uint32_t reg, uint32_t val)
   *((volatile uint32_t *) (lapic_va + (reg / sizeof(*lapic_va)))) = val;
 
   /* Xeon errata: follow up with read from ID register, forcing above
-     write to have observable effect. */
-  val = *((volatile uint32_t *) (lapic_va + (LAPIC_ID / sizeof(*lapic_va))));
-
+     write to have observable effect: */
+  (void) lapic_read_reg(LAPIC_ID);
 }
 
 /** @brief Initialize the PC motherboard legacy ISA peripheral
@@ -285,64 +606,136 @@ i8259_acknowledge(uint32_t vector)
  * LAPIC SUPPORT
  ****************************************************************/
 
+static spinlock_t ioapic_lock;
+
 static void
-lapic_init()
+apic_init()
 {
-  pmem_AllocRegion(0XFEE00000, 0XFEE01000, pmc_DEV, pmu_DEV, 
-		   "LAPIC region");
+  /* Only want to do this part on CPU 0 */
+  if (lapic_va == 0) {
+    /* In theory, this runs at startup time while interrupts are not
+       yet enabled, but it is good to handle the lock consistently,
+       and the "interrupts are disabled" assumption may change when we
+       handle sleep states. */
+    SpinHoldInfo shi = spinlock_grab(&ioapic_lock);
 
-  lapic_va = (volatile uint32_t *) HEAP_LIMIT_VA;
-  kmap_EnsureCanMap(HEAP_LIMIT_VA, "lapic");
-  kmap_map(HEAP_LIMIT_VA, lapic_pa, KMAP_R|KMAP_W|KMAP_NC);
+    kmap_EnsureCanMap(I386_LOCAL_APIC_VA, "lapic");
+    kmap_EnsureCanMap(I386_IO_APIC_VA, "ioapic");
+    kmap_map(I386_LOCAL_APIC_VA, lapic_pa, KMAP_R|KMAP_W|KMAP_NC);
+    kmap_map(I386_IO_APIC_VA, ioapic_pa, KMAP_R|KMAP_W|KMAP_NC);
 
-  if (lapic_requires_8259_disable)
-    /* Following disables all interrupts on the master
-     * 8259. Interrupts may still occur on the secondary, but we will not
-     * see them because the cascade interrupt is disabled on the
-     * primary.
-     */
-    outb(0xffu, IO_8259_ICU1_IMR);
+    lapic_va = (volatile uint32_t *) I386_LOCAL_APIC_VA;
+    ioapic_va = (volatile uint32_t *) I386_IO_APIC_VA;
+
+    if (lapic_requires_8259_disable) {
+      /* Following disables all interrupts on the primary and secondary
+       * 8259. Disabling secondary shouldn't be necessary, but that
+       * assumes that the ASIC emulating the 8259 is sensible.
+       */
+      outb(0xffu, IO_8259_ICU1_IMR);
+      outb(0xffu, IO_8259_ICU2_IMR);
+    }
     
-  // Linux clears interrupts on the local APIC when switching. OpenBSD
-  // does not. I suspect that Linux is doing this a defense against
-  // sleep recovery. For the moment, don't do it.
+    // Linux clears interrupts on the local APIC when switching. OpenBSD
+    // does not. I suspect that Linux is doing this a defense against
+    // sleep recovery. For the moment, don't do it.
+    
+    outb(IMCR_SET_INTERRUPT_MODE, IMCR);
+    outb(IMCR_LAPIC_MODE, IMCR_DATA);
 
-  outb(IMCR_SET_INTERRUPT_MODE, IMCR);
-  outb(IMCR_LAPIC_MODE, IMCR_DATA);
+    uint32_t id = ioapic_read_reg(IOAPIC_ID);
+    uint32_t ver = ioapic_read_reg(IOAPIC_VERSION);
+    uint32_t nInts = (ver & IOAPIC_MAXREDIR_MASK) >> IOAPIC_MAXREDIR_SHIFT;
 
-  lapic_write_reg(LAPIC_SVR, LAPIC_SVR_ENABLE | LAPIC_SPURIOUS_VECTOR);
+    printf("I/O APIC id is %d, ver %d, nInts %d\n", 
+	   id >> IOAPIC_ID_SHIFT,
+	   ver & IOAPIC_VERSION_MASK,
+	   nInts);
+
+    // Set each pin to point to corresponding vector. Conceptually,
+    // the mapping ought to be pin+0x20, but that would not leave
+    // anything left the primary system call entry point. The problem
+    // here is that we need to introduce an honest interrupt "sources"
+    // model.
+    //
+    // FIX: deal with interrupt source overrides
+    for (size_t pin = 0; pin < nInts; pin++) {
+    }
+
+    for (size_t pin = 0; pin < nInts; ) {
+      for (size_t n = 0; n < 1 && pin < nInts; n++) {
+	IoAPIC_Entry e = ioapic_read_entry(pin);
+	printf("PIN %3d -> vector %d  [hi=0x%08x, lo=0x%08x]  ", 
+	       pin, e.u.fld.vector, e.u.raw.hi, e.u.raw.lo);
+	pin++;
+      }
+      printf("\n");
+    }
+
+    fatal("Check map.\n");
+    spinlock_release(shi);
+  }
+
+  lapic_write_reg(LAPIC_SVR, LAPIC_SVR_ENABLED | LAPIC_SPURIOUS_VECTOR);
 }
 
 static void
-lapic_shutdown()
+apic_shutdown()
 {
-  // Restore to PIC mode:
+  // NOTE: This is untested and probably does not work!
+  fatal("Do not know how to perform LAPIC shutdown.\n");
   outb(IMCR_SET_INTERRUPT_MODE, IMCR);
   outb(IMCR_PIC_MODE, IMCR_DATA);
 }
 
 void
-lapic_enable(uint32_t vector)
+apic_enable(uint32_t vector)
 {
-  bug("Cat can't enable food in tin lapics\n");
+  SpinHoldInfo shi = spinlock_grab(&ioapic_lock);
+
+  IoAPIC_Entry e = ioapic_read_entry(vector);
+  e.u.fld.masked = 0;
+  ioapic_write_entry(vector, e);
+
+  spinlock_release(shi);
 }
 
 void
-lapic_disable(uint32_t vector)
+apic_disable(uint32_t vector)
 {
-  bug("Cat can't disable food in tin lapics\n");
+  SpinHoldInfo shi = spinlock_grab(&ioapic_lock);
+
+  IoAPIC_Entry e = ioapic_read_entry(vector);
+  e.u.fld.masked = 1;
+  ioapic_write_entry(vector, e);
+
+  spinlock_release(shi);
 }
 
 void
-lapic_acknowledge(uint32_t vector)
+apic_acknowledge(uint32_t vector)
 {
-  bug("Cat can't acknowledge food in tin lapics\n");
+  SpinHoldInfo shi = spinlock_grab(&ioapic_lock);
+
+  bug("Cat can't acknowledge food in tin apics\n");
+
+  spinlock_release(shi);
 }
 
 bool
-lapic_isPending(uint32_t vector)
+apic_isPending(uint32_t vector)
 {
-  bug("Cat can't isPending food in tin lapics\n");
+  bool result = false;
+
+  SpinHoldInfo shi = spinlock_grab(&ioapic_lock);
+
+  IoAPIC_Entry e = ioapic_read_entry(vector);
+  if (e.u.fld.deliveryStatus)
+    result = true;
+
+  spinlock_release(shi);
+
+  return result;
 }
 
 
@@ -352,21 +745,29 @@ lapic_isPending(uint32_t vector)
  ****************************************************************/
 
 bool
-pic_have_lapic()
+pic_have_apic()
 {
-  if (lapic_works && lapic_pa)
+  if (use_apic == false)
+    return false;
+
+  if (lapic_pa && ioapic_pa)
     return true;
 
+  use_apic = false;
   return false;
 }
 
 void
 pic_init()
 {
-  if (pic_have_lapic())
-    lapic_init();
-  else
+  if (pic_have_apic()) {
+    apic_init();
+    printf("APIC, ");
+  }
+  else {
     i8259_init();
+    printf("PIC, ");
+  }
 }
 
 void
@@ -374,15 +775,15 @@ pic_shutdown()
 {
   (void) locally_disable_interrupts();
 
-  if (pic_have_lapic())
-    lapic_shutdown();
+  if (pic_have_apic())
+    apic_shutdown();
 }
 
 void
 pic_enable(uint32_t vector)
 {
-  if (pic_have_lapic())
-    lapic_enable(vector);
+  if (pic_have_apic())
+    apic_enable(vector);
   else
     i8259_enable(vector);
 }
@@ -390,8 +791,8 @@ pic_enable(uint32_t vector)
 void
 pic_disable(uint32_t vector)
 {
-  if (pic_have_lapic())
-    lapic_disable(vector);
+  if (pic_have_apic())
+    apic_disable(vector);
   else
     i8259_disable(vector);
 }
@@ -399,8 +800,8 @@ pic_disable(uint32_t vector)
 void
 pic_acknowledge(uint32_t vector)
 {
-  if (pic_have_lapic())
-    lapic_acknowledge(vector);
+  if (pic_have_apic())
+    apic_acknowledge(vector);
   else
     i8259_acknowledge(vector);
 }
@@ -408,8 +809,8 @@ pic_acknowledge(uint32_t vector)
 bool
 pic_isPending(uint32_t vector)
 {
-  if (pic_have_lapic())
-    return lapic_isPending(vector);
+  if (pic_have_apic())
+    return apic_isPending(vector);
   else
     return i8259_isPending(vector);
 }

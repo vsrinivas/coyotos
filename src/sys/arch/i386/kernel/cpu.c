@@ -95,6 +95,12 @@ cpu_probe_cpus(void)
   for (size_t i = 0; i < MAX_NCPU; i++)
     cpu_construct(i);
 
+  // FIX: On pre-ACPI, non-MP systems, we want to determine here
+  // whether the primary CPU supports a local APIC, which means that
+  // we want to call cpu_scan_features on CPU0 from here. We cannot
+  // call cpu_scan_features on other CPUs until interrupts are
+  // enabled.
+
   size_t ncpu = acpi_probe_cpus();
   if (ncpu)
     printf("ACPI reports %d CPUs\n", ncpu);

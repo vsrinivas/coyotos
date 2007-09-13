@@ -498,13 +498,13 @@ void irq_vector_init()
 
   /* Initialize all software entries for traps and syscalls to
      UnboundVector. */
-  for (uint32_t trap = 0; trap < NUM_TRAP + NUM_IRQ; trap++) {
+  for (uint32_t trap = 0; trap < NUM_TRAP + NUM_IRQ; trap++)
     irq_BindVector(trap, irq_UnboundVector);
-  }
   
   /* Label the hardware interrupt vectors: */
   for (uint32_t vec = NUM_TRAP; vec < (NUM_TRAP+NUM_IRQ); vec++)
     IntVecEntry[vec].flags |= ivf_hardTrap;
+
   /* Undo the exceptions: */
   IntVecEntry[iv_Syscall].flags &= ~ivf_hardTrap;
   IntVecEntry[iv_LegacySyscall].flags &= ~ivf_hardTrap;
@@ -577,6 +577,8 @@ void irq_init()
 		 : /* no output */
 		 : "m" (IDTdescriptor) 
 		 : "memory");
+
+  printf("IDT");
 }
 
 void irq_DoTripleFault()

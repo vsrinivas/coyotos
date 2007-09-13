@@ -90,6 +90,15 @@
 
 #define HEAP_LIMIT_VA            0xFF000000
 
+/* These are not part of the HAL, and probably should not be allowed
+ * to pollute the machine-independent namespace, but it seems silly to
+ * create a whole separate header file for them. Further, I have
+ * already mis-adjusted HEAP_LIMIT_VA once because these were not
+ * documented here, and I would like not to do that again.
+ */
+#define I386_LOCAL_APIC_VA       (HEAP_LIMIT_VA)
+#define I386_IO_APIC_VA          (I386_LOCAL_APIC_VA+4096)
+
 /** @brief Virtual base address of transient map. MUST be a multiple of 4M */
 #define TRANSMAP_WINDOW_KVA 0xFF800000
 

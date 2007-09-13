@@ -92,7 +92,7 @@ pit_wakeup(Process *inProc, fixregs_t *saveArea)
 void
 hardclock_init()
 {
-  if (pic_have_lapic()) {
+  if (pic_have_apic()) {
     bug("Need to configure PIT for round-robin\n");
   }
   else {

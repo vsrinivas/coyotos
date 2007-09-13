@@ -275,8 +275,8 @@ process_command_line()
   if (cmdline_find_option(cmdline, "dbgwait") != 0)
     process_dbgwait();
 
-  if (cmdline_find_option(cmdline, "lapic") != 0)
-    lapic_works = true;
+  if (cmdline_find_option(cmdline, "apic") != 0)
+    use_apic = true;
 }
 
 /** @brief Initialize physical memory.
@@ -722,7 +722,6 @@ arch_init(void)
   printf("TSS, ");
   tss_init();
 
-  printf("IDT");
   irq_init();			/* for CPU 0 */
 
   printf(" established\n");
