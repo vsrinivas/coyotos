@@ -146,7 +146,6 @@ ProcessRequests(struct IDL_SERVER_Environment *_env)
   gsu.icw = 0;
   gsu.pb.sndPtr = 0;
   gsu.pb.sndLen = 0;
-  gsu.pb.u.invCap = CR_RETURN;
   
   for(;;) {
     /* we never send a reply, since we want the processes which fault to
@@ -159,6 +158,7 @@ ProcessRequests(struct IDL_SERVER_Environment *_env)
     gsu.icw |= IPW0_MAKE_NR(sc_InvokeCap)|IPW0_RP|IPW0_AC
         |IPW0_MAKE_LRC(3)|IPW0_NB|IPW0_CO;
     
+    gsu.pb.u.invCap = CR_RETURN;
     gsu.pb.rcvCap[0] = CR_RETURN;
     gsu.pb.rcvCap[1] = CR_ARG0;
     gsu.pb.rcvCap[2] = CR_ARG1;
