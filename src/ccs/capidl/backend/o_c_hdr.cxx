@@ -692,7 +692,7 @@ emit_marshall_decl(GCPtr<Symbol> s, INOstream& out, ArgInfo& args)
       out << "uintptr_t  _pw" << regArgWords << ";\n";
 
 
-    out << "caploc_t   _invCap;\n";
+    out << "uintptr_t  _pp;\n";
 
     /* Send caps */
     for (size_t i = 0; i < MAX_CAP_REG; i++) 
@@ -888,7 +888,7 @@ emit_marshall_decl(GCPtr<Symbol> s, INOstream& out, ArgInfo& args)
     for (; regArgWords < MAX_DATA_REG; regArgWords++)
       out << "uintptr_t  _pw" << regArgWords << ";\n";
 
-    out << "uintptr_t  _pp;\n";
+    out << "caploc_t   _invCap;\n";
 
     /* Send caps */
     {
