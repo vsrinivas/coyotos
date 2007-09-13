@@ -851,6 +851,8 @@ proc_invoke_cap(void)
 	  if (!proc_marshall_dest_cap(invParam.invokee, 
 				      get_rcv_cap(invParam.invokee, i),
 				      &invParam.destCap[i], nonBlock))
+	    /* Marshalling invokee's caps would block. Skip to receive
+	       phase. */
 	    goto receive_phase;
       }
       obhdr_dirty(&invParam.invokee->hdr);
@@ -1129,7 +1131,6 @@ proc_invoke_cap(void)
 	  /* Operation may have been a register set, in which case we
 	     need to re-fetch ipw0. */
 	  ipw0 = get_icw(invParam.invoker);
-	  set_pw(invParam.invoker, 0, (ipw0 & ~IPW0_SP));
 	  if ((ipw0 & IPW0_RP) == 0)
 	    donate = false;
 	}
@@ -1165,6 +1166,10 @@ proc_invoke_cap(void)
   ipw0 = get_icw(invParam.invoker);
 
   if (ipw0 & IPW0_RP) {
+    /* We are done with the send phase. */
+    ipw0 &= ~IPW0_SP;
+    set_pw(invParam.invoker, 0, ipw0);
+
     invParam.invoker->state.runState = PRS_RECEIVING;
 
     if (((ipw0 & IPW0_CW) == 0) && invParam.invoker->state.notices)
@@ -1185,8 +1190,23 @@ proc_invoke_cap(void)
    *
    *******************************************************************/
 
-  if (ipw0 & IPW0_CO)
+  if (ipw0 & IPW0_CO) {
+    /* We are done with the send phase and the receive phase. If we
+       were receiving, receive phase bit will have been cleared by the
+       party who woke us up. Unfortunately, if we skipped the receive
+       phase the SP bit may still be set. */
+    assert((ipw0 & IPW0_RP) == 0);
+
+    ipw0 &= ~IPW0_SP;
+    set_pw(invParam.invoker, 0, ipw0);
+
     copyout_soft_parameters(p);
+  }
+
+  /* Both RP and CO phases may be skipped, so need to clear SP bit. If
+     CO phase occurred, can clear that bit here too for free. */
+  ipw0 &= ~(IPW0_CO|IPW0_SP);
+  set_pw(invParam.invoker, 0, ipw0);
 
   /* Syscall has completed. It is therefore okay to return via fast
      system call return if this architecture has one. */
