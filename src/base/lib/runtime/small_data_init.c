@@ -62,6 +62,19 @@ __small_data_init(uintptr_t data, uintptr_t end)
 	!coyotos_AddressSpace_setSlot(CR_NEWADDR, cur, CR_NEWPAGE, &_IDL_E))
       goto fail;
   }
+
+  /* install a CapPage in slot 0 for the capability stack */
+  if (!coyotos_SpaceBank_alloc(CR_SPACEBANK,
+			       coyotos_Range_obType_otCapPage,
+			       coyotos_Range_obType_otInvalid,
+			       coyotos_Range_obType_otInvalid,
+			       CR_NEWPAGE,
+			       CR_NULL,
+			       CR_NULL,
+			       &_IDL_E) ||
+	!coyotos_AddressSpace_setSlot(CR_NEWADDR, 0, CR_NEWPAGE, &_IDL_E))
+    goto fail;
+
   return;
 
  fail:
