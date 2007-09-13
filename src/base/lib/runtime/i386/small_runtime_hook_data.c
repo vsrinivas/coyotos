@@ -8,9 +8,12 @@
 #include <idl/coyotos/SpaceBank.h>
 #include "coyotos.TargetInfo.h"
 
-#define CR_NEWADDR	CR_APP(0)
-#define CR_NEWPAGE	CR_APP(1)
-#define CR_OLDADDR	CR_APP(2)
+/* n must be < 4 */
+#define CR_UNSTABLE(n)	CR_APP(CRN_LASTAPP_STABLE - CRN_FIRSTAPP + 1 + (n))
+
+#define CR_NEWADDR	CR_UNSTABLE(0)
+#define CR_NEWPAGE	CR_UNSTABLE(1)
+#define CR_OLDADDR	CR_UNSTABLE(2)
 
 #define MY_IPW0(dw, sc) \
     (IPW0_CW|IPW0_SP|IPW0_RP|IPW0_RC|IPW0_SC| \

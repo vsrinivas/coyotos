@@ -33,6 +33,7 @@ module coyotos.RunTime {
     RUNTIME = 6,
     ADDRHANDLER = 7,
     APP0 = 8,  /* 8..23 inclusive are application-use */
+    APP_UNSTABLE0 = 20, /* 20..23 are smashed during initialization */
     REPLY0 = 24,
     REPLY1 = 25,
     REPLY2 = 26,
@@ -46,6 +47,7 @@ module coyotos.RunTime {
   export enum REGNO {
     NULL = REG.NULL,
     FIRSTAPP = 8,
+    LASTAPP_STABLE = 19, /* last app reg not smashed initialization */
     LASTAPP = 23,
     REPLY0 = REG.REPLY0,
     ARG0 = REG.ARG0

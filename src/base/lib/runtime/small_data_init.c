@@ -28,10 +28,13 @@
 #include <idl/coyotos/Range.h>
 #include <idl/coyotos/SpaceBank.h>
 
-#define CR_NEWADDR	CR_APP(0) /* new address space */
-#define CR_NEWPAGE	CR_APP(1) /* available for new page */
-#define CR_OLDADDR	CR_APP(2) /* old address space */
-#define CR_OLDPAGE	CR_APP(3) /* old page */
+/* n must be < 4 */
+#define CR_UNSTABLE(n)	CR_APP(CRN_LASTAPP_STABLE - CRN_FIRSTAPP + 1 + (n))
+
+#define CR_NEWADDR	CR_UNSTABLE(0) /* new address space */
+#define CR_NEWPAGE	CR_UNSTABLE(1) /* available for new page */
+#define CR_OLDADDR	CR_UNSTABLE(2) /* old address space */
+#define CR_OLDPAGE	CR_UNSTABLE(3) /* old page */
 
 void
 __small_data_init(uintptr_t data, uintptr_t end)

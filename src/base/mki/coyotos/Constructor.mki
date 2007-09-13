@@ -69,12 +69,7 @@ module coyotos.Constructor {
    * Constructors.
    */
   export capreg APP {
-    NEW_PROC = rt.REG.APP0,
-    NEW_ENDPT,
-    NEW_RENDPT,
-    UNUSED,
-
-    YIELD_BRAND,
+    YIELD_BRAND = rt.REG.APP0,
     YIELD_TOOLS,
     YIELD_PROTOSPACE,
     YIELD_ADDRSPACE,
@@ -87,12 +82,15 @@ module coyotos.Constructor {
     DISCRIM,
     SB_VERIFIER,
 
+    NEW_PROC,
+    NEW_ENDPT,
+    NEW_RENDPT,
     TMP
   };
   
   /* The initial app registers as seen by ProtoSpace. */
   export capreg PROTOAPP {
-    ADDRSPACE = rt.REG.APP0,
+    ADDRSPACE = rt.REG.APP_UNSTABLE0,
     HANDLER,
     SCHEDULE
   };

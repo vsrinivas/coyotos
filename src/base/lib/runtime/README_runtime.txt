@@ -18,12 +18,12 @@ Model-independent
 		                used for runtime environment.
 		 7  [PS,CONS]	Entry capability to Address Space handler
 
-	         7  [RT]        May be clobbered by low-level startup
-	         8  [RT]        May be clobbered by low-level startup
-	         9  [RT]        May be clobbered by low-level startup
-	         10 [RT]        May be clobbered by low-level startup
+	         8-23 registers available to the application
 
-	         5-23 registers available to the application
+	         20 [RT]        May be clobbered by low-level startup
+	         21 [RT]        May be clobbered by low-level startup
+	         22 [RT]        May be clobbered by low-level startup
+	         23 [RT]        May be clobbered by low-level startup
 
 		 24 [IDL] Reply cap arg 0
 		 25 [IDL] Reply cap arg 1
@@ -38,8 +38,8 @@ Model-independent
                  Note that in some runtime models, the early startup
                  code requires capability registers for low-level
                  setup. When setting up a process in mkimage, it
-                 should be assumed that capability registers 7 through
-                 10 may be clobbered by the time main() receives control.
+                 should be assumed that capability registers 20 through
+                 23 may be clobbered by the time main() receives control.
 
         Startup Conventions
 
