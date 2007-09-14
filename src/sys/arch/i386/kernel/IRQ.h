@@ -29,75 +29,96 @@
 #include <kerninc/Process.h>
 #include <hal/irq.h>
 
+#define NUM_VECTOR   (NUM_TRAP+NUM_IRQ)
+
 /** @brief How we use the interrupt vectors. */
-enum IrqVectors {
-  iv_DivZero 		= 0x0,
-  iv_Debug 		= 0x1,
-  iv_NMI 		= 0x2,
-  iv_BreakPoint 	= 0x3,
-  iv_Overflow 		= 0x4,
-  iv_Bounds 		= 0x5,
-  iv_BadOpcode 		= 0x6,
-  iv_DeviceNotAvail	= 0x7,
-  iv_DoubleFault 	= 0x8,
-  iv_CoprocessorOverrun = 0x9,
-  iv_InvalTSS 		= 0xa,
-  iv_SegNotPresent 	= 0xb,
-  iv_StackSeg 		= 0xc,
-  iv_GeneralProtection 	= 0xd,
-  iv_PageFault 		= 0xe,
-  iv_CoprocError	= 0x10,
-  iv_AlignCheck         = 0x11,
-  iv_MachineCheck       = 0x12,
-  iv_SIMDfp             = 0x13,
+enum Vectors {
+  vec_DivZero 		 = 0x0,
+  vec_Debug 		 = 0x1,
+  vec_NMI 		 = 0x2,
+  vec_BreakPoint 	 = 0x3,
+  vec_Overflow 		 = 0x4,
+  vec_Bounds 		 = 0x5,
+  vec_BadOpcode 	 = 0x6,
+  vec_DeviceNotAvail	 = 0x7,
+  vec_DoubleFault 	 = 0x8,
+  vec_CoprocessorOverrun = 0x9,
+  vec_InvalTSS 		 = 0xa,
+  vec_SegNotPresent 	 = 0xb,
+  vec_StackSeg 		 = 0xc,
+  vec_GeneralProtection  = 0xd,
+  vec_PageFault 	 = 0xe,
+  vec_CoprocError	 = 0x10,
+  vec_AlignCheck         = 0x11,
+  vec_MachineCheck       = 0x12,
+  vec_SIMDfp             = 0x13,
 
   /* Vectors in the range [0x14, 0x1f] are reserved. */
 
-  iv_IRQ0 		= NUM_TRAP,
-  iv_Legacy_PIT         = NUM_TRAP,    /* IRQ0. CMOS interval timer */
-  iv_Legacy_Keyboard    = NUM_TRAP+1,  /* IRQ1. Keyboard  */
-  iv_8259_Cascade       = NUM_TRAP+1,  /* IRQ2. Should never happen. */
+  vec_IRQ0 		 = NUM_TRAP,
 
   /* Following fall within the "interrupt space" portion of the
      numbering, but must not collide with hardware interrupts. */
-  iv_Syscall		= 0x30,
-  iv_LegacySyscall      = 0x80,
+  vec_Syscall		 = 0x30,
+  vec_LegacySyscall      = 0x80,
 };
 
-/** @brief Initialize the interrupt descriptor table.
+enum LegacyInterrupts {
+  irq_PIT       = 0,		/* CMOS Interval Timer */
+  irq_Keyboard  = 1,		/* Keyboard */
+  irq_Cascade   = 2,	      /* master 8259 cascade from secondary */
+};
+
+/** @brief Initialize the vector table and the corresponding IDT
+ * entries.
  */
 void irq_vector_init(void);
 
-/** @brief Initialize the interrupt vector pointer hardware on the
- * current CPU.
+/** @brief Enable interrupt handling on current CPU.
+ *
+ * When called for the first time, also initializes the interrupt
+ * handling tables.
  */
 void irq_init(void);
 
-typedef void (*IrqVecFn)(Process *, fixregs_t *saveArea);
+typedef void (*VecFn)(Process *, fixregs_t *saveArea);
 
-enum IntVecFlags {
-  /** @brief 1 iff a handler is registered for this interrupt. */
-  ivf_bound = 0x1u,
-  /** @brief 1 if this interrupt is logically enabled. */
-  ivf_enabled = 0x2u,
-  /** @brief 1 if this interrupt is a hardward trap (system call). */
-  ivf_hardTrap = 0x4u,
-  /** @brief 1 iff this interrupt is currently configured in legacy
-      PIC mode */
-  ivf_legacyPIC = 0x4u,
-};
-
-/** @brief Per-vector interrupt information.
+/** @brief Vector types.
  *
- * @todo This should probably be machine-independent.
+ * Values for VectorInfo.type field.
  */
-struct IntVecInfo {
-  IrqVecFn fn;			/**< @brief Handler function */
+enum VecType {
+  vt_Unbound,		/**< @brief Not yet bound.  */
+  vt_HardTrap,		/**< @brief Hardware trap or exception.  */
+  vt_SysCall,		/**< @brief System call (software trap).  */
+  vt_Interrupt,		/**< @brief Interrupt source.  */
+};
+typedef enum VecType VecType;
+
+/** @brief Per-vector information.
+ *
+ * This structure stores the machine-dependent mapping from vectors to
+ * handlers, and also from vectors to interrupt lines.
+ *
+ * The stall queue associated with a given interrupt pin is actually
+ * stored in the VectorInfo structure.
+ */
+struct VectorInfo {
+  VecFn    fn;			/**< @brief Handler function. */
   uint64_t count;		/**< @brief Number of occurrences. */
-  uint32_t flags;		/**< @brief See IntVecFlags. */
+  uint8_t  type;		/**< @brief See VecType. */
+  uint8_t  user : 1;		/**< @brief User accessable */
+  uint8_t  edge : 1;		/**< @brief Edge triggered */
+  uint8_t  enabled : 1;		/**< @brief Vector enabled  */
+  uint8_t  irqSource;		/**< @brief Interrupt pin number. */
   // StallQ stallQ;
 };
-typedef struct IntVecInfo IntVecInfo;
+typedef struct VectorInfo VectorInfo;
+extern struct VectorInfo VectorMap[NUM_VECTOR];
+extern uint8_t IrqVector[NUM_IRQ];
+
+#define IRQ_NO_VECTOR 0
+#define VECTOR_NO_IRQ 255
 
 /** @brief Dispatcher for an interrupt or exception that diverted us
  * from userland.
@@ -114,11 +135,11 @@ typedef struct IntVecInfo IntVecInfo;
  *
  */
 void irq_OnTrapOrInterrupt(Process *inProc, fixregs_t *saveArea);
-void irq_EnableVector(uint32_t vector);
-void irq_DisableVector(uint32_t vector);
+void irq_EnableInterrupt(uint32_t irq);
+void irq_DisableInterrupt(uint32_t irq);
 
-void irq_BindVector(uint32_t vector, IrqVecFn fn);
-void irq_UnbindInterrupt(uint32_t vector);
+void irq_BindInterrupt(uint32_t irq, VecFn fn);
+void irq_UnbindInterrupt(uint32_t irq);
 
 void irq_DoTripleFault() NORETURN;
 

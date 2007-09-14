@@ -56,7 +56,7 @@ pit_wakeup(Process *inProc, fixregs_t *saveArea)
   //  printf("%s Timer Interrupt!\n", inProc ? "Process" : "Kernel");
 
   /* Re-enable the periodic timer interrupt line: */
-  pic_enable(vecno);
+  pic_enable(VectorMap[vecno].irqSource);
 
   /* Preemption has occurred. */
   if (inProc) {
@@ -103,7 +103,7 @@ hardclock_init()
 
     /* CMOS chip is already programmed with a slow but acceptable
        interval timer. Just use that. */
-    irq_BindVector(iv_Legacy_PIT, pit_wakeup);
-    irq_EnableVector(iv_Legacy_PIT);
+    irq_BindInterrupt(irq_PIT, pit_wakeup);
+    irq_EnableInterrupt(irq_PIT);
   }
 }

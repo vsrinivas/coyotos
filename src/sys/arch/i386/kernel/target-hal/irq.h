@@ -45,8 +45,6 @@
 /** @brief Number of hardware-defined trap entries */
 #define TARGET_HAL_NUM_TRAP        32
 
-//#define TARGET_HAL_NUM_VECTOR      (NUM_TRAP+NUM_SYSCALL+NUM_IRQ)
-
 
 #include "../IA32/EFLAGS.h"
 

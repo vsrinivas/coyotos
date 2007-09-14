@@ -88,13 +88,13 @@ void pic_shutdown();
  * This permits detection and suppression of spurious hardware
  * interrupts.
  */
-bool pic_isPending(uint32_t vector);
+bool pic_isPending(uint32_t irq);
 
 /** @brief Enable the interrupt line corresponding to @p vector */
-void pic_enable(uint32_t vector);
+void pic_enable(uint32_t irq);
 
 /** @brief Disable the interrupt line corresponding to @p vector */
-void pic_disable(uint32_t vector);
+void pic_disable(uint32_t irq);
 
 /** @brief Acknowledge to the PIC that an interrupt on the interrupt line
  * corresponding to @p vector has been received by the OS.
@@ -102,6 +102,6 @@ void pic_disable(uint32_t vector);
  * This should typically be done only after disabling the interrupt at
  * the PIC.
  */
-void pic_acknowledge(uint32_t vector);
+void pic_acknowledge(uint32_t irq);
 
 #endif /* __I686_PIC_H__ */

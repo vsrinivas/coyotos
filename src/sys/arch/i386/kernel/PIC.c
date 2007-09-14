@@ -37,6 +37,7 @@
 #include <coyotos/i386/io.h>
 #include "IRQ.h"
 #include "PIC.h"
+#include "cpu.h"
 
 bool use_apic = false;
 bool lapic_requires_8259_disable = false;
@@ -216,19 +217,23 @@ ioapic_write_reg(uint32_t reg, uint32_t val)
 }
 
 static inline IoAPIC_Entry
-ioapic_read_entry(uint32_t ndx)
+ioapic_read_entry(uint32_t irq)
 {
   IoAPIC_Entry ent;
-  ent.u.raw.lo = ioapic_read_reg(IOAPIC_ENTRYLO(ndx));
-  ent.u.raw.hi = ioapic_read_reg(IOAPIC_ENTRYHI(ndx));
+  printf("Read %d\n", IOAPIC_ENTRYLO(irq));
+  ent.u.raw.lo = ioapic_read_reg(IOAPIC_ENTRYLO(irq));
+  printf("Read %d\n", IOAPIC_ENTRYHI(irq));
+  ent.u.raw.hi = ioapic_read_reg(IOAPIC_ENTRYHI(irq));
   return ent;
 }
 
 static inline void
-ioapic_write_entry(uint32_t ndx, IoAPIC_Entry ent)
+ioapic_write_entry(uint32_t irq, IoAPIC_Entry ent)
 {
-  ioapic_write_reg(IOAPIC_ENTRYLO(ndx), ent.u.raw.lo);
-  ioapic_write_reg(IOAPIC_ENTRYHI(ndx), ent.u.raw.hi);
+  printf("Write %d\n", IOAPIC_ENTRYLO(irq));
+  ioapic_write_reg(IOAPIC_ENTRYLO(irq), ent.u.raw.lo);
+  printf("Write %d\n", IOAPIC_ENTRYHI(irq));
+  ioapic_write_reg(IOAPIC_ENTRYHI(irq), ent.u.raw.hi);
 }
 
 
@@ -495,22 +500,21 @@ i8259_init()
 
 #ifdef BRING_UP
   for (size_t irq = 0; irq < 16; irq++)
-    irq_set_softled(iv_IRQ0 + irq, false);
+    irq_set_softled(vec_IRQ0 + irq, false);
 #endif
 }
 
 void
-i8259_enable(uint32_t vector)
+i8259_enable(uint32_t irq)
 {
   assert(cpu_ncpu == 1);
-  assert((vector - NUM_TRAP) < 16);
+  assert(irq < 16);
 
   flags_t flags = locally_disable_interrupts();
-  uint32_t irq = vector - NUM_TRAP;
 
   i8259_irqMask &= ~(1u << irq);
 #ifdef BRING_UP
-  irq_set_softled(vector, true);
+  irq_set_softled(vec_IRQ0 + irq, true);
 #endif
 
   if (irq >= 8) {
@@ -519,11 +523,11 @@ i8259_enable(uint32_t vector)
     /* If we are doing cascaded 8259s, any interrupt enabled on the
        second PIC requires that the cascade vector on the primary PIC
        be enabled. */
-    if (i8259_irqMask & (1u << (iv_8259_Cascade - NUM_TRAP))) {
-      irq = iv_8259_Cascade - NUM_TRAP;
+    if (i8259_irqMask & (1u << irq_Cascade)) {
+      irq = irq_Cascade;
       i8259_irqMask &= ~(1u << irq);
 #ifdef BRING_UP
-      irq_set_softled(iv_8259_Cascade, true);
+      irq_set_softled(vec_IRQ0 + irq_Cascade, true);
 #endif
     }
   }
@@ -537,17 +541,16 @@ i8259_enable(uint32_t vector)
 }
 
 void
-i8259_disable(uint32_t vector)
+i8259_disable(uint32_t irq)
 {
   assert(cpu_ncpu == 1);
-  assert((vector - NUM_TRAP) < 16);
+  assert(irq < 16);
 
   flags_t flags = locally_disable_interrupts();
-  uint32_t irq = vector - NUM_TRAP;
 
   i8259_irqMask |= (1u << irq);
 #ifdef BRING_UP
-  irq_set_softled(vector, false);
+  irq_set_softled(vec_IRQ0 + irq, false);
 #endif
 
   if (irq >= 8)
@@ -561,13 +564,12 @@ i8259_disable(uint32_t vector)
 }
 
 bool
-i8259_isPending(uint32_t vector)
+i8259_isPending(uint32_t irq)
 {
   assert(cpu_ncpu == 1);
-  assert((vector - NUM_TRAP) < 16);
+  assert(irq < 16);
 
   flags_t flags = locally_disable_interrupts();
-  uint32_t irq = vector - NUM_TRAP;
   bool isPending = false;	/* until proven otherwise */
 
   uint8_t bit = (1u << (irq & 0x7u));
@@ -583,13 +585,12 @@ i8259_isPending(uint32_t vector)
 }
 
 void
-i8259_acknowledge(uint32_t vector)
+i8259_acknowledge(uint32_t irq)
 {
   assert(cpu_ncpu == 1);
-  assert((vector - NUM_TRAP) < 16);
+  assert(irq < 16);
 
   flags_t flags = locally_disable_interrupts();
-  uint32_t irq = vector - NUM_TRAP;
 
   // printf("Acknowledge IRQ0\n");
 
@@ -652,25 +653,48 @@ apic_init()
 	   ver & IOAPIC_VERSION_MASK,
 	   nInts);
 
-    // Set each pin to point to corresponding vector. Conceptually,
-    // the mapping ought to be pin+0x20, but that would not leave
-    // anything left the primary system call entry point. The problem
-    // here is that we need to introduce an honest interrupt "sources"
-    // model.
-    //
-    // FIX: deal with interrupt source overrides
-    for (size_t pin = 0; pin < nInts; pin++) {
-    }
+    // For each vector corresponding to a defined interrupt pin, wire
+    // the pin back to that vector
+    for (size_t vec = 0; vec < NUM_VECTOR; vec++) {
+      if (VectorMap[vec].type != vt_Interrupt)
+	continue;
 
-    for (size_t pin = 0; pin < nInts; ) {
-      for (size_t n = 0; n < 1 && pin < nInts; n++) {
-	IoAPIC_Entry e = ioapic_read_entry(pin);
-	printf("PIN %3d -> vector %d  [hi=0x%08x, lo=0x%08x]  ", 
-	       pin, e.u.fld.vector, e.u.raw.hi, e.u.raw.lo);
-	pin++;
+      uint32_t irq = VectorMap[vec].irqSource;
+      if (irq > nInts) {
+	VectorMap[vec].irqSource = 255;
+	continue;
       }
-      printf("\n");
+
+      IoAPIC_Entry e = ioapic_read_entry(irq);
+      e.u.fld.vector = vec;
+      e.u.fld.deliverMode = 0;	/* FIXED delivery */
+      e.u.fld.destMode = 0;		/* Physical destination (for now) */
+      e.u.fld.polarity = 0;		/* Active high */
+      e.u.fld.triggerMode = VectorMap[vec].edge ? 0 : 1;
+      e.u.fld.masked = 1;
+      e.u.fld.dest = archcpu_vec[0].lapic_id; /* CPU0 for now */
+
+      printf("Vector %d -> irq %d  ", e.u.fld.vector, irq);
+      if ((irq % 2) == 1)
+	printf("\n");
+      ioapic_write_entry(irq, e);
+
+      IoAPIC_Entry e2 = ioapic_read_entry(irq);
+      if (e2.u.fld.vector != e.u.fld.vector)
+	fatal("e.vector %d e2.vector %d\n",
+	       e.u.fld.vector, e2.u.fld.vector);
     }
+    printf("\n");
+
+    for (size_t irq = 0; irq < nInts; irq++) {
+      IoAPIC_Entry e = ioapic_read_entry(irq);
+      printf("IRQ %3d -> vector %d  ", 
+	     irq, e.u.fld.vector);
+      if ((irq % 2) == 1)
+	printf("\n");
+    }
+    if ((nInts % 2) == 1)
+      printf("\n");
 
     fatal("Check map.\n");
     spinlock_release(shi);
@@ -689,31 +713,31 @@ apic_shutdown()
 }
 
 void
-apic_enable(uint32_t vector)
+apic_enable(uint32_t irq)
 {
   SpinHoldInfo shi = spinlock_grab(&ioapic_lock);
 
-  IoAPIC_Entry e = ioapic_read_entry(vector);
+  IoAPIC_Entry e = ioapic_read_entry(irq);
   e.u.fld.masked = 0;
-  ioapic_write_entry(vector, e);
+  ioapic_write_entry(irq, e);
 
   spinlock_release(shi);
 }
 
 void
-apic_disable(uint32_t vector)
+apic_disable(uint32_t irq)
 {
   SpinHoldInfo shi = spinlock_grab(&ioapic_lock);
 
-  IoAPIC_Entry e = ioapic_read_entry(vector);
+  IoAPIC_Entry e = ioapic_read_entry(irq);
   e.u.fld.masked = 1;
-  ioapic_write_entry(vector, e);
+  ioapic_write_entry(irq, e);
 
   spinlock_release(shi);
 }
 
 void
-apic_acknowledge(uint32_t vector)
+apic_acknowledge(uint32_t irq)
 {
   SpinHoldInfo shi = spinlock_grab(&ioapic_lock);
 
@@ -723,13 +747,13 @@ apic_acknowledge(uint32_t vector)
 }
 
 bool
-apic_isPending(uint32_t vector)
+apic_isPending(uint32_t irq)
 {
   bool result = false;
 
   SpinHoldInfo shi = spinlock_grab(&ioapic_lock);
 
-  IoAPIC_Entry e = ioapic_read_entry(vector);
+  IoAPIC_Entry e = ioapic_read_entry(irq);
   if (e.u.fld.deliveryStatus)
     result = true;
 
@@ -780,37 +804,37 @@ pic_shutdown()
 }
 
 void
-pic_enable(uint32_t vector)
+pic_enable(uint32_t irq)
 {
   if (pic_have_apic())
-    apic_enable(vector);
+    apic_enable(irq);
   else
-    i8259_enable(vector);
+    i8259_enable(irq);
 }
 
 void
-pic_disable(uint32_t vector)
+pic_disable(uint32_t irq)
 {
   if (pic_have_apic())
-    apic_disable(vector);
+    apic_disable(irq);
   else
-    i8259_disable(vector);
+    i8259_disable(irq);
 }
 
 void
-pic_acknowledge(uint32_t vector)
+pic_acknowledge(uint32_t irq)
 {
   if (pic_have_apic())
-    apic_acknowledge(vector);
+    apic_acknowledge(irq);
   else
-    i8259_acknowledge(vector);
+    i8259_acknowledge(irq);
 }
 
 bool
-pic_isPending(uint32_t vector)
+pic_isPending(uint32_t irq)
 {
   if (pic_have_apic())
-    return apic_isPending(vector);
+    return apic_isPending(irq);
   else
-    return i8259_isPending(vector);
+    return i8259_isPending(irq);
 }
