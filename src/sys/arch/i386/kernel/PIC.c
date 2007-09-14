@@ -39,13 +39,15 @@
 #include "PIC.h"
 #include "cpu.h"
 
-bool use_apic = false;
+#define DEBUG_IOAPIC if (0)
+
+bool use_apic = true;
 bool lapic_requires_8259_disable = false;
 
 kpa_t lapic_pa = 0;		/* if present, certainly won't be here */
-volatile uint32_t *lapic_va = 0;
+kva_t lapic_va = 0;
 kpa_t ioapic_pa = 0;		/* if present, certainly won't be here */
-volatile uint32_t *ioapic_va = 0;
+kva_t ioapic_va = 0;
 
 /****************************************************************
  * 8259 SUPPORT
@@ -99,7 +101,7 @@ typedef struct IoAPIC_Entry {
   union {
     struct {
       /** @brief Interrupt vector used for delivery (R/W) */
-      uint64_t vector : 8;
+      uint32_t vector : 8;
       /** @brief Delivery mode (R/W).
        *
        * <table>
@@ -143,25 +145,25 @@ typedef struct IoAPIC_Entry {
        *          mode.</td></tr>
        * </table>
        */
-      uint64_t deliverMode : 3;
+      uint32_t deliverMode : 3;
 
       /** @brief Destination mode (R/W).
        *
        * 0: physical, 1: logical
        */
-      uint64_t destMode : 1;
+      uint32_t destMode : 1;
 
       /** @brief Delivery Status (RO)
        *
        * 0: idle 1: send pending
        */
-      uint64_t deliveryStatus: 1;
+      uint32_t deliveryStatus: 1;
 
       /** @brief Interrupt pin polarity (R/W)
        *
        * 0: active high, 1: active low
        */
-      uint64_t polarity : 1;
+      uint32_t polarity : 1;
 
       /** @brief Remote IRR (RO)
        *
@@ -171,28 +173,29 @@ typedef struct IoAPIC_Entry {
        *
        * Read-only
        */
-      uint64_t remoteIRR : 1;
+      uint32_t remoteIRR : 1;
 
       /** @brief Trigger Mode (R/W)
        *
        * 1: level, 0: edge
        */
-      uint64_t triggerMode : 1;
+      uint32_t triggerMode : 1;
 
       /** @brief Masked (R/W)
        *
        * 1: masked, 0: enabled
        */
-      uint64_t masked : 1;
+      uint32_t masked : 1;
 
 
-      uint64_t reserved : 39; 
+      uint32_t  : 15; 
+      uint32_t  : 24; 
 
       /** @brief if dest mode is physical, contains an APIC ID. If
        * dest mode is logical, specifies logical destination address,
        * which may be a @em set of processors.
        */
-      uint64_t dest : 8;
+      uint32_t dest : 8;
     } fld;
     struct {
       uint32_t lo;
@@ -204,25 +207,31 @@ typedef struct IoAPIC_Entry {
 static inline uint32_t
 ioapic_read_reg(uint32_t reg)
 {
-  *((volatile uint32_t *) ioapic_va) = reg;
-  uint32_t val = *((volatile uint32_t *) (ioapic_va + 4));
+  /* data window is at ioapic_va + 0x10 */
+  volatile uint32_t *va_reg = (uint32_t *) ioapic_va;
+  volatile uint32_t *va_data = (uint32_t *) (ioapic_va + 0x10);
+
+  *va_reg = reg;
+  uint32_t val = *va_data;
   return val;
 }
 
 static inline void
 ioapic_write_reg(uint32_t reg, uint32_t val)
 {
-  *((volatile uint32_t *) ioapic_va) = reg;
-  *((volatile uint32_t *) (ioapic_va + 4)) = reg;
+  /* data window is at ioapic_va + 0x10 */
+  volatile uint32_t *va_reg = (uint32_t *) ioapic_va;
+  volatile uint32_t *va_data = (uint32_t *) (ioapic_va + 0x10);
+
+  *va_reg = reg;
+  *va_data = val;
 }
 
 static inline IoAPIC_Entry
 ioapic_read_entry(uint32_t irq)
 {
   IoAPIC_Entry ent;
-  printf("Read %d\n", IOAPIC_ENTRYLO(irq));
   ent.u.raw.lo = ioapic_read_reg(IOAPIC_ENTRYLO(irq));
-  printf("Read %d\n", IOAPIC_ENTRYHI(irq));
   ent.u.raw.hi = ioapic_read_reg(IOAPIC_ENTRYHI(irq));
   return ent;
 }
@@ -230,9 +239,7 @@ ioapic_read_entry(uint32_t irq)
 static inline void
 ioapic_write_entry(uint32_t irq, IoAPIC_Entry ent)
 {
-  printf("Write %d\n", IOAPIC_ENTRYLO(irq));
   ioapic_write_reg(IOAPIC_ENTRYLO(irq), ent.u.raw.lo);
-  printf("Write %d\n", IOAPIC_ENTRYHI(irq));
   ioapic_write_reg(IOAPIC_ENTRYHI(irq), ent.u.raw.hi);
 }
 
@@ -452,17 +459,16 @@ ioapic_write_entry(uint32_t irq, IoAPIC_Entry ent)
 static inline uint32_t
 lapic_read_reg(uint32_t reg)
 {
-  uint32_t val = 
-    *((volatile uint32_t *) (lapic_va + (LAPIC_ID / sizeof(*lapic_va))));
+  volatile uint32_t *va_reg = (uint32_t *) (lapic_va + LAPIC_ID);
+  uint32_t val = *va_reg;
   return val;
 }
 
 static inline void
 lapic_write_reg(uint32_t reg, uint32_t val)
 {
-  assert((reg % sizeof(*lapic_va)) == 0);
-
-  *((volatile uint32_t *) (lapic_va + (reg / sizeof(*lapic_va)))) = val;
+  volatile uint32_t *va_reg = (uint32_t *) (lapic_va + LAPIC_ID);
+  *va_reg = val;
 
   /* Xeon errata: follow up with read from ID register, forcing above
      write to have observable effect: */
@@ -625,8 +631,8 @@ apic_init()
     kmap_map(I386_LOCAL_APIC_VA, lapic_pa, KMAP_R|KMAP_W|KMAP_NC);
     kmap_map(I386_IO_APIC_VA, ioapic_pa, KMAP_R|KMAP_W|KMAP_NC);
 
-    lapic_va = (volatile uint32_t *) I386_LOCAL_APIC_VA;
-    ioapic_va = (volatile uint32_t *) I386_IO_APIC_VA;
+    lapic_va = I386_LOCAL_APIC_VA;
+    ioapic_va = I386_IO_APIC_VA;
 
     if (lapic_requires_8259_disable) {
       /* Following disables all interrupts on the primary and secondary
@@ -648,10 +654,11 @@ apic_init()
     uint32_t ver = ioapic_read_reg(IOAPIC_VERSION);
     uint32_t nInts = (ver & IOAPIC_MAXREDIR_MASK) >> IOAPIC_MAXREDIR_SHIFT;
 
-    printf("I/O APIC id is %d, ver %d, nInts %d\n", 
-	   id >> IOAPIC_ID_SHIFT,
-	   ver & IOAPIC_VERSION_MASK,
-	   nInts);
+    DEBUG_IOAPIC 
+      printf("I/O APIC id is %d, ver %d, nInts %d\n", 
+	     id >> IOAPIC_ID_SHIFT,
+	     ver & IOAPIC_VERSION_MASK,
+	     nInts);
 
     // For each vector corresponding to a defined interrupt pin, wire
     // the pin back to that vector
@@ -674,29 +681,35 @@ apic_init()
       e.u.fld.masked = 1;
       e.u.fld.dest = archcpu_vec[0].lapic_id; /* CPU0 for now */
 
-      printf("Vector %d -> irq %d  ", e.u.fld.vector, irq);
-      if ((irq % 2) == 1)
-	printf("\n");
       ioapic_write_entry(irq, e);
 
-      IoAPIC_Entry e2 = ioapic_read_entry(irq);
-      if (e2.u.fld.vector != e.u.fld.vector)
-	fatal("e.vector %d e2.vector %d\n",
-	       e.u.fld.vector, e2.u.fld.vector);
-    }
-    printf("\n");
+      DEBUG_IOAPIC {
+	printf("Vector %d -> irq %d  ", e.u.fld.vector, irq);
+	if ((irq % 2) == 1)
+	  printf("\n");
 
-    for (size_t irq = 0; irq < nInts; irq++) {
-      IoAPIC_Entry e = ioapic_read_entry(irq);
-      printf("IRQ %3d -> vector %d  ", 
-	     irq, e.u.fld.vector);
-      if ((irq % 2) == 1)
+	IoAPIC_Entry e2 = ioapic_read_entry(irq);
+	if (e2.u.fld.vector != e.u.fld.vector)
+	  fatal("e.vector %d e2.vector %d\n",
+		e.u.fld.vector, e2.u.fld.vector);
+      }
+    }
+    DEBUG_IOAPIC printf("\n");
+
+    DEBUG_IOAPIC {
+      for (size_t irq = 0; irq < nInts; irq++) {
+	IoAPIC_Entry e = ioapic_read_entry(irq);
+	printf("IRQ %3d -> vector %d  ", 
+	       irq, e.u.fld.vector);
+	if ((irq % 2) == 1)
+	  printf("\n");
+      }
+      if ((nInts % 2) == 1)
 	printf("\n");
-    }
-    if ((nInts % 2) == 1)
-      printf("\n");
 
-    fatal("Check map.\n");
+      fatal("Check map.\n");
+    }
+
     spinlock_release(shi);
   }
 

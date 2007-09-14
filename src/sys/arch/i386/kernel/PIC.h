@@ -46,7 +46,7 @@ extern kpa_t lapic_pa;
  * This is the virtual memory address where each CPU can access its
  * own local APIC. Value will be zero if there is no local APIC.
  */
-extern volatile uint32_t *lapic_va;
+extern kva_t lapic_va;
 
 /** @brief Physical address of I/O APIC 
  *
@@ -66,7 +66,7 @@ extern kpa_t ioapic_pa;
  * @bug There is a model issue here, because systems can have more
  * than one I/O APIC. Current implementation does not handle this.
  */
-extern volatile uint32_t *ioapic_va;
+extern kva_t ioapic_va;
 
 /** @brief Return true if the system has a local APIC that is actually
  * in use by us.
