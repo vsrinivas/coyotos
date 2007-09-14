@@ -41,7 +41,7 @@
 
 #define DEBUG_IOAPIC if (0)
 
-bool use_apic = true;
+bool use_apic = false;
 bool lapic_requires_8259_disable = false;
 
 kpa_t lapic_pa = 0;		/* if present, certainly won't be here */
