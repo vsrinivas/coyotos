@@ -508,6 +508,7 @@ CapValue::getEnvironment()
 {
   switch(cap.type) {
   case ct_Endpoint:
+  case ct_Entry:
     return getEndpointEnvironment();
   case ct_GPT:
     return getGptEnvironment();
