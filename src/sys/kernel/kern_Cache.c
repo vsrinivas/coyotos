@@ -76,7 +76,7 @@ Cache_s Cache = {
 #define ALIASFRAME(alias_ft, ft, val) \
     &Cache.c_ ## ft,
 #define NODEFFRAME(ft, val)
-#include <coyotos/frametype.def>
+#include <kerninc/frametype.def>
   } 
 };
 
