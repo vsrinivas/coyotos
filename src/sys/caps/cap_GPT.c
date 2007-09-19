@@ -87,6 +87,39 @@ void cap_GPT(InvParam_t *iParam)
       return;
     }
 
+  case OC_coyotos_GPT_setHandler:
+    {
+      /** @bug is this really an iparam32? */
+      uint32_t hasHandler = get_iparam32(iParam);
+      INV_REQUIRE_ARGS(iParam, 0);
+
+      GPT *gpt = (GPT *)iParam->iCap.cap->u2.prepObj.target;
+
+      obhdr_dirty(&gpt->mhdr.hdr);
+
+      if (gpt->state.ha && hasHandler == 0)
+	cap_handlerBeingOverwritten(&gpt->state.cap[GPT_HANDLER_SLOT]);
+
+      sched_commit_point();
+
+      gpt->state.ha = !!hasHandler;
+      iParam->opw[0] = InvResult(iParam, 0);
+      return;
+    }
+
+  case OC_coyotos_GPT_getHandler:
+    {
+      INV_REQUIRE_ARGS(iParam, 0);
+
+      GPT *gpt = (GPT *)iParam->iCap.cap->u2.prepObj.target;
+
+      sched_commit_point();
+
+      put_oparam32(iParam, gpt->state.ha);
+      iParam->opw[0] = InvResult(iParam, 0);
+      return;
+    }
+
   case OC_coyotos_GPT_makeLocalWindow:
   case OC_coyotos_GPT_makeBackgroundWindow:
     {

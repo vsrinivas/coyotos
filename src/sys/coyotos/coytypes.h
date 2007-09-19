@@ -21,6 +21,7 @@
  */
 
 #include <stdint.h>
+#include <stdbool.h>
 
 #include <coyotos/machine/pagesize.h>
 
@@ -29,7 +30,10 @@ typedef uint64_t  coyaddr_t;
 typedef uint32_t  guard_t;
 typedef coyaddr_t archaddr_t;
 
-/* defines the size of a capability in a CapPage */
+/** @brief Defined the number of bits in a software address */
+#define COYOTOS_SOFTADDR_BITS  64
+
+/** @brief Defines the size of a capability in a CapPage */
 #define COYOTOS_CAPABILITY_SIZE 16
 
 static inline uint8_t guard_l2g(guard_t g)
@@ -42,12 +46,29 @@ static inline uint32_t guard_match(guard_t g)
   return (g >> 8);
 }
 
+static inline uint64_t guard_mask(guard_t g)
+{
+  if (guard_l2g(g) >= COYOTOS_SOFTADDR_BITS)
+    return (0);
+  return (~0ull) << guard_l2g(g);
+}
+
+static inline uint64_t guard_matchValue(guard_t g)
+{
+  if (guard_l2g(g) >= COYOTOS_SOFTADDR_BITS)
+    return (0);
+  return (uint64_t)guard_match(g) << guard_l2g(g);
+}
+
+static inline bool guard_matches(guard_t g, uint64_t addr)
+{
+  return (addr & guard_mask(g)) == guard_matchValue(g);
+}
+
 static inline guard_t make_guard(uint32_t match, uint32_t l2g)
 {
   return (match << 8) | l2g;
 }
-
-#define COYOTOS_SOFTADDR_BITS  64
 
 // typedef uint64_t  ipcword_t;
 

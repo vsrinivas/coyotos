@@ -22,12 +22,21 @@ interface GPT extends AddressSpace {
   /// @brief log(2) of number of slots in a GPT
   const l2value_t l2slots = 4;
 
+  const slot_t handlerSlot = 15;
+  const slot_t backgroundSlot = 14;
+
   /// @brief set the l2v field of this GPT to @p l2v, returning the 
   /// previous l2v value.
   l2value_t setl2v(l2value_t l2v);
 
   /// @brief Return the current l2v field value of this GPT.
   l2value_t getl2v();
+
+  /// @brief Set whether or not this GPT has a handler
+  void setHandler(boolean hasHandler);
+
+  /// @brief Find out whether this GPT has a handler
+  boolean getHandler();
 
   /// @brief Store a new local window capability in slot @p slot.
   ///

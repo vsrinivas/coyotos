@@ -73,5 +73,5 @@ abstract interface Memory extends Cap {
  
   /// @brief Return the restriction bits set for this memory
   /// capability.
-  unsigned long getRestrictions();
+  restrictions getRestrictions();
 };
