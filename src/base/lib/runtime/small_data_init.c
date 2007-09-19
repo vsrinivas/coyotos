@@ -36,6 +36,10 @@
 #define CR_OLDADDR	CR_UNSTABLE(2) /* old address space */
 #define CR_OLDPAGE	CR_UNSTABLE(3) /* old page */
 
+/* HACK to make sure sbrk is included if the runtime hook is included. */
+extern char *sbrk(size_t);
+char *(*sbrk_ptr)(size_t) = sbrk;
+
 void
 __small_data_init(uintptr_t data, uintptr_t end)
 {
