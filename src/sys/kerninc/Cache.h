@@ -89,11 +89,11 @@ typedef struct Cache_s {
 #define DEFFRAME(ft, val) struct ft *v_ ## ft;
 #define ALIASFRAME(alias_ft, ft, val)
 #define NODEFFRAME(ft, val)
-#include <coyotos/frametype.def>
+#include <kerninc/frametype.def>
 #define DEFFRAME(ft, val) ObFrameCache c_ ## ft;
 #define ALIASFRAME(alias_ft, ft, val)
 #define NODEFFRAME(ft, val)
-#include <coyotos/frametype.def>
+#include <kerninc/frametype.def>
 
   CACHE(Depend)             dep;
   CACHE(RevMap)             rmap;

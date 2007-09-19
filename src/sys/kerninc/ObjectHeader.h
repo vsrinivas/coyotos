@@ -33,12 +33,12 @@
 typedef enum ObType {
 #define DEFFRAME(ft, val) ot_ ## ft = val,
 #define ALIASFRAME(ft, alias, val) ot_ ## ft = val,
-#include <coyotos/frametype.def>
+#include <kerninc/frametype.def>
 } ObType;
 
 enum { 
 #define NODEFFRAME(ft, val) ot_ ## ft = val,
-#include <coyotos/frametype.def>
+#include <kerninc/frametype.def>
   ot_Invalid = ot_NTYPE 
 };
 
