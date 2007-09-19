@@ -64,9 +64,8 @@ module coyotos.Constructor {
     BRAND = 0xffff  /* used to brand processes */
   };  
   
-  /* Our application registers.  The first four are smashed by the runtime,
-   * so we use them for temporaries.  The rest are set up for pre-constructed
-   * Constructors.
+  /* Our application registers.  The YIELD_* and VERIFIER registers are set
+   * up for pre-Sealed Constructors.
    */
   export capreg APP {
     YIELD_BRAND = rt.REG.APP0,
@@ -212,6 +211,11 @@ module coyotos.Constructor {
    */
   export def set_tool(con, offset, value) {
     con.recipient.capReg[APP.YIELD_TOOLS][offset] = value;
+  }
+
+  /* Gets the bank a constructor is using */
+  export def get_bank(con) {
+    return con.recipient.capReg[rt.REG.SPACEBANK];
   }
   
   /* Now we can set up the metaconstructor;  It's just a constructor whose

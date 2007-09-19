@@ -1,0 +1,11 @@
+package coyotos;
+
+/**
+ * @brief AddressSpaceHandler
+ */
+interface SpaceHandler extends Cap {
+
+  /** @brief Get the address space root for this space */ 
+  AddressSpace getSpace();
+
+};

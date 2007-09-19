@@ -1,0 +1,112 @@
+/*
+ * Copyright (C) 2007, The EROS Group, LLC
+ *
+ * This file is part of the Coyotos Operating System.
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 2,
+ * or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+ */
+
+module coyotos.VirtualCopySpace {
+  import rt = coyotos.RunTime;
+  import Constructor = coyotos.Constructor;
+
+  /* Our protected payload values */
+  export enum PP {
+    VCS = 0,
+    Handler = 1
+  };  
+  
+  export capreg APP {
+    SPACEGPT = rt.REG.APP0,
+    BGGPT,
+    HANDLER_ENTRY,
+
+    TMP1,
+    TMP2,
+    TMP3
+  };
+
+  export enum TOOLS {
+    BACKGROUND = rt.TOOL.APP0
+  };
+
+  def vcs_image = loadimage(PrimeBank, "coyotos/VirtualCopySpace");
+  def vcs_space = weaken(vcs_image.space);
+  def vcs_pc = vcs_image.pc;
+
+  /* returns a constructor for the space loaded from "file" */
+  export def make_file(bank, file) {
+    def cons = Constructor.create(bank, vcs_space, vcs_pc, NullCap());
+    def cons_bank = Constructor.get_bank(cons);
+
+    def image = loadimage(cons_bank, file);
+
+    Constructor.set_tool(cons, TOOLS.BACKGROUND, weaken(image.space));
+
+    return cons;
+  }
+  
+  /* returns a constructor for an arbitrary space */
+  export def make(bank, space) {
+    def cons = Constructor.create(bank, vcs_space, vcs_pc, NullCap());
+
+    Constructor.set_tool(cons, TOOLS.BACKGROUND, weaken(space));
+
+    return cons;
+  }
+
+  def make_filled_gpt(l2g, l2v, value) {
+    def gpt = guard(new GPT(PrimeBank), 0, l2g);
+    gpt.l2v = l2v;
+
+    gpt.cap[ 0] = value;
+    gpt.cap[ 1] = value;
+    gpt.cap[ 2] = value;
+    gpt.cap[ 3] = value;
+    gpt.cap[ 4] = value;
+    gpt.cap[ 5] = value;
+    gpt.cap[ 6] = value;
+    gpt.cap[ 7] = value;
+    gpt.cap[ 8] = value;
+    gpt.cap[ 9] = value;
+    gpt.cap[10] = value;
+    gpt.cap[11] = value;
+    gpt.cap[12] = value;
+    gpt.cap[13] = value;
+    gpt.cap[14] = value;
+    gpt.cap[15] = value;
+
+    return weaken(gpt);
+  }
+
+  def zeroPg = weaken(new Page(PrimeBank));
+  /// @bug we need to built this based on get_l2g(zeroPg)
+  def zeroSpc =
+      make_filled_gpt(63, 60,
+      make_filled_gpt(60, 56,
+      make_filled_gpt(56, 52,
+      make_filled_gpt(52, 48,
+      make_filled_gpt(48, 44,
+      make_filled_gpt(44, 40,
+      make_filled_gpt(40, 36,
+      make_filled_gpt(36, 32,
+      make_filled_gpt(32, 28,
+      make_filled_gpt(28, 24,
+      make_filled_gpt(24, 20,
+      make_filled_gpt(20, 16,
+      make_filled_gpt(16, 12, zeroPg)))))))))))));
+
+  export def zeroVCS = make(PrimeBank, zeroSpc);
+}

@@ -21,7 +21,7 @@
 default: package
 COYOTOS_SRC=../..
 
-DIRS=Constructor SpaceBank
+DIRS=Constructor SpaceBank VirtualCopySpace
 
 include $(COYOTOS_SRC)/build/make/makerules.mk
 

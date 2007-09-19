@@ -59,7 +59,8 @@ module coyotos.RunTime {
     PROTOSPACE,
     SPACEBANK_VERIFY,
     CONSTRUCTOR_VERIFY,
-    AUDIT_LOG
+    AUDIT_LOG,
+    APP0
   };
 
   /* From the coyotos.Process IDL file, this is the initialization fault. */

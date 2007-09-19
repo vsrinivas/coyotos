@@ -1,0 +1,9 @@
+package coyotos;
+
+/**
+ * @brief VirtualCopySpace
+ */
+interface VirtualCopySpace extends SpaceHandler {
+
+    Constructor freeze();
+};
