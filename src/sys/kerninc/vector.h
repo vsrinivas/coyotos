@@ -63,11 +63,14 @@
 /**@brief Signature of a vector handler function. */
 typedef void (*VecFn)(struct Process *, fixregs_t *saveArea);
 
+struct VectorInfo;
+
 /** @brief Method dispatch for interrupt controller chips */
 struct IrqController {
   irq_t baseIRQ;	   /**< @brief First IRQ on this controller */
   irq_t nIRQ;		   /**< @brief Number of IRQ sources */
   kva_t va;			/**< @brief For memory-mapped controllers. */
+  void (*setup)(struct IrqController *, irq_t irq, struct VectorInfo *vi);
   void (*enable)(struct IrqController *, irq_t irq);
   void (*disable)(struct IrqController *, irq_t irq);
   bool (*isPending)(struct IrqController *, irq_t irq);
@@ -88,6 +91,14 @@ enum VecType {
 };
 typedef enum VecType VecType;
 
+#define VEC_MODE_FROMBUS 0
+#define VEC_MODE_EDGE    1
+#define VEC_MODE_LEVEL   2
+
+#define VEC_LEVEL_FROMBUS  0
+#define VEC_LEVEL_ACTHIGH  1
+#define VEC_LEVEL_ACTLOW   2
+
 /** @brief Per-vector information.
  *
  * This structure stores the machine-dependent mapping from vectors to
@@ -102,9 +113,10 @@ struct VectorInfo {
   uint64_t count;		/**< @brief Number of occurrences. */
   uint8_t  type;		/**< @brief See VecType. */
   uint8_t  user : 1;		/**< @brief User accessable */
-  uint8_t  edge : 1;		/**< @brief Edge triggered */
+  uint8_t  mode : 2;		/**< @brief Trigger mode */
+  uint8_t  level : 2;		/**< @brief Active hi/lo */
   uint8_t  enabled : 1;		/**< @brief Vector enabled  */
-  uint8_t  irq;			/**< @brief Interrupt pin number. */
+  uint8_t  irq;			/**< @brief Global interrupt pin number. */
   spinlock_t lock;		/**< @brief For manipulation of this vector. */
   IrqController* ctrlr;		/**< @brief Controller chip */
   // StallQ stallQ;
@@ -127,9 +139,20 @@ void irq_Enable(irq_t irq);
 /** @brief Disable specified interupt pin. */
 void irq_Disable(irq_t irq);
 
-/** @brief Bind specified interupt pin. */
-void irq_Bind(irq_t irq, VecFn fn);
-/** @brief Unbind specified interupt pin. */
-void irq_Unbind(irq_t irq);
+/** @brief Return true IFF vector is currently enabled. */
+bool irq_isEnabled(irq_t irq);
+
+/** @brief Bind an interrupt to a device.
+ *
+ * Note that this is generally @em not used to bind the interrupt to a
+ * particular end device. There are one or two devices in the kernel
+ * for which that is true, but the more usual case is that this gets
+ * invoked indirectly from user-land bus device drivers to bind the
+ * interrupt source to the bus controller. Further demultiplexing to
+ * the actual device will happen in user-mode code.
+ *
+ * In consequence, there is currently no provision in the kernel for
+ * @em undoing this operation. */
+void irq_Bind(irq_t irq, uint32_t mode, uint32_t level, VecFn fn);
 
 #endif /* __KERNINC_VECTOR_H__ */

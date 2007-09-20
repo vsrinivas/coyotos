@@ -33,14 +33,15 @@
  * on the CMOS chip.
  */
 
-#include "IRQ.h"
-#include "PIC.h"
 #include <kerninc/printf.h>
 #include <kerninc/assert.h>
 #include <kerninc/Sched.h>
 #include <kerninc/ReadyQueue.h>
 #include <kerninc/event.h>
 #include <coyotos/i386/io.h>
+#include "PIC.h"
+#include "IRQ.h"
+#include "lapic.h"
 
 // #define CMOS_TICK_DIVIDER	11931 /* (0x2e9b) ~10ms */
 #define CMOS_TICK_DIVIDER	23863 /* (0x2e9b) ~50/sec */
@@ -92,7 +93,8 @@ pit_wakeup(Process *inProc, fixregs_t *saveArea)
 void
 hardclock_init()
 {
-  if (lapic_pa) {
+  // For testing, set things up to use the legacy PIT even in APIC mode.
+  if (false && lapic_pa) {
     bug("Need to configure PIT for round-robin\n");
   }
   else {
@@ -103,7 +105,7 @@ hardclock_init()
 
     /* CMOS chip is already programmed with a slow but acceptable
        interval timer. Just use that. */
-    irq_Bind(irq_PIT, pit_wakeup);
-    irq_Enable(irq_PIT);
+    irq_Bind(irq_ISA_PIT, VEC_MODE_FROMBUS, VEC_LEVEL_FROMBUS, pit_wakeup);
+    irq_Enable(irq_ISA_PIT);
   }
 }

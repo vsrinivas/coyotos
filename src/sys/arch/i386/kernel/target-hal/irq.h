@@ -54,8 +54,57 @@
 
 /**@brief Type used for IRQ indices.
  *
- * @bug This type declaration should probably move into the HAL. */
-typedef uint8_t TARGET_IRQ_T;
+ * IA-32 platforms admit the possibility of interrupts getting
+ * remapped. In particular, interrupt pin N on the ISA
+ * bus may not be mapped to global IRQ N. My initial hope had been to
+ * express the entire kernel-external interface strictly in terms of
+ * global interrupt numbers, but there does not appear to be any
+ * particularly good way for an older driver to consult the interrupt
+ * re-routing tables. This is particularly true given that future
+ * versions of the PC may introduce new re-routing strategies, and we
+ * would like to avoid the need to change the drivers at that time.
+ *
+ * We therefore reserve the uppermost 8 bits of the target IRQ value
+ * to indicate a "bus identifier". At present the defined bus
+ * identifiers are:
+ *
+ * <table>
+ * <thead>
+ * <tr valign="top">
+ *   <td><b>Identifier</b></td>
+ *   <td><b>Number</b></td>
+ *   <td><b>Meaning</b></td>
+ * </tr>
+ * </thead>
+ * <tbody>
+ * <tr valign="top">
+ *  <td>IBUS_GLOBAL</td>
+ *  <td>0</td>
+ *  <td>System global IRQ namespace/td>
+ * </tr>
+ * <tr valign="top">
+ *  <td>IBUS_ISA</td>
+ *  <td>1</td>
+ *  <td>ISA interrupt namespace/td>
+ * </tr>
+ * <tr valign="top">
+ *  <td>IBUS_PCI</td>
+ *  <td>2</td>
+ *  <td>PCI interrupt namespace/td>
+ * </tr>
+ * </tbody>
+ * </table>
+ *
+ * @bug This idea probably needs to become part of the public kernel
+ * interface, at which point it will need to move into an IDL file.
+ */
+typedef uint32_t TARGET_IRQ_T;
+#define IBUS_GLOBAL 0x0
+#define IBUS_ISA    0x01000000
+#define IBUS_PCI    0x02000000
+#define IRQ(bus,pin) ((bus) | (pin))
+#define IRQ_PIN(irq) ((irq) & 0x00ffffff)
+#define IRQ_BUS(irq) ((irq) & 0xff000000)
 
 /** @brief Opaque flags type definition. 
  *

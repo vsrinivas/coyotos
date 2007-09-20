@@ -1,3 +1,6 @@
+#ifndef __I686_IOAPIC_H__
+#define __I686_IOAPIC_H__
+
 /*
  * Copyright (C) 2007, The EROS Group, LLC.
  *
@@ -21,6 +24,13 @@
 /** @file
  * @brief IO APIC support.
  */
+
+/** @brief True if implementation has a redundant 8259 legacy PIC that
+ * must be disabled before the local APIC is enabled.
+ *
+ * Set conditionally in acpi.c:acpi_find_MADT()
+ */
+extern bool lapic_requires_8259_disable;
 
 /* I/O APIC Register numbers */
 /** @brief I/O APIC Identitification Register */
@@ -150,6 +160,24 @@ typedef struct IoAPIC_Entry {
 } IoAPIC_Entry;
 
 
-extern void ioapic_init();
+/** @brief Start the IOAPIC-based interrupt system.
+ *
+ * Shuts down the 80259 interrupt controller system and initializes
+ * all registered IOAPICs.
+ */
+extern void ioapic_init(); 
+
+/** @brief Shut down the IOAPIC system prior to soft reboot.
+ *
+ * @bug Not currently implemented in any meaningful sense.
+ */
 extern void ioapic_shutdown();
+
+/** @brief Register an IOAPIC chip with the IOAPIC subsystem.
+ *
+ * All IOAPIC chips discovered should be registered before calling
+ * ioapic_init().  Called by acpi_probe_apics().
+ */
 extern void ioapic_register(irq_t baseIRQ, kva_t va);
+
+#endif /* __I686_IOAPIC_H__ */
