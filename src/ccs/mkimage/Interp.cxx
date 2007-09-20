@@ -429,7 +429,7 @@ AST::interp(InterpState& is)
 
       if (!isValue(v)) {
 	is.errStream << loc << " " << 
-	  "Left hand side of assignment is not a value." << '\n';
+	  "Right hand side of assignment is not a value." << '\n';
 	  THROW(excpt::BadValue, "Bad interpreter result");
       }
 
@@ -470,7 +470,7 @@ AST::interp(InterpState& is)
 
       if (!isValue(v)) {
 	is.errStream << loc << " " << 
-	  "Left hand side of assignment is not a value." << '\n';
+	  "Right hand side of assignment is not a value." << '\n';
 	THROW(excpt::BadValue, "Bad interpreter result");
       }
 
