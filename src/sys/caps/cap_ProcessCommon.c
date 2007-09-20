@@ -104,6 +104,7 @@ void cap_ProcessCommon(InvParam_t *iParam)
       sched_commit_point();
 
       if (cancelFault) {
+	p->issues &= ~pi_Faulted;
 	p->state.faultCode = 0;
 	p->state.faultInfo = 0;
       }

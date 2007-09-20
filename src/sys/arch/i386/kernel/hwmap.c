@@ -399,7 +399,9 @@ depend_entry_invalidate_impl(const DependEntry *entry, int slot)
   size_t mask = entry->slotMask;
 
   if (UsingPAE) {
-    IA32_PAE *pte = TRANSMAP_MAP(map->pa, IA32_PAE *);
+    uintptr_t offset = (map->pa & COYOTOS_PAGE_ADDR_MASK);
+    char *map_base = TRANSMAP_MAP(map->pa - offset, char *);
+    IA32_PAE *pte = (IA32_PAE *)(map_base + offset);
     size_t maxpte = COYOTOS_PAGE_SIZE / sizeof (*pte);
     
     size_t base = entry->basePTE;
@@ -422,7 +424,7 @@ depend_entry_invalidate_impl(const DependEntry *entry, int slot)
 	}
       }
     }
-    TRANSMAP_UNMAP(pte);
+    TRANSMAP_UNMAP(map_base);
   }
   else {
     IA32_PTE *pte = TRANSMAP_MAP(map->pa, IA32_PTE *);

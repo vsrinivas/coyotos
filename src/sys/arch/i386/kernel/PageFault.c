@@ -357,7 +357,10 @@ const PageTableLevel normPtbl[] = {
 };
 
 void
-do_pageFault(Process *base, uintptr_t addr_arg, bool wantWrite, bool wantExec)
+do_pageFault(Process *base, uintptr_t addr_arg, 
+	     bool wantWrite, 
+	     bool wantExec,
+	     bool wantCap)
 {
   uintptr_t addr = addr_arg;
 
@@ -386,6 +389,11 @@ do_pageFault(Process *base, uintptr_t addr_arg, bool wantWrite, bool wantExec)
 
   if (result != 0)
     goto deliver_fault;
+
+  if (!wantCap && (mwr.ents[mwr.count - 1].entry->hdr.ty == ot_CapPage)) {
+    result = coyotos_Process_FC_DataAccessTypeError;
+    goto deliver_fault;
+  }
 
   mwe = &mwr.ents[0];
   restr = 0;

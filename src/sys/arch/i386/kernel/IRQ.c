@@ -257,10 +257,10 @@ vh_PageFault(Process *inProc, fixregs_t *saveArea)
   bool wantWrite = (e & PAGEFAULT_ERROR_RW);
 
   DEBUG_PAGEFAULT
-    printf("do_pageFault(proc=0x%p, va=0x%08x, %s, %s)\n", inProc, addr,
+    printf("do_pageFault(proc=0x%p, va=0x%08x, %s, %s, false)\n", inProc, addr,
 	   wantWrite ? "wantWrite" : "0", wantExec ? "wantExec" : "0");
 
-  do_pageFault(inProc, addr, wantWrite, wantExec);
+  do_pageFault(inProc, addr, wantWrite, wantExec, false);
 
   DEBUG_PAGEFAULT
     printf("do_pageFault(...) done\n");
