@@ -111,8 +111,8 @@ proc_do_upcall(InvParam_t *iParam)
 
   // receiver AC must be set, but no need to check receiver LRC,
   // since cannot be less than zero:
-  if (opw0 & IPW0_AC) {
-    size_t nCap = min(IPW0_LSC(iParam->opw[0])+1, invokee_lrc+1);
+  if ((opw0 & IPW0_AC) && (opw0 & IPW0_SC)) {
+    size_t nCap = min(IPW0_LSC(opw0)+1, invokee_lrc+1);
 
     for (size_t i = 0; i < nCap; i++)
       cap_set(iParam->destCap[i].cap, &iParam->srcCap[i].theCap);

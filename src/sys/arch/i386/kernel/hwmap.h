@@ -111,7 +111,7 @@ struct Mapping *pgtbl_get(struct MemHeader *hdr, size_t level,
 			  coyaddr_t guard, coyaddr_t mask, size_t restr);
 
 
-void do_pageFault(Process *base, uintptr_t addr, bool wantWrite, 
-		  bool wantExec);
+void do_pageFault(Process *base, uintptr_t addr, 
+		  bool wantWrite, bool wantExec, bool wantCap);
 
 #endif /* __I386_HW_MAP_H__ */

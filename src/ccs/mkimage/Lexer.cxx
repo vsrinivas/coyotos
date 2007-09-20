@@ -497,6 +497,12 @@ Lexer::lex(ParseType *lvalp)
       do {
 	c = getChar();
 
+	if (c == EOF) {
+	  errStream << here.asString()
+		    << ": end of file while processing '\"' quoted string\n";
+	  num_errors++;
+	  break;
+	}
 	if (c == '\\') 
 	  (void) getChar();	// just ignore it -- will validate later
 

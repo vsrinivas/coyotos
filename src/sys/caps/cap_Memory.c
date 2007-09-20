@@ -68,6 +68,17 @@ cap_Memory(InvParam_t *iParam)
       iParam->opw[0] = InvResult(iParam, 1);
       return;
     }
+  case OC_coyotos_Memory_getRestrictions:
+    {
+      INV_REQUIRE_ARGS(iParam, 0);
+
+      sched_commit_point();
+
+      put_oparam32(iParam, iParam->iCap.cap->restr);
+
+      iParam->opw[0] = InvResult(iParam, 0);
+      return;
+    }
   case OC_coyotos_Memory_getGuard:
     {
       INV_REQUIRE_ARGS(iParam, 0);

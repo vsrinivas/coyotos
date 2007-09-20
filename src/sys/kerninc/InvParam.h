@@ -180,7 +180,7 @@ static inline uintptr_t InvResult(InvParam_t *iParam, size_t nCap)
 {
   uintptr_t opw0 = IPW0_MAKE_LDW(iParam->next_odw-1);
   if (nCap)
-    opw0 |= (IPW0_SC | IPW0_LSC(nCap-1));
+    opw0 |= (IPW0_SC | IPW0_MAKE_LSC(nCap-1));
   return opw0;
 }
 

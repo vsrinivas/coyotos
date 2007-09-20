@@ -30,6 +30,7 @@ module coyotos.VirtualCopySpace {
   
   export capreg APP {
     SPACEGPT = rt.REG.APP0,
+    OPAQUESPACE,
     BGGPT,
     HANDLER_ENTRY,
 

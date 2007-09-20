@@ -50,7 +50,7 @@ strcat_number(char *string, uint64_t value)
 
   output[idx] = 0;
 
-  while (value) {
+  while (value || idx == MAX) {
     output[--idx] = '0' + (value % 10);
     value /= 10;
   }

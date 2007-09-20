@@ -40,8 +40,7 @@ void cap_Process(InvParam_t *iParam)
 
   if ((opCode != OC_coyotos_Cap_getType) && 
       (iParam->iCap.cap->restr & CAP_RESTR_RESTART)) {
-    sched_commit_point();
-    InvErrorMessage(iParam, RC_coyotos_Cap_NoAccess);
+    cap_ProcessCommon(iParam);
     return;
   }
 
