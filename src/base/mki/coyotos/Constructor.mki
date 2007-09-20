@@ -128,7 +128,27 @@ module coyotos.Constructor {
   primordial_tools[rt.TOOL.SPACEBANK_VERIFY] = sb.Verifier;
   primordial_tools[rt.TOOL.CONSTRUCTOR_VERIFY] = Verifier;
   primordial_tools[rt.TOOL.AUDIT_LOG] = NullCap();
-  
+
+  /* Create a ProtoSpace-running process, with Address Space constructor
+   * (or address space) as_cons, starting PC pc, and Handler constructor
+   * (or handler) handler_cons
+   */
+  export def make_process(bank, as_cons, pc, handler_cons) {
+    def my_protospace = dup(bank, protospace);
+
+    set_page_uint64(my_protospace, 0, pc);
+
+    def proc = util.make_running_process(bank, weaken(my_protospace), 8);
+
+    proc.capReg[rt.REG.TOOLS] = readonly(dup(bank, primordial_tools));
+    
+    proc.capReg[PROTOAPP.ADDRSPACE] = as_cons;
+    proc.capReg[PROTOAPP.HANDLER] = handler_cons;
+    proc.capReg[PROTOAPP.SCHEDULE] = proc.schedule;
+
+    return proc;
+  }
+
   /*
    * Internal function which sets up *proc* (a running process with the
    * constructor image) to be a sealed constructor of image *as*, with
@@ -182,7 +202,7 @@ module coyotos.Constructor {
    */
   export def create_small(src_bank, file, handler) {
     def bank = new Bank(src_bank);
-    def proc = util.make_running_process(src_bank, cons_space, cons_pc);
+    def proc = util.make_running_process(bank, cons_space, cons_pc);
     
     def image = loadimage(bank, file);
     

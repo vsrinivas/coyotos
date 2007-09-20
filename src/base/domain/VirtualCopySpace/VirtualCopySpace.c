@@ -39,6 +39,7 @@
 #include <idl/coyotos/Endpoint.h>
 #include <idl/coyotos/GPT.h>
 #include <idl/coyotos/Page.h>
+#include <idl/coyotos/KernLog.h>
 #include <idl/coyotos/CapPage.h>
 #include <idl/coyotos/Null.h>
 #include <idl/coyotos/Process.h>
@@ -66,6 +67,7 @@ typedef union {
 } _IDL_GRAND_SERVER_UNION;
 
 #define CR_SPACEGPT      coyotos_VirtualCopySpace_APP_SPACEGPT
+#define CR_OPAQUESPACE   coyotos_VirtualCopySpace_APP_OPAQUESPACE
 #define CR_BGGPT         coyotos_VirtualCopySpace_APP_BGGPT
 #define CR_HANDLER_ENTRY coyotos_VirtualCopySpace_APP_HANDLER_ENTRY
 
@@ -125,7 +127,7 @@ HANDLE_coyotos_VirtualCopySpace_freeze(caploc_t _retVal, ISE *_env)
 static uint64_t
 HANDLE_coyotos_SpaceHandler_getSpace(caploc_t _retVal, ISE *_env)
 {
-  cap_copy(_retVal, CR_SPACEGPT);
+  cap_copy(_retVal, CR_OPAQUESPACE);
 
   return (RC_coyotos_Cap_OK);
 }
@@ -192,10 +194,8 @@ round_up(uint64_t a, uint64_t b)
 
 /// @bug current limitations:
 ///   @li  doesn't fill in read-only faults with a fixed zero page
-///   @li  doesn't fill in Nulls with CapPages, since we don't have
-///        a distinguished fault code.
-static bool
-process_fault(uint64_t addr)
+bool
+process_fault(uint64_t addr, bool wantCap)
 {
   caploc_t cap = CR_SPACEGPT;
   caploc_t next = CR_TMP1;
@@ -214,6 +214,7 @@ process_fault(uint64_t addr)
    */
 
   coyotos_Memory_l2value_t l2v = 0;
+  coyotos_Memory_l2value_t unusedl2v = 0;
   coyotos_Memory_l2value_t lastl2v = COYOTOS_SOFTADDR_BITS;
 
   for (;;) {
@@ -245,28 +246,31 @@ process_fault(uint64_t addr)
     coyotos_Memory_l2value_t l2g = guard_l2g(theGuard);
     
     /* check to see that the address space is well-formed */
-    if (l2g > COYOTOS_HW_ADDRESS_BITS || l2g > l2v)
+    if (l2g > COYOTOS_HW_ADDRESS_BITS || l2g > l2v ||
+	highbits_shifted(matchValue, l2v) != 0) {
       return (false);
+    }
     
-    uint64_t mismatch = ((addr ^ matchValue) & mask);
+    uint64_t mismatch = ((remaddr ^ matchValue) & mask);
     
     if (mismatch != 0) {
       // we need to add a GPT
 
       // figure out its guard and l2v
-      size_t new_l2g = 
+      size_t desired_l2g = 
 	min(l2g + round_up(l2offset(mismatch) - l2g, coyotos_GPT_l2slots),
 	    COYOTOS_SOFTADDR_BITS);
-      
-      uint32_t new_match = highbits_shifted(matchValue, new_l2g);
 
-      size_t new_l2v = max(new_l2g - coyotos_GPT_l2slots, l2g);
+      size_t new_l2v = max(desired_l2g - coyotos_GPT_l2slots, l2g);
+      size_t new_l2g = min(desired_l2g, l2v);
+
+      uint32_t new_match = highbits_shifted(matchValue, new_l2g);
 
       // figure out the position and new guard for the existing cap
       size_t the_slot = highbits_shifted(lowbits(matchValue, new_l2g),
 					 new_l2v);
       uint32_t the_match = highbits_shifted(lowbits(matchValue, new_l2v), l2g);
-      
+
       // now that that's all figured out, allocate the new cap, and
       // set everything up.
       if (!coyotos_SpaceBank_alloc(CR_SPACEBANK,
@@ -276,18 +280,17 @@ process_fault(uint64_t addr)
 				   spare,
 				   CR_NULL,
 				   CR_NULL,
-				   IDL_E))
+				   IDL_E)) {
 	return false;
+      }
 
       // If the cap was invalid (i.e. Null), don't install anything in
       // the chosen slot.
-      if (!coyotos_GPT_setl2v(spare, new_l2v, &l2v, IDL_E) ||
+      if (!coyotos_GPT_setl2v(spare, new_l2v, &unusedl2v, IDL_E) ||
 	  !coyotos_AddressSpace_guardedSetSlot(cap,
 					       slot,
 					       spare,
-					       make_guard(new_match, 
-							  l2g + 
-							  coyotos_GPT_l2slots),
+					       make_guard(new_match, new_l2g),
 					       IDL_E) ||
 	  (!invalidCap && 
 	   !coyotos_AddressSpace_guardedSetSlot(spare,
@@ -306,11 +309,12 @@ process_fault(uint64_t addr)
 
     if (invalidCap)
       restr = coyotos_Memory_restrictions_readOnly;
-    else if (!coyotos_Memory_getRestrictions(next, &restr, IDL_E))
+    else if (!coyotos_Memory_getRestrictions(next, &restr, IDL_E)) {
       return false;  // shouldn't happen
-
-    if (restr & coyotos_Memory_restrictions_opaque)
+    }
+    if (restr & coyotos_Memory_restrictions_opaque) {
       return false;  // cannot peer through opacity
+    }
 
     if (restr & (coyotos_Memory_restrictions_readOnly | 
 		 coyotos_Memory_restrictions_weak)) {
@@ -322,16 +326,16 @@ process_fault(uint64_t addr)
 
       // we need to replace this capability with a strong capability.
       coyotos_Cap_AllegedType type = 0;
-      if (!coyotos_Cap_getType(next, &type, IDL_E))
+      if (!coyotos_Cap_getType(next, &type, IDL_E)) {
 	return false;
+      }
 
       coyotos_Range_obType obType = coyotos_Range_obType_otInvalid;
 
       switch (type) {
       case IKT_coyotos_Null:
-	// this should really decide based on the type of fault whether to
-	// supply a Page or CapPage.
-	obType = coyotos_Range_obType_otPage;
+	obType = wantCap ? 
+	  coyotos_Range_obType_otCapPage : coyotos_Range_obType_otPage;
 	break;
       case IKT_coyotos_Page:
 	obType = coyotos_Range_obType_otPage;
@@ -371,7 +375,8 @@ process_fault(uint64_t addr)
       } else if (!coyotos_AddressSpace_copyFrom(spare, next, spare, IDL_E) ||
 		 !coyotos_Memory_reduce(spare, new_restr, spare, IDL_E) ||
 		 !coyotos_AddressSpace_setSlot(cap, slot, spare, IDL_E)) {
-	(void) coyotos_SpaceBank_free(CR_SPACEBANK, 1, spare, CR_NULL, CR_NULL,
+	(void) coyotos_SpaceBank_free(CR_SPACEBANK, 1, 
+				      spare, CR_NULL, CR_NULL,
 				      IDL_E);
 	return false;
       }
@@ -380,12 +385,15 @@ process_fault(uint64_t addr)
       if (obType == coyotos_Range_obType_otPage ||
 	  obType == coyotos_Range_obType_otCapPage)
 	return true;
+
+      continue; // re-process with new cap
     }
 
     // To prevent infinite recursion, we require that address spaces
     // continually reduce l2v.
-    if (l2v >= lastl2v)
+    if (l2v >= lastl2v) {
       return false;
+    }
     lastl2v = l2v;
 
     // we're traversing *into* a GPT.  Since the guard is zero, and
@@ -410,10 +418,11 @@ HANDLE_coyotos_MemoryHandler_handle(caploc_t proc,
 
   switch (faultCode) {
   case coyotos_Process_FC_InvalidDataReference:
-  case coyotos_Process_FC_InvalidCapReference:
   case coyotos_Process_FC_AccessViolation:
-
-    clearFault = process_fault(faultInfo);
+    clearFault = process_fault(faultInfo, false);
+    break;
+  case coyotos_Process_FC_InvalidCapReference:
+    clearFault = process_fault(faultInfo, true);
     break;
 
   default:
@@ -439,7 +448,7 @@ choose_if(uint64_t epID, uint32_t pp)
   default:
     return IKT_coyotos_Cap;
   }
-}
+} 
 
 bool
 initialize(void)
@@ -462,10 +471,10 @@ initialize(void)
   if (guard_l2g(theGuard) == COYOTOS_SOFTADDR_BITS)
     goto fail;
 
-  if (coyotos_Memory_reduce(CR_BGGPT,
-			    coyotos_Memory_restrictions_weak,
-			    CR_BGGPT,
-			    IDL_E))
+  if (!coyotos_Memory_reduce(CR_BGGPT,
+			     coyotos_Memory_restrictions_weak,
+			     CR_BGGPT,
+			     IDL_E))
     goto fail;
 
   coyotos_Memory_l2value_t old_l2v;
@@ -502,8 +511,12 @@ initialize(void)
        !coyotos_AddressSpace_guardedSetSlot(CR_SPACEGPT,
 					    slot,
 					    CR_BGGPT,
-					    make_guard(0, guard_l2g(theGuard)),
+					    theGuard,
 					    IDL_E)) ||
+      !coyotos_Memory_reduce(CR_SPACEGPT,
+			     coyotos_Memory_restrictions_opaque,
+			     CR_OPAQUESPACE,
+			     IDL_E) ||
       !coyotos_Endpoint_makeEntryCap(CR_INITEPT, 
 				     coyotos_VirtualCopySpace_PP_VCS, 
 				     CR_REPLY0, 

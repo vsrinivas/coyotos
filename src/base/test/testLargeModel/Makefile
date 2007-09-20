@@ -19,13 +19,26 @@
 #
 
 default: package
-COYOTOS_SRC=../..
+COYOTOS_SRC=../../..
+CROSS_BUILD=yes
 
-DIRS=\
-    testAppInt \
-    testConstructor \
-    testHandler \
-    testLargeModel
+CFLAGS+=-g -O
+
+INC=-I. -I$(COYOTOS_SRC)/../usr/include -I$(BUILDDIR)
+SOURCES=$(wildcard *.c)
+OBJECTS=$(patsubst %.c,$(BUILDDIR)/%.o,$(wildcard *.c))
+TARGETS=$(BUILDDIR)/testLargeModel
 
 include $(COYOTOS_SRC)/build/make/makerules.mk
+
+install all: $(TARGETS) $(BUILDDIR)/mkimage.out
+
+$(BUILDDIR)/testLargeModel: $(OBJECTS)
+	$(GCC) $(GPLUSFLAGS) $(OBJECTS) $(LIBS) $(STDLIBDIRS) -o $@
+
+# for test images
+$(BUILDDIR)/mkimage.out: $(TARGETS) testLargeModel.mki
+	$(MKIMAGE) -o $@ -t $(COYOTOS_TARGET) -I. -L$(BUILDDIR) testLargeModel
+
+-include $(BUILDDIR)/.*.m
 
