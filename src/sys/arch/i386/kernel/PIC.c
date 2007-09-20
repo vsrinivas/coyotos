@@ -45,7 +45,7 @@
 
 #define DEBUG_IOAPIC if (0)
 
-bool use_apic = true;
+bool use_ioapic = false;
 
 /** @brief Physical address of local APIC 
  *
@@ -66,24 +66,28 @@ kva_t lapic_va;
  ****************************************************************/
 
 void
-pic_no_op(IrqController *chip, irq_t irq)
+pic_no_op(VectorInfo *vector)
 {
 }
 
 void
 pic_init()
 {
-  if (use_apic && acpi_probe_apics()) {
-    ioapic_init();
+  bool have_ioapic = acpi_probe_apics();
 
-    /* This is per-cpu. It should not be done here. */
-    lapic_write_register(LAPIC_SVR, LAPIC_SVR_ENABLED | LAPIC_SPURIOUS_VECTOR);
+  if (use_ioapic && have_ioapic) {
+    ioapic_init();
 
     printf("APIC, ");
   }
   else {
     i8259_init();
     printf("PIC, ");
+  }
+
+  if (use_ioapic && lapic_pa) {
+    lapic_init();
+    printf("LAPIC, ");
   }
 }
 
@@ -92,6 +96,6 @@ pic_shutdown()
 {
   (void) locally_disable_interrupts();
 
-  if (use_apic)
+  if (use_ioapic)
     ioapic_shutdown();
 }

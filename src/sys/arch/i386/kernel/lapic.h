@@ -209,21 +209,22 @@ extern kva_t lapic_va;
 #define     LAPIC_LVT_TIMER_PERIODIC  0x20000
 
 /** @brief Initial Count Register */
-#define LAPIC_ICR_TIMER     0x380
+#define LAPIC_TIMER_ICR     0x380
 /** @brief Current Count Register */
-#define LAPIC_CCR_TIMER     0x390
+#define LAPIC_TIMER_CCR     0x390
 /** @brief Divide Configuration Register */
-#define LAPIC_DCR_TIMER     0x3E0
+#define LAPIC_TIMER_DCR     0x3E0
 #define   LAPIC_DCR_DIVIDE_VALUE_MASK  0xf
 #define   LAPIC_DCR_DIVIDE_DIV2        0x0
 #define   LAPIC_DCR_DIVIDE_DIV4        0x1
 #define   LAPIC_DCR_DIVIDE_DIV8        0x2
 #define   LAPIC_DCR_DIVIDE_DIV16       0x3
-#define   LAPIC_DCR_DIVIDE_DIV32       0x4
-#define   LAPIC_DCR_DIVIDE_DIV64       0x5
-#define   LAPIC_DCR_DIVIDE_DIV128      0x6
-#define   LAPIC_DCR_DIVIDE_DIV1        0x7
+#define   LAPIC_DCR_DIVIDE_DIV32       0x8
+#define   LAPIC_DCR_DIVIDE_DIV64       0x9
+#define   LAPIC_DCR_DIVIDE_DIV128      0xa
+#define   LAPIC_DCR_DIVIDE_DIV1        0xb
 
+#if 0
 /** @brief Vector used for spurious LAPIC interrupts.
  *
  * This vector is used for an interrupt which was aborted becauase the
@@ -234,14 +235,15 @@ extern kva_t lapic_va;
 
 /** @brief Vector used for inter-processor-interrupts
  */
-#define   LAPIC_IPI_VECTOR       /* ?? */
+#define   LAPIC_IPI_VECTOR       0xf8
 
 /** @brief Vector used for local apic timer interrupts
  */
-#define   LAPIC_TIMER_VECTOR       /* ?? */
+#define   LAPIC_TIMER_VECTOR     0xff
+#endif
 
 
-static inline uint32_t
+static inline uint32_t 
 lapic_read_register(uint32_t reg)
 {
   volatile uint32_t *va_reg = (uint32_t *) (lapic_va + reg);
@@ -249,7 +251,7 @@ lapic_read_register(uint32_t reg)
   return val;
 }
 
-static inline void
+static inline void 
 lapic_write_register(uint32_t reg, uint32_t val)
 {
   volatile uint32_t *va_reg = (uint32_t *) (lapic_va + reg);
@@ -260,11 +262,17 @@ lapic_write_register(uint32_t reg, uint32_t val)
   (void) lapic_read_register(LAPIC_ID);
 }
 
-static inline void lapic_eoi()
+static inline void
+lapic_eoi()
 {
   /* EOI is performed by writing an arbitrary value to the lapic EOI
    * register. */
   lapic_write_register(LAPIC_EOI, 0x1);
 }
+
+/** @brief Initialize the PC motherboard legacy ISA peripheral
+ *  interrupt controllers.
+ */
+extern void lapic_init();
 
 #endif /* __I686_LAPIC_H__ */

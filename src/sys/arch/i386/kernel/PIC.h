@@ -26,13 +26,13 @@
 
 /** @brief True if we should attempt to use local APIC.
  */
-extern bool use_apic;
+extern bool use_ioapic;
 
 /** @brief Initialize the preferred peripheral interrupt controller. */
 void pic_init();
 
 void pic_shutdown();
 
-void pic_no_op(struct IrqController *chip, irq_t irq);
+void pic_no_op(VectorInfo *);
 
 #endif /* __I686_PIC_H__ */

@@ -64,11 +64,15 @@ enum Vectors {
 /* Hardware interrupt busses and pins known to the kernel. */
 enum Interrupts {
   /* CMOS Interval Timer */
-  irq_ISA_PIT       = IRQ(IBUS_ISA,0),
+  irq_ISA_PIT        = IRQ(IBUS_ISA,0),
   /* Keyboard */
-  irq_ISA_Keyboard  = IRQ(IBUS_ISA,1),
+  irq_ISA_Keyboard   = IRQ(IBUS_ISA,1),
   /* master 8259 cascade from secondary */
-  irq_ISA_Cascade   = IRQ(IBUS_ISA,2),
+  irq_ISA_Cascade    = IRQ(IBUS_ISA,2),
+
+  irq_LAPIC_Spurious = IRQ(IBUS_LAPIC,0xef),
+  irq_LAPIC_IPI      = IRQ(IBUS_LAPIC,0xf8),
+  irq_LAPIC_Timer    = IRQ(IBUS_LAPIC,0xff),
 };
 
 /** @brief Number of global interrupt sources */
@@ -101,12 +105,5 @@ void irq_init(void);
 void irq_OnTrapOrInterrupt(Process *inProc, fixregs_t *saveArea);
 
 void irq_DoTripleFault() NORETURN;
-
-/** @brief Mapping from legacy (8259) IRQ pin numbers to current pin
- * numbers.
- *
- * Initializes to an identity map. Rearranged by ioapic_init.
- */
-extern irq_t ISA_IrqMap[16];
 
 #endif /* __I686_IRQ_H__ */

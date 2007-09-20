@@ -102,6 +102,8 @@ typedef uint32_t TARGET_IRQ_T;
 #define IBUS_GLOBAL 0x0
 #define IBUS_ISA    0x01000000
 #define IBUS_PCI    0x02000000
+#define IBUS_LAPIC  0x03000000
+
 #define IRQ(bus,pin) ((bus) | (pin))
 #define IRQ_PIN(irq) ((irq) & 0x00ffffff)
 #define IRQ_BUS(irq) ((irq) & 0xff000000)

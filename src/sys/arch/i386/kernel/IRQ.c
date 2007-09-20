@@ -406,9 +406,9 @@ irq_OnTrapOrInterrupt(Process *inProc, fixregs_t *saveArea)
      * that we allegedly received is still pending. If not, simply
      * acknowledge the PIC and return to whatever we were doing.
      */
-    if (! ctrlr->isPending(ctrlr, irq)) {
+    if (! ctrlr->isPending(vector)) {
       fatal("IRQ %d no longer pending\n", irq);
-      ctrlr->earlyAck(ctrlr, irq);
+      ctrlr->earlyAck(vector);
 
       return;
     }
@@ -422,7 +422,7 @@ irq_OnTrapOrInterrupt(Process *inProc, fixregs_t *saveArea)
     /// well enough to do anything sensible about them here. Need to
     /// read up on that.
     irq_Disable(irq);
-    ctrlr->earlyAck(ctrlr, irq);
+    ctrlr->earlyAck(vector);
   }
 
   if (inProc)
@@ -432,7 +432,7 @@ irq_OnTrapOrInterrupt(Process *inProc, fixregs_t *saveArea)
   vector->fn(inProc, saveArea);
 
   if (vector->type == vt_Interrupt)
-    vector->ctrlr->lateAck(vector->ctrlr, vector->irq);
+    vector->ctrlr->lateAck(vector);
 
   /* We do NOT re-enable the taken interrupt on the way out. That is
    * the driver's job to do if it wants to do it.
@@ -590,7 +590,8 @@ void irq_DoTripleFault()
   sysctl_halt();
 }
 
-irq_t irq_MapInterrupt(irq_t irq)
+VectorInfo *
+irq_MapInterrupt(irq_t irq)
 {
   switch (IRQ_BUS(irq)) {
   case IBUS_ISA:
@@ -600,10 +601,14 @@ irq_t irq_MapInterrupt(irq_t irq)
 	irq = isovr.globalSystemInterrupt;
       else
 	irq = IRQ(IBUS_GLOBAL, IRQ_PIN(irq));
-      return irq;
+      return IrqVector[irq];
     }
   case IBUS_GLOBAL:
-    return irq;
+    return IrqVector[irq];
+
+  case IBUS_LAPIC:
+      return &VectorMap[IRQ_PIN(irq)];
+
   default:
     fatal("Unknown bus type for binding\n");
   }
@@ -614,6 +619,8 @@ irq_t irq_MapInterrupt(irq_t irq)
 void
 irq_Bind(irq_t irq, uint32_t mode, uint32_t level, VecFn fn)
 {
+  VectorInfo *vector;
+
   switch (IRQ_BUS(irq)) {
   case IBUS_ISA:
     {
@@ -631,13 +638,21 @@ irq_Bind(irq_t irq, uint32_t mode, uint32_t level, VecFn fn)
       }
       else
 	irq = IRQ(IBUS_GLOBAL, IRQ_PIN(irq));
+
+      vector = IrqVector[irq];
+
       break;
     }
+  case IBUS_LAPIC:
+    {
+      vector = &VectorMap[IRQ_PIN(irq)];
+      break;
+    }
+
   default:
     fatal("Unknown bus type for binding\n");
   }
 
-  VectorInfo *vector = IrqVector[irq];
   assert(vector);
 
   SpinHoldInfo shi = spinlock_grab(&vector->lock);
@@ -647,6 +662,7 @@ irq_Bind(irq_t irq, uint32_t mode, uint32_t level, VecFn fn)
 
   vector->mode = mode;
   vector->level = level;
+  vector->ctrlr->setup(vector);
 
   spinlock_release(shi);
 }
@@ -654,14 +670,13 @@ irq_Bind(irq_t irq, uint32_t mode, uint32_t level, VecFn fn)
 void
 irq_Enable(irq_t irq)
 {
-  irq = irq_MapInterrupt(irq);
+  VectorInfo *vector = irq_MapInterrupt(irq);
 
-  VectorInfo *vector = IrqVector[irq];
   assert(vector);
 
   SpinHoldInfo shi = spinlock_grab(&vector->lock);
 
-  vector->ctrlr->enable(vector->ctrlr, irq);
+  vector->ctrlr->enable(vector);
   vector->enabled = 1;
 
   spinlock_release(shi);
@@ -670,14 +685,13 @@ irq_Enable(irq_t irq)
 void
 irq_Disable(irq_t irq)
 {
-  irq = irq_MapInterrupt(irq);
+  VectorInfo *vector = irq_MapInterrupt(irq);
 
-  VectorInfo *vector = IrqVector[irq];
   assert(vector);
 
   SpinHoldInfo shi = spinlock_grab(&vector->lock);
 
-  vector->ctrlr->disable(vector->ctrlr, irq);
+  vector->ctrlr->disable(vector);
   vector->enabled = 0;
 
   spinlock_release(shi);
@@ -688,14 +702,12 @@ irq_isEnabled(irq_t irq)
 {
   bool result = false;
 
-  irq = irq_MapInterrupt(irq);
-
-  VectorInfo *vector = IrqVector[irq];
+  VectorInfo *vector = irq_MapInterrupt(irq);
   assert(vector);
 
   SpinHoldInfo shi = spinlock_grab(&vector->lock);
 
-  vector->ctrlr->enable(vector->ctrlr, irq);
+  vector->ctrlr->enable(vector);
   if (vector->enabled)
     result = true;
 

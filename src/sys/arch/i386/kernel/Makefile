@@ -41,6 +41,7 @@ OBJECTS=\
 	$(BUILDDIR)/PIC.o \
 	$(BUILDDIR)/8259.o \
 	$(BUILDDIR)/ioapic.o \
+	$(BUILDDIR)/lapic.o \
 	$(BUILDDIR)/PageFault.o \
 	$(BUILDDIR)/HardClock.o \
 	$(BUILDDIR)/init.o \

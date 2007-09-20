@@ -43,11 +43,67 @@
 #include "IRQ.h"
 #include "lapic.h"
 
+#define CMOS_HARD_TICK_RATE     1193182
+
 // #define CMOS_TICK_DIVIDER	11931 /* (0x2e9b) ~10ms */
 #define CMOS_TICK_DIVIDER	23863 /* (0x2e9b) ~50/sec */
 #define CMOS_TIMER_PORT_0	0x40
 #define CMOS_TIMER_MODE		0x43
 #define CMOS_SQUARE_WAVE0	0x34
+
+uint32_t
+lapic_calibrate()
+{
+#define CALIBRATE_TICKS 2500
+#define CALIBRATE_GUARD 50
+
+  lapic_write_register(LAPIC_TIMER_DCR, LAPIC_DCR_DIVIDE_DIV2);
+  lapic_write_register(LAPIC_LVT_Timer,
+		       LAPIC_LVT_TIMER_PERIODIC|LAPIC_LVT_MASKED|
+		       IRQ_PIN(irq_LAPIC_Timer));
+  lapic_write_register(LAPIC_TIMER_ICR, 0xffffffff);
+
+  /* Spin reading the CMOS clock until we know that (1) we did not
+   * read during a borrow into the low byte from the high byte, and
+   * (2) the value read is large enough that it will not underflow
+   * while we are calibrating.
+   */
+  uint16_t cmos_hi;
+  uint16_t lo, hi;
+  do {
+    lo = inb(CMOS_TIMER_PORT_0);
+    hi = inb(CMOS_TIMER_PORT_0);
+    cmos_hi = (hi <<8) | lo;
+  } while (lo < 16 || cmos_hi < (CALIBRATE_TICKS+CALIBRATE_GUARD) );
+
+  /* Get a starting read from the CMOS clock. */
+  do {
+    lo = inb(CMOS_TIMER_PORT_0);
+    hi = inb(CMOS_TIMER_PORT_0);
+    cmos_hi = (hi <<8) | lo;
+  } while (lo < 16);
+
+  /* Get a starting read from the LAPIC timer. */
+  uint32_t lapic_hi = lapic_read_register(LAPIC_TIMER_CCR);
+
+  uint32_t cmos_lo = cmos_hi;
+
+  /* Watch the CMOS clock for a while. */
+  do {
+    lo = inb(CMOS_TIMER_PORT_0);
+    hi = inb(CMOS_TIMER_PORT_0);
+    cmos_lo = (hi <<8) | lo;
+  } while (lo < 16 || (cmos_hi - cmos_lo) < CALIBRATE_TICKS);
+
+  uint32_t lapic_lo = lapic_read_register(LAPIC_TIMER_CCR);
+
+  uint32_t ratio = (lapic_hi - lapic_lo) / (cmos_hi - cmos_lo);
+
+  printf("%d CMOS ticks => %d lapic_ticks (%d)\n", 
+	 (cmos_hi - cmos_lo), (lapic_hi - lapic_lo), 
+	 ratio);
+  return ratio;
+}
 
 static void 
 pit_wakeup(Process *inProc, fixregs_t *saveArea)
@@ -94,11 +150,47 @@ void
 hardclock_init()
 {
   // For testing, set things up to use the legacy PIT even in APIC mode.
-  if (false && lapic_pa) {
-    bug("Need to configure PIT for round-robin\n");
+  if (use_ioapic && lapic_pa) {
+    uint64_t ratio = lapic_calibrate();
+
+    uint64_t fsb_clock = ratio * ((uint64_t) CMOS_HARD_TICK_RATE) * 2;
+
+    const uint64_t one_ghz = (1000ull * 1000ull * 1000ull);
+    const uint64_t one_hundred_mhz = (1000ull * 1000ull * 100ull);
+    const uint64_t one_mhz = (1000ull * 1000ull);
+
+    if (fsb_clock > one_ghz) {
+      uint64_t ghz = fsb_clock / one_ghz;
+      fsb_clock -= (ghz * one_ghz);
+      printf("FSB speed %d.%01d ghz\n", ghz,
+	     fsb_clock / one_hundred_mhz);
+    }
+    else {
+      printf("FSB speed %d mhz\n", fsb_clock/one_mhz);
+    }
+
+#if 1
+    uint32_t val = lapic_read_register(LAPIC_LVT_Timer);
+    lapic_write_register(LAPIC_LVT_Timer, val | LAPIC_LVT_TIMER_PERIODIC|LAPIC_LVT_MASKED);
+
+    irq_Bind(irq_LAPIC_Timer, VEC_MODE_EDGE, VEC_LEVEL_ACTHIGH, pit_wakeup);
+
+    lapic_write_register(LAPIC_TIMER_ICR, ratio * CMOS_TICK_DIVIDER);
+    irq_Enable(irq_LAPIC_Timer);
+
+#else
+
+    outb(CMOS_SQUARE_WAVE0, CMOS_TIMER_MODE);
+    outb(CMOS_TICK_DIVIDER & 0xffu, CMOS_TIMER_PORT_0);
+    outb(CMOS_TICK_DIVIDER >> 8, CMOS_TIMER_PORT_0);
+
+    /* CMOS chip is already programmed with a slow but acceptable
+       interval timer. Just use that. */
+    irq_Bind(irq_ISA_PIT, VEC_MODE_FROMBUS, VEC_LEVEL_FROMBUS, pit_wakeup);
+    irq_Enable(irq_ISA_PIT);
+#endif
   }
   else {
-
     outb(CMOS_SQUARE_WAVE0, CMOS_TIMER_MODE);
     outb(CMOS_TICK_DIVIDER & 0xffu, CMOS_TIMER_PORT_0);
     outb(CMOS_TICK_DIVIDER >> 8, CMOS_TIMER_PORT_0);

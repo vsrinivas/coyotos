@@ -48,14 +48,14 @@ kva_t lapic_va = 0;
 
 #define DEBUG_IOAPIC if (0)
 
-static void ioapic_setup(IrqController *ctrlr, irq_t irq, VectorInfo *vi);
-static void ioapic_enable(IrqController *ctrlr, irq_t irq);
-static void ioapic_disable(IrqController *ctrlr, irq_t irq);
-static void ioapic_earlyAck(IrqController *ctrlr, irq_t irq);
-static void ioapic_lateAck(IrqController *ctrlr, irq_t irq);
+static void ioapic_setup(VectorInfo *vector);
+static void ioapic_enable(VectorInfo *vector);
+static void ioapic_disable(VectorInfo *vector);
+static void ioapic_earlyAck(VectorInfo *vector);
+static void ioapic_lateAck(VectorInfo *vector);
 
 // static void ioapic_acknowledge(IrqController *ctrlr, irq_t irq);
-static bool ioapic_isPending(IrqController *ctrlr, irq_t irq);
+static bool ioapic_isPending(VectorInfo *vector);
 
 static IrqController ioapic[3];
 static size_t nIoAPIC = 0;
@@ -139,15 +139,15 @@ ioapic_write_entry(IrqController *ctrlr, uint32_t pin, IoAPIC_Entry ent)
 static spinlock_t ioapic_lock;
 
 static void
-ioapic_setup(IrqController *ctrlr, irq_t irq, VectorInfo *vi)
+ioapic_setup(VectorInfo *vi)
 {
   assert(vi->mode != VEC_MODE_FROMBUS);
   assert(vi->level != VEC_LEVEL_FROMBUS);
 
   SpinHoldInfo shi = spinlock_grab(&ioapic_lock);
-  size_t pin = irq - ctrlr->baseIRQ;
+  size_t pin = vi->irq - vi->ctrlr->baseIRQ;
 
-  IoAPIC_Entry e = ioapic_read_entry(ctrlr, pin);
+  IoAPIC_Entry e = ioapic_read_entry(vi->ctrlr, pin);
 
   if (vi->level == VEC_LEVEL_ACTHIGH)
     e.u.fld.polarity = 0;
@@ -159,54 +159,50 @@ ioapic_setup(IrqController *ctrlr, irq_t irq, VectorInfo *vi)
   else
     e.u.fld.triggerMode = 1;
 
-  ioapic_write_entry(ctrlr, pin, e);
+  ioapic_write_entry(vi->ctrlr, pin, e);
 
   spinlock_release(shi);
 
 }
 
 static void
-ioapic_enable(IrqController *ctrlr, irq_t irq)
+ioapic_enable(VectorInfo *vi)
 {
   SpinHoldInfo shi = spinlock_grab(&ioapic_lock);
-  size_t pin = irq - ctrlr->baseIRQ;
+  size_t pin = vi->irq - vi->ctrlr->baseIRQ;
 
-  IoAPIC_Entry e = ioapic_read_entry(ctrlr, pin);
+  IoAPIC_Entry e = ioapic_read_entry(vi->ctrlr, pin);
   e.u.fld.masked = 0;
-  ioapic_write_entry(ctrlr, pin, e);
+  ioapic_write_entry(vi->ctrlr, pin, e);
 
   spinlock_release(shi);
 }
 
 static void
-ioapic_disable(IrqController *ctrlr, irq_t irq)
+ioapic_disable(VectorInfo *vi)
 {
   SpinHoldInfo shi = spinlock_grab(&ioapic_lock);
-  size_t pin = irq - ctrlr->baseIRQ;
+  size_t pin = vi->irq - vi->ctrlr->baseIRQ;
 
-  IoAPIC_Entry e = ioapic_read_entry(ctrlr, pin);
+  IoAPIC_Entry e = ioapic_read_entry(vi->ctrlr, pin);
   e.u.fld.masked = 1;
-  ioapic_write_entry(ctrlr, pin, e);
+  ioapic_write_entry(vi->ctrlr, pin, e);
 
   spinlock_release(shi);
 }
 
 static void
-ioapic_earlyAck(IrqController *ctrlr, irq_t irq)
+ioapic_earlyAck(VectorInfo *vi)
 {
-  VectorInfo *vector = IrqVector[irq];
-
-  if (vector->mode == VEC_MODE_EDGE)
+  if (vi->mode == VEC_MODE_EDGE)
     // If intterupt was edge triggered, issue early EOI:
     lapic_eoi();
 }
 
 static void
-ioapic_lateAck(IrqController *ctrlr, irq_t irq)
+ioapic_lateAck(VectorInfo *vi)
 {
-  VectorInfo *vector = IrqVector[irq];
-
-  if (vector->mode == VEC_MODE_LEVEL)
+  if (vi->mode == VEC_MODE_LEVEL)
     lapic_eoi();
 }
 
@@ -227,9 +223,9 @@ ioapic_acknowledge(IrqController *ctrlr, irq_t irq)
  * de-assertion on the lapic.
  */
 static bool
-ioapic_isPending(IrqController *ctrlr, irq_t irq)
+ioapic_isPending(VectorInfo *vi)
 {
-  return irq_isEnabled(irq);
+  return irq_isEnabled(vi->irq);
 }
 
 static void 

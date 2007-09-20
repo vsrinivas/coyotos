@@ -70,12 +70,12 @@ struct IrqController {
   irq_t baseIRQ;	   /**< @brief First IRQ on this controller */
   irq_t nIRQ;		   /**< @brief Number of IRQ sources */
   kva_t va;			/**< @brief For memory-mapped controllers. */
-  void (*setup)(struct IrqController *, irq_t irq, struct VectorInfo *vi);
-  void (*enable)(struct IrqController *, irq_t irq);
-  void (*disable)(struct IrqController *, irq_t irq);
-  bool (*isPending)(struct IrqController *, irq_t irq);
-  void (*earlyAck)(struct IrqController *, irq_t irq);
-  void (*lateAck)(struct IrqController *, irq_t irq);
+  void (*setup)(struct VectorInfo *vi);
+  void (*enable)(struct VectorInfo *vi);
+  void (*disable)(struct VectorInfo *vi);
+  bool (*isPending)(struct VectorInfo *vi);
+  void (*earlyAck)(struct VectorInfo *vi);
+  void (*lateAck)(struct VectorInfo *vi);
 };
 typedef struct IrqController IrqController;
 
@@ -116,7 +116,7 @@ struct VectorInfo {
   uint8_t  mode : 2;		/**< @brief Trigger mode */
   uint8_t  level : 2;		/**< @brief Active hi/lo */
   uint8_t  enabled : 1;		/**< @brief Vector enabled  */
-  uint8_t  irq;			/**< @brief Global interrupt pin number. */
+  uint32_t  irq;			/**< @brief Global interrupt pin number. */
   spinlock_t lock;		/**< @brief For manipulation of this vector. */
   IrqController* ctrlr;		/**< @brief Controller chip */
   // StallQ stallQ;
@@ -154,5 +154,8 @@ bool irq_isEnabled(irq_t irq);
  * In consequence, there is currently no provision in the kernel for
  * @em undoing this operation. */
 void irq_Bind(irq_t irq, uint32_t mode, uint32_t level, VecFn fn);
+
+/** @brief Given an IRQ, return the appropriate vector entry. */
+VectorInfo *irq_MapInterrupt(irq_t irq);
 
 #endif /* __KERNINC_VECTOR_H__ */

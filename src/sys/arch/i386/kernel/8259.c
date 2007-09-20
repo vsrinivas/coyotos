@@ -64,16 +64,18 @@ static uint16_t i8259_irqMask   = (uint16_t) ~0u;
  * chips, because it is simpler that way.
  *******************************************************************************/
 static void
-i8259_setup(IrqController *chip, irq_t irq, VectorInfo *vi)
+i8259_setup(VectorInfo *vi)
 {
   /* Already set up at initialization time. */
   assert(vi->mode == VEC_MODE_EDGE && vi->level == VEC_LEVEL_ACTHIGH);
 }
 
 static void
-i8259_enable(IrqController *chip, irq_t irq)
+i8259_enable(VectorInfo *vector)
 {
   assert(cpu_ncpu == 1);
+
+  irq_t irq = vector->irq;
   assert(irq < 16);
 
   const size_t cascade_pin = IRQ_PIN(irq_ISA_Cascade);
@@ -107,9 +109,11 @@ i8259_enable(IrqController *chip, irq_t irq)
 }
 
 static void
-i8259_disable(IrqController *chip, irq_t irq)
+i8259_disable(VectorInfo *vector)
 {
   assert(cpu_ncpu == 1);
+
+  irq_t irq = vector->irq;
   assert(irq < 16);
 
   flags_t flags = locally_disable_interrupts();
@@ -130,9 +134,11 @@ i8259_disable(IrqController *chip, irq_t irq)
 }
 
 static bool
-i8259_isPending(IrqController *chip, irq_t irq)
+i8259_isPending(VectorInfo *vector)
 {
   assert(cpu_ncpu == 1);
+
+  irq_t irq = vector->irq;
   assert(irq < 16);
 
   flags_t flags = locally_disable_interrupts();
@@ -151,9 +157,11 @@ i8259_isPending(IrqController *chip, irq_t irq)
 }
 
 static void
-i8259_acknowledge(IrqController *chip, irq_t irq)
+i8259_acknowledge(VectorInfo *vector)
 {
   assert(cpu_ncpu == 1);
+
+  irq_t irq = vector->irq;
   assert(irq < 16);
 
   flags_t flags = locally_disable_interrupts();
