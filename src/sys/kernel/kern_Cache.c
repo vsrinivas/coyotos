@@ -44,6 +44,7 @@
 #include <kerninc/malloc.h>
 #include <kerninc/string.h>
 #include <kerninc/pstring.h>
+#include <kerninc/shellsort.h>
 #include <kerninc/ObjectHash.h>
 #include <kerninc/ReadyQueue.h>
 #include <kerninc/FreeList.h>
@@ -119,6 +120,8 @@ cache_estimate_sizes(size_t pagesPerProc, kpsize_t totPage)
   } while(0)
 
 #define ADJUST_OBJ(type)	ADJUST(&Cache.c_ ## type, sizeof (type))
+#define ADJUST_PAGE(type) \
+  ADJUST(&Cache.c_ ## type, sizeof (type) + sizeof (void *))
 #define ADJUST_CACHE(cache)	ADJUST(&Cache.cache, sizeof (*Cache.cache.vec))
 
   if (Cache.c_Process.count == 0) {
@@ -225,6 +228,42 @@ cache_newobj_setup_aging(ObjectHeader *hdr)
   agelist_addFront(&Cache.obCache[hdr->ty]->reclaim, hdr);
 }
 
+static int
+page_physaddr_cmp(const void *lhs, const void *rhs)
+{
+  const Page *lhp = *(const Page **)lhs;
+  const Page *rhp = *(const Page **)rhs;
+
+  if (lhp->pa > rhp->pa)
+    return 1;
+  if (lhp->pa < rhp->pa)
+    return -1;
+  return 0;
+}
+
+Page *
+obhdr_findPage(kpa_t pa)
+{
+  if (Cache.page_byPhysAddr_count == 0)
+    return 0;
+
+  int l = 0;
+  int r = Cache.page_byPhysAddr_count - 1;
+
+  while (r >= l) {
+    int m = (l + r) / 2;
+    Page *pm = Cache.page_byPhysAddr[m];
+    if (pa == pm->pa)
+      return pm;
+
+    if (pa < pm->pa)
+      r = m - 1;
+    else
+      l = m + 1;
+  }
+  return 0;
+}
+
 void
 cache_add_page_space(bool lastCall)
 {
@@ -271,6 +310,8 @@ cache_add_page_space(bool lastCall)
 	  coyotos_Range_physOidStart + (pa / COYOTOS_PAGE_SIZE);
 	phdr->mhdr.hdr.ty = ot_Page;
 
+	Cache.page_byPhysAddr[Cache.page_byPhysAddr_count++] = phdr;
+
 	obhash_insert_obj(phdr);
 	
 	cache_newobj_setup_aging(&phdr->mhdr.hdr);
@@ -282,6 +323,11 @@ cache_add_page_space(bool lastCall)
   } while(contigPages);
 
   printf("Page space is %d pages (est. was %d)\n", nPage, Cache.c_Page.count);
+
+  shellsort(Cache.page_byPhysAddr,
+	    Cache.page_byPhysAddr_count,
+	    sizeof (Cache.page_byPhysAddr),
+	    page_physaddr_cmp);
 
   /* Update the watermarks using the new page count */
   cache_setup_watermarks(&Cache.c_Page, nPage);
@@ -379,6 +425,9 @@ cache_add_page_space(bool lastCall)
 /* NOTE: Only putting frame header on page frame header free list,
    because we do not yet know which of these frames are backed. */
 #define PAGE_FRAME_HEADER_CONSTRUCT(cache, vector, oty)	\
+  Cache.page_byPhysAddr = calloc(sizeof(*Cache.page_byPhysAddr),\
+				 Cache.cache.count);		\
+  Cache.page_byPhysAddr_count = 0;				\
   OBCACHE_CONSTRUCT(cache, vector, oty);			\
   Cache.max_oid[oty] = 0;					\
   do {								\

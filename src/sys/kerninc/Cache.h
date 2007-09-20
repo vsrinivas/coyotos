@@ -82,6 +82,9 @@ typedef struct Cache_s {
   mutex_t                   freePageHeadersLock;
   Link                      freePageHeaders;
 
+  Page		**page_byPhysAddr;     /* array of Page pointers in PA order */
+  size_t	page_byPhysAddr_count; /* # of elements in page_byPhysAddr */
+
 /*
  * The vectors for each frame type are defined seperately from the
  * Cache structures, in order to simplify the structure definitions.
