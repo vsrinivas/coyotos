@@ -409,7 +409,8 @@ HANDLE_coyotos_MemoryHandler_handle(caploc_t proc,
   bool clearFault = false;
 
   switch (faultCode) {
-  case coyotos_Process_FC_InvalidAddr:
+  case coyotos_Process_FC_InvalidDataReference:
+  case coyotos_Process_FC_InvalidCapReference:
   case coyotos_Process_FC_AccessViolation:
 
     clearFault = process_fault(faultInfo);
