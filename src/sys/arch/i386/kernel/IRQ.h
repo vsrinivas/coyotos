@@ -28,6 +28,7 @@
 #include <kerninc/ccs.h>
 #include <kerninc/Process.h>
 #include <kerninc/vector.h>
+#include <hal/irq.h>
 
 /** @brief How we use the interrupt vectors. */
 enum Vectors {
@@ -60,14 +61,18 @@ enum Vectors {
   vec_Syscall		 = 0x30,
 };
 
-enum LegacyInterrupts {
-  irq_PIT       = 0,		/* CMOS Interval Timer */
-  irq_Keyboard  = 1,		/* Keyboard */
-  irq_Cascade   = 2,	      /* master 8259 cascade from secondary */
+/* Hardware interrupt busses and pins known to the kernel. */
+enum Interrupts {
+  /* CMOS Interval Timer */
+  irq_ISA_PIT       = IRQ(IBUS_ISA,0),
+  /* Keyboard */
+  irq_ISA_Keyboard  = IRQ(IBUS_ISA,1),
+  /* master 8259 cascade from secondary */
+  irq_ISA_Cascade   = IRQ(IBUS_ISA,2),
 };
 
-/** @brief Number of interrupt sources */
-extern irq_t nIRQ;
+/** @brief Number of global interrupt sources */
+extern irq_t nGlobalIRQ;
 
 /** @brief Enable interrupt handling on current CPU.
  *
@@ -96,5 +101,12 @@ void irq_init(void);
 void irq_OnTrapOrInterrupt(Process *inProc, fixregs_t *saveArea);
 
 void irq_DoTripleFault() NORETURN;
+
+/** @brief Mapping from legacy (8259) IRQ pin numbers to current pin
+ * numbers.
+ *
+ * Initializes to an identity map. Rearranged by ioapic_init.
+ */
+extern irq_t ISA_IrqMap[16];
 
 #endif /* __I686_IRQ_H__ */

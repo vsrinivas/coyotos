@@ -39,247 +39,27 @@
 #include "PIC.h"
 #include "8259.h"
 #include "ioapic.h"
+#include "lapic.h"
 #include "cpu.h"
 #include "acpi.h"
 
 #define DEBUG_IOAPIC if (0)
 
-bool use_apic = false;
-bool lapic_requires_8259_disable = false;
+bool use_apic = true;
 
-kpa_t lapic_pa = 0;		/* if present, certainly won't be here */
-kva_t lapic_va = 0;
-
-/* The now-obsolete Intel Multiprocessor Specification introduces an
- * Interrupt Mode Control Register, which is used to get the chipset
- * to re-arrange the interrupt lines back and forth between the legacy
- * interrupt controller and the local APIC. Curiously, there is no
- * mention of any such requirement in later ACPI specs.
+/** @brief Physical address of local APIC 
  *
- * Protocol: write the constant 0x70 to the IMCR (port 22), then write
- * the desired mode to port 23.
+ * This is the physical memory address where each CPU can access its
+ * own local APIC. Value will be zero if there is no local APIC.
  */
-#define IMCR 0x22
-#define IMCR_DATA 0x23
-#define IMCR_SET_INTERRUPT_MODE 0x70
-#define IMCR_PIC_MODE 0
-#define IMCR_LAPIC_MODE 1
+kpa_t lapic_pa;
 
-/* Definitions of LAPIC-related registers and values */
-/** @brief LAPIC ID register.
+/** @brief Virtual address of local APIC 
  *
- * Physical identity of this LAPIC. */
-#define LAPIC_ID            0x020
-#define   LAPIC_ID_MASK                0x0f000000
-#define   LAPIC_ID_SHIFT               24
-/** @brief LAPIC Version Register.
- *
- * Identifies APIC version. MAXLVT field indicates number of LVT
- * entries. PPro had 5 LVT entries, and we don't use more than that
- * in any case. */
-#define LAPIC_VERSION       0x030
-#define   LAPIC_VERSION_VERSION_MASK   0x000000ff
-#define     LAPIC_VERSION_LAPIC        0
-#define     LAPIC_VERSION_i8289DX      1 /* external LAPIC chip */
-#define   LAPIC_VERSION_MAXLVT_MASK    0x00ff0000
-#define   LAPIC_VERSION_MAXLVT_SHIFT   16
-/** @brief LAPIC Task Priority Register */
-#define LAPIC_TPR           0x080
-#define   LAPIC_TPR_PRIO               0xff
-/** @brief LAPIC Arbitration Priority Register */
-#define LAPIC_APR           0x090
-#define   LAPIC_ZPR_PRIO               0xff
-/** @brief LAPIC Processor Priority Register */
-#define LAPIC_PPR           0x0A0
-#define   LAPIC_PPR_PRIO               0xff
-/** @brief LAPIC EOI Register
- *
- * "During interrupt service routine, software shoudl indicate acceptance of
- * lowest-priority, fixed, timer, and error interrupts by writing an
- * arbitrary vaelu into EOI register. This allows APIC to issue next
- * interrupt whether ISR has terminated ot not. */
-#define LAPIC_EOI           0x0B0
-/** @brief LAPIC Logical Destination Register */
-#define LAPIC_LDR           0x0D0
-#define   LAPIC_LDR_MASK               0xff000000
-#define   LAPIC_LDR_SHIFT              24
-/** @brief LAPIC Destination Format Register */
-#define LAPIC_DFR           0x0E0
-#define   LAPIC_DFR_MASK               0xf0000000
-#define   LAPIC_DFR_SHIFT              28
-/** @brief LAPIC Spurious Interrupt Vector Register. */
-#define LAPIC_SVR           0x0F0
-#define   LAPIC_SVR_VECTOR_MASK        0x0ffu
-#define   LAPIC_SVR_ENABLED            0x100u
-#define   LAPIC_SVR_FOCUS              0x200u
-/** @brief LAPIC In-Service Register 0-255
- *
- * Bit set when APIC accepts interrupt, cleared when the INTA cycle
- * is issued */
-#define LAPIC_ISR           0x100
-/** @brief LAPIC Trigger Mode Register 0-255
- *
- * On acceptance, bit is set to 1 IFF level triggered. If level
- * triggered, EOI is sent to all I/O APICS when soft EOI is issued. */
-#define LAPIC_TMR           0x180
-/** @brief LAPIC Interrupt Request Register 0-255 
- *
- * Bit set to 1 when interrupt is delivered to processor but not
- * fully serviced yet (EOI not yet received). Highest priority bit
- * will be set during INTA cycle, and cleared during EIO cycle.*/
-#define LAPIC_IRR           0x200
-/** @brief LAPIC Error Status Register */
-#define LAPIC_ESR           0x280
-#define   LAPIC_ESR_Send_CS_Error             0x01
-#define   LAPIC_ESR_Receive_CS_Error          0x02
-#define   LAPIC_ESR_Send_Accept_Error         0x04
-#define   LAPIC_ESR_Receive_Accept_Error      0x08
-          /* 0x10 reserved */
-#define   LAPIC_ESR_Send_Illegal_Vector       0x20
-#define   LAPIC_ESR_Receive_Illegal_Vector    0x40
-#define   LAPIC_ESR_Illegal_Register_Address  0x80
-/** @brief LAPIC Interrupt Command Register 0-31 */
-#define LAPIC_ICR0          0x300
-#define   LAPIC_ICR0_VECTOR_MASK       0x000ff
-#define   LAPIC_ICR0_DELIVER_MODE      0x00700
-#define     LAPIC_ICR0_DELIVER_FIXED     0x00000
-#define     LAPIC_ICR0_DELIVER_LOWPRIO   0x00100
-#define     LAPIC_ICR0_DELIVER_SMI       0x00200
-#define     LAPIC_ICR0_DELIVER_NMI       0x00400
-#define     LAPIC_ICR0_DELIVER_INIT      0x00500
-#define     LAPIC_ICR0_DELIVER_STARTUP   0x00600
-#define   LAPIC_ICR0_DEST_MODE         0x00800
-#define     LAPIC_ICR0_DESTMODE_PHYSICAL 0x00000
-#define     LAPIC_ICR0_DESTMODE_LOGICAL  0x00800
-#define   LAPIC_ICR0_DELIVER_PENDING   0x01000
-#define   LAPIC_ICR0_LEVEL_ASSERT      0x04000
-#define   LAPIC_ICR0_TRIGGER_MODE      0x08000
-#define     LAPIC_ICR0_TRIGGER_EDGE      0x00000
-#define     LAPIC_ICR0_TRIGGER_LEVEL     0x08000
-#define   LAPIC_ICR0_DEST_SHORTHAND    0xC0000
-#define     LAPIC_ICR0_DEST_FIELD        0x00000
-#define     LAPIC_ICR0_DEST_SELF         0x40000
-#define     LAPIC_ICR0_ALL_AND_SELF      0x80000
-#define     LAPIC_ICR0_ALL_BUT_SELF      0xC0000
-/** @brief LAPIC Interrupt Command Register 32-63 */
-#define LAPIC_ICR32         0x310
-/** @brief LAPIC Local Vector Table (Timer) */
-#define LAPIC_LVT_Timer     0x320
-/** @brief LAPIC Performance Counter */
-#define LAPIC_LVT_PerfCntr  0x340
-/** @brief LAPIC Local Vector Table (LINT0) */
-#define LAPIC_LVT_LINT0     0x350
-/** @brief LAPIC Local Vector Table (LINT1) */
-#define LAPIC_LVT_LINT1     0x360
-/** @brief LAPIC Local Vector Table (Error) */
-#define LAPIC_LVT_ERROR     0x370
-/** @brief vector number in LVT entry. */
-#define   LAPIC_LVT_VECTOR_MASK       0x000ff
-/** @brief Interrupt delivery mode.
- *
- * 000: fixed, 100: NMI, 111: External interrupt
- *
- * Present in LINT0, LINT1, PCINT only 
- */ 
-#define   LAPIC_LVT_DELIVER_MODE      0x00700
-#define     LAPIC_LVT_DELIVER_FIXED   0x00000
-#define     LAPIC_LVT_DELIVER_NMI     0x00400
-#define     LAPIC_LVT_DELIVER_ExtINT  0x00700
-/* Bit 11 not defined */
-/** @brief Interrupt delivery status
- *
- * 0: idle, 1: pending.
+ * This is the virtual memory address where each CPU can access its
+ * own local APIC. Value will be zero if there is no local APIC.
  */
-#define   LAPIC_LVT_DELIVER_PENDING   0x01000
-/** @brief Interrupt pin polarity.
- *
- * 0: active high, 1: active low
- *
- * LINT0, LINT1 only
- */
-#define   LAPIC_LVT_POLARITY          0x02000
-/** @brief Remote interrupt request register
- *
- * Undefined for edge-triggered interrupts. Set when local APIC
- * accepts the interrupt. Reset when an EOI command is received from
- * the processor.
- *
- * LINT0, LINT1 only
- */
-#define   LAPIC_LVT_REMOTE_IRR        0x04000
-/** @brief Interrupt trigger mode
- *
- * Applies when delivery mode is set to "fixed".
- *
- * LINT0, LINT1 only.
- */
-#define   LAPIC_LVT_TRIGGER_MODE      0x08000
-#define     LAPIC_LVT_TRIGGER_EDGE    0
-#define     LAPIC_LVT_TRIGGER_LEVEL   1
-/** @brief Interrupt delivery masked
- *
- * 0: unmasked, 1: masked.
- */
-#define   LAPIC_LVT_MASKED            0x10000
-/** @brief LVT Timer mode
- *
- * 0: one-shot, 1: periodic
- */
-#define   LAPIC_LVT_TIMER_MODE        0x20000
-#define     LAPIC_LVT_TIMER_ONESHOT   0x00000
-#define     LAPIC_LVT_TIMER_PERIODIC  0x20000
-
-/** @brief Initial Count Register */
-#define LAPIC_ICR_TIMER     0x380
-/** @brief Current Count Register */
-#define LAPIC_CCR_TIMER     0x390
-/** @brief Divide Configuration Register */
-#define LAPIC_DCR_TIMER     0x3E0
-#define   LAPIC_DCR_DIVIDE_VALUE_MASK  0xf
-#define   LAPIC_DCR_DIVIDE_DIV2        0x0
-#define   LAPIC_DCR_DIVIDE_DIV4        0x1
-#define   LAPIC_DCR_DIVIDE_DIV8        0x2
-#define   LAPIC_DCR_DIVIDE_DIV16       0x3
-#define   LAPIC_DCR_DIVIDE_DIV32       0x4
-#define   LAPIC_DCR_DIVIDE_DIV64       0x5
-#define   LAPIC_DCR_DIVIDE_DIV128      0x6
-#define   LAPIC_DCR_DIVIDE_DIV1        0x7
-
-/** @brief Vector used for spurious LAPIC interrupts.
- *
- * This vector is used for an interrupt which was aborted becauase the
- * cpu masked it after it happened but before it was
- * delivered. Low-order 4 bits must be 0xf.
- */
-#define   LAPIC_SPURIOUS_VECTOR  0xefu
-
-/** @brief Vector used for inter-processor-interrupts
- */
-#define   LAPIC_IPI_VECTOR       /* ?? */
-
-/** @brief Vector used for local apic timer interrupts
- */
-#define   LAPIC_TIMER_VECTOR       /* ?? */
-
-
-static inline uint32_t
-lapic_read_reg(uint32_t reg)
-{
-  volatile uint32_t *va_reg = (uint32_t *) (lapic_va + LAPIC_ID);
-  uint32_t val = *va_reg;
-  return val;
-}
-
-static inline void
-lapic_write_reg(uint32_t reg, uint32_t val)
-{
-  volatile uint32_t *va_reg = (uint32_t *) (lapic_va + LAPIC_ID);
-  *va_reg = val;
-
-  /* Xeon errata: follow up with read from ID register, forcing above
-     write to have observable effect: */
-  (void) lapic_read_reg(LAPIC_ID);
-}
+kva_t lapic_va;
 
 /****************************************************************
  * GENERIC WRAPPERS
@@ -297,7 +77,7 @@ pic_init()
     ioapic_init();
 
     /* This is per-cpu. It should not be done here. */
-    lapic_write_reg(LAPIC_SVR, LAPIC_SVR_ENABLED | LAPIC_SPURIOUS_VECTOR);
+    lapic_write_register(LAPIC_SVR, LAPIC_SVR_ENABLED | LAPIC_SPURIOUS_VECTOR);
 
     printf("APIC, ");
   }

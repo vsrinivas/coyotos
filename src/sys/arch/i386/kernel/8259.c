@@ -64,11 +64,19 @@ static uint16_t i8259_irqMask   = (uint16_t) ~0u;
  * chips, because it is simpler that way.
  *******************************************************************************/
 static void
+i8259_setup(IrqController *chip, irq_t irq, VectorInfo *vi)
+{
+  /* Already set up at initialization time. */
+  assert(vi->mode == VEC_MODE_EDGE && vi->level == VEC_LEVEL_ACTHIGH);
+}
+
+static void
 i8259_enable(IrqController *chip, irq_t irq)
 {
   assert(cpu_ncpu == 1);
   assert(irq < 16);
 
+  const size_t cascade_pin = IRQ_PIN(irq_ISA_Cascade);
   flags_t flags = locally_disable_interrupts();
 
   i8259_irqMask &= ~(1u << irq);
@@ -82,11 +90,10 @@ i8259_enable(IrqController *chip, irq_t irq)
     /* If we are doing cascaded 8259s, any interrupt enabled on the
        second PIC requires that the cascade vector on the primary PIC
        be enabled. */
-    if (i8259_irqMask & (1u << irq_Cascade)) {
-      irq = irq_Cascade;
-      i8259_irqMask &= ~(1u << irq);
+    if (i8259_irqMask & (1u << cascade_pin)) {
+      i8259_irqMask &= ~(1u << cascade_pin);
 #ifdef BRING_UP
-      irq_set_softled(vec_IRQ0 + irq_Cascade, true);
+      irq_set_softled(vec_IRQ0 + cascade_pin, true);
 #endif
     }
   }
@@ -166,6 +173,7 @@ static IrqController i8259 = {
   0,
   16,
   0,
+  i8259_setup,
   i8259_enable,
   i8259_disable,
   i8259_isPending,
@@ -181,7 +189,7 @@ i8259_init()
 {
   assert(cpu_ncpu == 1);
 
-  nIRQ = 16;
+  nGlobalIRQ = 16;
 
   /* Set up the vector entries */
   for (size_t pin = 0; pin < i8259.nIRQ; pin++) {
@@ -189,11 +197,11 @@ i8259_init()
     uint32_t vec = vec_IRQ0 + irq;
     IrqVector[irq] = &VectorMap[vec];
     VectorMap[vec].type = vt_Interrupt;
-    VectorMap[vec].edge = 1;	/* all legacy IRQs are edge triggered */
+    VectorMap[vec].mode = VEC_MODE_FROMBUS; /* all legacy IRQs are edge triggered */
+    VectorMap[vec].level = VEC_LEVEL_FROMBUS; /* all legacy IRQs are active high. */
     VectorMap[vec].irq = irq;
+    VectorMap[vec].enabled = 0;
     VectorMap[vec].ctrlr = &i8259;
-
-    irq_Unbind(irq);
   }
 
   /* Set up the interrupt controller chip: */

@@ -42,9 +42,10 @@
 #include "Selector.h"
 #include "hwmap.h"
 #include "PIC.h"
+#include "acpi.h"
 
 /** @brief Number of interrupt sources */
-irq_t nIRQ;
+irq_t nGlobalIRQ;
 
 
 /** @brief Hardware-level interrupt dispatch table. */
@@ -406,7 +407,7 @@ irq_OnTrapOrInterrupt(Process *inProc, fixregs_t *saveArea)
      * acknowledge the PIC and return to whatever we were doing.
      */
     if (! ctrlr->isPending(ctrlr, irq)) {
-      printf("IRQ %d no longer pending\n", irq);
+      fatal("IRQ %d no longer pending\n", irq);
       ctrlr->earlyAck(ctrlr, irq);
 
       return;
@@ -494,6 +495,8 @@ void vector_init()
 {
   for (size_t i = 0; i < 32; i++) {
     VectorMap[i].type = vt_HardTrap;
+    VectorMap[i].mode = VEC_MODE_FROMBUS;
+    VectorMap[i].level = VEC_LEVEL_FROMBUS;
     VectorMap[i].enabled = 1;
     VectorMap[i].fn = vh_ReservedException; /* Until otherwise proven. */
   }
@@ -587,11 +590,53 @@ void irq_DoTripleFault()
   sysctl_halt();
 }
 
+irq_t irq_MapInterrupt(irq_t irq)
+{
+  switch (IRQ_BUS(irq)) {
+  case IBUS_ISA:
+    {
+      IntSrcOverride isovr;
+      if (acpi_map_interrupt(irq, &isovr))
+	irq = isovr.globalSystemInterrupt;
+      else
+	irq = IRQ(IBUS_GLOBAL, IRQ_PIN(irq));
+      return irq;
+    }
+  case IBUS_GLOBAL:
+    return irq;
+  default:
+    fatal("Unknown bus type for binding\n");
+  }
+}
+
 /** @brief Set up the software vector table to point to the provided
     handler procedure. */
 void
-irq_Bind(irq_t irq, VecFn fn)
+irq_Bind(irq_t irq, uint32_t mode, uint32_t level, VecFn fn)
 {
+  switch (IRQ_BUS(irq)) {
+  case IBUS_ISA:
+    {
+      mode = VEC_MODE_EDGE;
+      level = VEC_LEVEL_ACTHIGH;
+
+      IntSrcOverride isovr;
+      if (acpi_map_interrupt(irq, &isovr)) {
+	irq = isovr.globalSystemInterrupt;
+
+	if ((isovr.flags & MPS_INTI_TRIGGER) == MPS_INTI_TRIGGER_LEVEL)
+	  mode = VEC_MODE_LEVEL;
+	if ((isovr.flags & MPS_INTI_POLARITY) == MPS_INTI_POLARITY_ACTIVELOW)
+	  mode = VEC_LEVEL_ACTLOW;
+      }
+      else
+	irq = IRQ(IBUS_GLOBAL, IRQ_PIN(irq));
+      break;
+    }
+  default:
+    fatal("Unknown bus type for binding\n");
+  }
+
   VectorInfo *vector = IrqVector[irq];
   assert(vector);
 
@@ -600,21 +645,8 @@ irq_Bind(irq_t irq, VecFn fn)
   vector->count = 0;
   vector->fn = fn;
 
-  spinlock_release(shi);
-}
-
-/** @brief Set up the software vector table to point to the provided
-    handler procedure. */
-void
-irq_Unbind(irq_t irq)
-{
-  VectorInfo *vector = IrqVector[irq];
-  assert(vector);
-
-  SpinHoldInfo shi = spinlock_grab(&vector->lock);
-
-  vector->count = 0;
-  vector->fn = vh_UnboundIRQ;
+  vector->mode = mode;
+  vector->level = level;
 
   spinlock_release(shi);
 }
@@ -622,6 +654,8 @@ irq_Unbind(irq_t irq)
 void
 irq_Enable(irq_t irq)
 {
+  irq = irq_MapInterrupt(irq);
+
   VectorInfo *vector = IrqVector[irq];
   assert(vector);
 
@@ -636,13 +670,37 @@ irq_Enable(irq_t irq)
 void
 irq_Disable(irq_t irq)
 {
+  irq = irq_MapInterrupt(irq);
+
   VectorInfo *vector = IrqVector[irq];
   assert(vector);
 
   SpinHoldInfo shi = spinlock_grab(&vector->lock);
 
   vector->ctrlr->disable(vector->ctrlr, irq);
-  vector->enabled = 1;
+  vector->enabled = 0;
 
   spinlock_release(shi);
 }
+
+bool
+irq_isEnabled(irq_t irq)
+{
+  bool result = false;
+
+  irq = irq_MapInterrupt(irq);
+
+  VectorInfo *vector = IrqVector[irq];
+  assert(vector);
+
+  SpinHoldInfo shi = spinlock_grab(&vector->lock);
+
+  vector->ctrlr->enable(vector->ctrlr, irq);
+  if (vector->enabled)
+    result = true;
+
+  spinlock_release(shi);
+
+  return result;
+}
+

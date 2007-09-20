@@ -28,47 +28,6 @@
  */
 extern bool use_apic;
 
-/** @brief True if implementation has a redundant 8259 legacy PIC that
- * must be disabled before the local APIC is enabled.
- *
- * Set conditionally in acpi.c:acpi_find_MADT()
- */
-extern bool lapic_requires_8259_disable;
-
-/** @brief Physical address of local APIC 
- *
- * This is the physical memory address where each CPU can access its
- * own local APIC. Value will be zero if there is no local APIC.
- */
-extern kpa_t lapic_pa;
-
-/** @brief Virtual address of local APIC 
- *
- * This is the virtual memory address where each CPU can access its
- * own local APIC. Value will be zero if there is no local APIC.
- */
-extern kva_t lapic_va;
-
-/** @brief Physical address of I/O APIC 
- *
- * This is the physical memory address of the I/O APIC.
- * Value will be zero if there is no I/O APIC.
- *
- * @bug There is a model issue here, because systems can have more
- * than one I/O APIC. Current implementation does not handle this.
- */
-extern kpa_t ioapic_pa;
-
-/** @brief Virtual address of I/O APIC 
- *
- * This is the virtual memory address of the I/O APIC.
- * Value will be zero if there is no I/O APIC.
- *
- * @bug There is a model issue here, because systems can have more
- * than one I/O APIC. Current implementation does not handle this.
- */
-extern kva_t ioapic_va;
-
 /** @brief Initialize the preferred peripheral interrupt controller. */
 void pic_init();
 

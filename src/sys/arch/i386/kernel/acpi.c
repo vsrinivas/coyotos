@@ -48,81 +48,7 @@
 #include "PIC.h"
 #include "cpu.h"
 #include "ioapic.h"
-
-typedef struct RSDP_v3 {
-  char     signature[8];
-  uint8_t  cksum;
-  char     oemid[6];
-  uint8_t  revision;
-  uint32_t rsdt;		/* physical address of RSDT */
-  uint32_t length;		/* of entire RSDT */
-
-  /* Fields below appeared starting in v3.0 */
-  uint64_t xsdt;		/* Physical address of XSDT */
-  uint8_t  ex_cksum;		/* Extended checksum */
-  char     reserved[3];
-} RSDP_v3;
-
-typedef struct SDT_hdr {
-  char     signature[4];
-  uint32_t length;
-  uint8_t  revision;
-  uint8_t  cksum;
-  char     oemid[6];
-  char     oemTableID[8];
-  uint32_t oemRevision;
-  uint32_t creatorID;
-  uint32_t creatorRevision;
-} SDT_hdr;
-
-#define LAPIC_type_Processor_Local_APIC 0x0
-#define LAPIC_type_IO_APIC              0x1u
-#define LAPIC_type_Intr_Source_Override 0x2u
-#define LAPIC_type_NMI_Source           0x3u
-#define LAPIC_type_LAPIC_NMI_Struct     0x4u
-#define LAPIC_type_LAPIC_addr_override  0x5u
-#define LAPIC_type_IO_SAPIC             0x6u
-#define LAPIC_type_LOCAL_SAPIC          0x7u
-#define LAPIC_type_Platform_Intr_Source 0x8u
-/* 9   - 127 Reserved */
-/* 128 - 255 Reserved for OEM use */
-
-#define LAPIC_flag_Enabled 0x1u	/* CPU enabled/disabled */
-
-typedef struct CpuLocalAPIC {
-  uint8_t   type;
-  uint8_t   length;
-  uint8_t   acpiProcessorID;
-  uint8_t   lapicID;
-  uint32_t  flags;
-} CpuLocalAPIC;
-
-typedef struct CpuIOAPIC {
-  uint8_t   type;
-  uint8_t   length;
-  uint8_t   ioapicID;
-  uint8_t   reserved;
-  uint32_t  ioapicPA;
-  uint32_t  globalSystemInterruptBase;
-} CpuIOAPIC;
-
-#define MPS_INTI_POLARITY_MASK  0x0003u
-#define   MPS_INTI_POLARITY_FROMBUS   0x00
-#define   MPS_INTI_POLARITY_ACTIVEHI  0x01
-#define   MPS_INTI_POLARITY_ACTIVELOW 0x03
-#define MPS_INTI_TRIGGER_MODE   0x000Cu
-#define   MPS_INTI_TRIGGER_FROMBUS    0x00
-#define   MPS_INTI_TRIGGER_EDGE       0x04
-#define   MPS_INTI_TRIGGER_LEVEL      0x0C
-
-typedef struct IntSrcOverride {
-  uint8_t   type;
-  uint8_t   length;
-  uint8_t   bus;		/* constant 0, meaning ISA */
-  uint8_t   source;		/* Bus-relative IRQ */
-  uint32_t  globalSystemInterrupt; /* what it got mapped to */
-  uint16_t  flags;		   /* MPS INTI flags */
-} IntSrcOverride;
+#include "lapic.h"
 
 static uint8_t
 acpi_cksum(kpa_t pa, size_t len)
@@ -353,6 +279,85 @@ acpi_probe_apics()
   }
 
   return found;
+}
+
+bool
+acpi_map_interrupt(irq_t irq, IntSrcOverride *ret_isovr)
+{
+  IntSrcOverride isovr;
+
+  /* Set up the default response that is appropriate to the bus type
+   * for this IRQ. */
+  ret_isovr->type = LAPIC_type_Intr_Source_Override;
+  ret_isovr->length = sizeof(isovr);
+  ret_isovr->source = IRQ_PIN(irq);
+  ret_isovr->flags = MPS_INTI_POLARITY_FROMBUS|MPS_INTI_TRIGGER_FROMBUS;
+  ret_isovr->globalSystemInterrupt = IRQ_PIN(irq); /* until remapped  */
+
+  switch (IRQ_BUS(irq)) {
+  case IBUS_ISA:
+    {
+      /* ISA bus was edge triggered, active high */
+      ret_isovr->bus = ACPI_BUS_ISA;
+      ret_isovr->flags = MPS_INTI_TRIGGER_EDGE | MPS_INTI_POLARITY_ACTIVEHI;
+      break;
+    }
+  default:
+    {
+      fatal("Unknown input bus type to acpi_map_interrupt.\n");
+    }
+  }
+
+  uint32_t madt_pa = acpi_find_MADT();
+
+  if (madt_pa == 0)
+    return false;
+
+  SDT_hdr madt_hdr;
+
+  memcpy_ptov(&madt_hdr, madt_pa, sizeof(madt_hdr));
+
+  kpa_t madt_bound = madt_pa + madt_hdr.length;
+  kpa_t apicstruct_pa = madt_pa + sizeof(madt_hdr) + 8;
+
+  /* Issue: ACPI does not specify any ordering for entrys in the APIC
+   * table. This creates a problem, because we do not know if the
+   * first entry in the table corresponds to the IPL CPU.
+   *
+   * To ensure that logical CPU ID 0 is assigned to the boot
+   * processor, handle slot 0 as a special case.
+   */
+  for(kpa_t pa = apicstruct_pa; pa < madt_bound; pa += isovr.length) {
+    memcpy_ptov(&isovr, pa, 2);
+
+    assert(isovr.length);
+
+    if (isovr.type == LAPIC_type_Intr_Source_Override) {
+      memcpy_ptov(&isovr, pa, sizeof(isovr));
+
+      if ((IRQ_BUS(irq) == IBUS_ISA) && (isovr.bus != ACPI_BUS_ISA))
+	continue;
+
+      if (isovr.source != IRQ_PIN(irq))
+	continue;
+
+      ret_isovr->globalSystemInterrupt = isovr.globalSystemInterrupt;
+
+      if ((isovr.flags & MPS_INTI_POLARITY) != MPS_INTI_POLARITY_FROMBUS) {
+	ret_isovr->flags &= ~MPS_INTI_POLARITY;
+	ret_isovr->flags |= (isovr.flags & MPS_INTI_POLARITY);
+      }
+
+      if ((isovr.flags & MPS_INTI_TRIGGER) != MPS_INTI_TRIGGER_FROMBUS) {
+	ret_isovr->flags &= ~MPS_INTI_TRIGGER;
+	ret_isovr->flags |= (isovr.flags & MPS_INTI_TRIGGER);
+      }
+
+      return true;
+    }
+  }
+
+  return false;
 }
 
 size_t 
