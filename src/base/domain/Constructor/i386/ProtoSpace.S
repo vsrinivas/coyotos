@@ -34,9 +34,7 @@
 
 #define CHECK_FAILURE		\
 	test $IPW0_EX, %eax;	\
-	jz 1f;		    	\
-	jmp fail;		\
-1:
+	jnz fail;
 
 	/*
 	 * The assembler doesn't give us a good way to compare against
@@ -45,9 +43,9 @@
 	 * value. 
 	 */
 #define TEST_KEYTYPE_CONSTRUCTOR(label_failed) \
-	test (my_IKT_constructor), %ebx		; \
+	cmpl %ebx, (my_IKT_constructor)		; \
 	jnz label_failed			; \
-	test (my_IKT_constructor + 4), %esi	; \
+	cmpl %esi, (my_IKT_constructor + 4)	; \
 	jnz label_failed
 
 	.sect .rodata
@@ -82,6 +80,7 @@ _start:
 	DO_RO_SYSCALL(handler_call_create)
 	CHECK_FAILURE
 handler_not_cons:
+	.size handler_not_cons, 0
 	/* install the handler */	
 	DO_RO_SYSCALL(self_call_setSlot_handler)
 	CHECK_FAILURE
@@ -92,7 +91,10 @@ handler_not_cons:
 	TEST_KEYTYPE_CONSTRUCTOR(addrSpace_not_cons)
 	DO_RO_SYSCALL(addrSpace_call_create)
 	CHECK_FAILURE
+	DO_RO_SYSCALL(addrHandler_call_getSpace)
+	CHECK_FAILURE
 addrSpace_not_cons:
+	.size addrSpace_not_cons, 0
 	DO_RO_SYSCALL_LD64(self_call_setSpaceAndPC, (startPC), (startPC + 4))
 	CHECK_FAILURE
 	
@@ -109,4 +111,5 @@ fail:
 halt:	hlt			; /* above call should not have returned. */
 	jmp halt
 
+	.size _start, (. - _start)
 

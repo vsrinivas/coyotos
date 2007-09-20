@@ -5,6 +5,7 @@
 #include <idl/coyotos/Cap.h>
 #include <idl/coyotos/Process.h>
 #include <idl/coyotos/Constructor.h>
+#include <idl/coyotos/SpaceHandler.h>
 #include "coyotos.Constructor.h"
 
 #define CR_ADDRSPACE	coyotos_Constructor_PROTOAPP_ADDRSPACE
@@ -38,8 +39,9 @@ const InvParameterBlock_t handler_call_create = {
   .pw[1] = OC_coyotos_Constructor_create,
   .u.invCap = CR_HANDLER,
   .sndCap[0] = CR_REPLYEPT,
-  .sndCap[1] = CR_SCHEDULE,
-  .sndCap[2] = CR_NULL,
+  .sndCap[1] = CR_SPACEBANK,
+  .sndCap[2] = CR_SCHEDULE,
+  .sndCap[3] = CR_NULL,  /* do not pass along runtime cap */
   .rcvCap[0] = CR_HANDLER,
   .epID = 0
 };
@@ -49,8 +51,18 @@ const InvParameterBlock_t addrSpace_call_create = {
   .pw[1] = OC_coyotos_Constructor_create,
   .u.invCap = CR_ADDRSPACE,
   .sndCap[0] = CR_REPLYEPT,
-  .sndCap[1] = CR_SCHEDULE,
-  .sndCap[2] = CR_NULL,  /* do not pass along runtime cap */
+  .sndCap[1] = CR_SPACEBANK,
+  .sndCap[2] = CR_SCHEDULE,
+  .sndCap[3] = CR_NULL,  /* do not pass along runtime cap */
+  .rcvCap[0] = CR_ADDRHANDLER,
+  .epID = 0
+};
+
+const InvParameterBlock_t addrHandler_call_getSpace = {
+  .pw[0] = MY_IPW0_RC(1, 0, 0),
+  .pw[1] = OC_coyotos_SpaceHandler_getSpace,
+  .u.invCap = CR_ADDRHANDLER,
+  .sndCap[0] = CR_REPLYEPT,
   .rcvCap[0] = CR_ADDRSPACE,
   .epID = 0
 };
