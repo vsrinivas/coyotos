@@ -375,7 +375,7 @@ do_pageFault(Process *base, uintptr_t addr_arg, bool wantWrite, bool wantExec)
   result = memwalk(&base->state.addrSpace, addr, wantWrite, &mwr);
 
   if (addr >= KVA) {
-    result = coyotos_Process_FC_InvalidAddr;
+    result = coyotos_Process_FC_InvalidDataReference;
     goto deliver_fault;
   }
 
