@@ -75,7 +75,7 @@ OBJECTS=\
 	$(BUILDDIR)/kern_Process.o \
 	$(BUILDDIR)/kern_ObStore.o \
 	$(BUILDDIR)/kern_Invoke.o \
-	$(BUILDDIR)/kern_qsort.o \
+	$(BUILDDIR)/kern_shellsort.o \
 	$(BUILDDIR)/kern_malloc.o \
 	$(patsubst %.c,$(BUILDDIR)/%.o,$(notdir $(wildcard ../../../caps/cap*.c)))
 

@@ -1,5 +1,5 @@
-#ifndef __KERNINC_QSORT_H__
-#define __KERNINC_QSORT_H__
+#ifndef __KERNINC_SHELLSORT_H__
+#define __KERNINC_SHELLSORT_H__
 /*
  * Copyright (C) 2005, The EROS Group, LLC.
  *
@@ -21,10 +21,14 @@
  */
 
 /** @file
- * @brief Quicksort and friends.
+ * @brief Shellsort.
  */
 
-void
-qsort(void *a, size_t n, size_t es, int (*cmp)(const void *, const void *));
+#include <coyotos/coytypes.h>
+#include <stddef.h>
 
-#endif /* __KERNINC_QSORT_H__ */
+void
+shellsort(void *a, size_t n, size_t es,
+	  int (*cmp)(const void *, const void *));
+
+#endif /* __KERNINC_SHELLSORT_H__ */

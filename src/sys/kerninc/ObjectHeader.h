@@ -212,4 +212,8 @@ static inline void obhdr_wakeAll(ObjectHeader* ob)
 
 /** @brief Initialize the stall queue array. */
 extern void obhdr_stallQueueInit(void);
+
+/** @brief Find a Page header by physical address. */
+extern Page *obhdr_findPage(kpa_t pa);
+
 #endif /* __KERNINC_OBJECTHEADER_H__ */

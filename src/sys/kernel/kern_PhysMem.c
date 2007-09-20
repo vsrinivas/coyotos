@@ -55,7 +55,7 @@
 #include <kerninc/assert.h>
 #include <kerninc/printf.h>
 #include <kerninc/PhysMem.h>
-#include <kerninc/qsort.h>
+#include <kerninc/shellsort.h>
 #include <kerninc/string.h>
 #include <kerninc/util.h>
      
@@ -515,7 +515,7 @@ same_descrip(const char *s1, const char *s2)
 static void
 pmem_cleanup()
 {
-  qsort(pmem_table, PHYSMEM_NREGION, sizeof(*pmem_table), cmp_base);
+  shellsort(pmem_table, PHYSMEM_NREGION, sizeof(*pmem_table), cmp_base);
 
   /* Check for mergeable regions: */
   size_t ndx = 0;
@@ -557,7 +557,7 @@ pmem_cleanup()
       pmi1->bound = pmi2->bound;
       INIT_TO_ZERO(pmi2);
 
-      qsort(pmem_table, PHYSMEM_NREGION, sizeof(*pmem_table), cmp_base);
+      shellsort(pmem_table, PHYSMEM_NREGION, sizeof(*pmem_table), cmp_base);
 
       nPmemInfo --;
       DEBUG_PMEM {
