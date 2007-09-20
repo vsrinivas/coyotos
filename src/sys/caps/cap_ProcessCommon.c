@@ -81,7 +81,8 @@ void cap_ProcessCommon(InvParam_t *iParam)
        */
       if (cancelFault && (iParam->iCap.cap->restr & CAP_RESTR_RESTART)) {
 	switch(p->state.faultCode) {
-	case coyotos_Process_FC_InvalidAddr:
+	case coyotos_Process_FC_InvalidDataReference:
+	case coyotos_Process_FC_InvalidCapReference:
 	case coyotos_Process_FC_NoExecute:
 	case coyotos_Process_FC_AccessViolation:
 	case coyotos_Process_FC_DataAccessTypeError:

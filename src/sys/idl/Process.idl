@@ -52,29 +52,32 @@ abstract interface Process extends Cap {
     /// @brief Slice expiration occurred.
     SliceExpired = 3,
 
-    /// @brief Issued address was undefined.
-    InvalidAddr = 4,
+    /// @brief Issued data reference address was undefined.
+    InvalidDataReference = 4,
+
+    /// @brief Issued capability reference address was undefined.
+    InvalidCapReference = 5,
 
     /// @brief Insufficient access rights for instruction reference.
     ///
     /// Note that this exception will be generated only on machines
     /// that provide the NX permission bit or equivalent
     /// functionality.
-    NoExecute = 5,
+    NoExecute = 6,
 
     /// @brief Cannot write to specified address.
-    AccessViolation = 6,
+    AccessViolation = 7,
 
     /// @brief A data load/store was attempted to a capability page.
-    DataAccessTypeError = 7,
+    DataAccessTypeError = 8,
 
     /// @brief A capability load/store was attempted to a data page or
     /// I/O page.
-    CapAccessTypeError = 8,
+    CapAccessTypeError = 9,
 
     /// @brief Reference to item at misaligned address. Note that this
     /// is not considered a memory error.
-    MisalignedReference = 9,
+    MisalignedReference = 10,
 
     /// @brief GPT traversal limit exceeded in address space reference.
     TraverseLimit = 12, 

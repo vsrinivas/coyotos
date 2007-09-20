@@ -245,7 +245,7 @@ memwalk(capability *cap, coyaddr_t addr, bool forWrite,
   if (forWrite && (cum_restr & (CAP_RESTR_RO|CAP_RESTR_WK)))
     return coyotos_Process_FC_AccessViolation;
 
-  return coyotos_Process_FC_InvalidAddr;
+  return coyotos_Process_FC_InvalidDataReference;
 
  success:
   results->cum_restr = cum_restr;

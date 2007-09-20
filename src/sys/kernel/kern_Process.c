@@ -481,6 +481,9 @@ proc_findCapPageSlot(Process *p, uintptr_t addr, bool forWriting,
 	    forWriting,
 	    &mwr);
 
+  if (fc == coyotos_Process_FC_InvalidDataReference)
+    fc = coyotos_Process_FC_InvalidCapReference;
+
   if (fc && nonBlock)
     return (fc);
 
@@ -579,7 +582,7 @@ proc_marshall_src_cap(Process *p, caploc_t from, SrcCap *sc,
 
       if (! (vm_valid_uva(p, addr) && 
 	     vm_valid_uva(p, addr+sizeof(capability)-1)) )
-	proc_TakeFault(p, coyotos_Process_FC_InvalidAddr, addr);
+	proc_TakeFault(p, coyotos_Process_FC_InvalidCapReference, addr);
 
       coyotos_Process_FC fc = 
 	proc_findCapPageSlot(p, addr, false, false, &cps);
