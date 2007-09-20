@@ -27,9 +27,7 @@
 #include <stdbool.h>
 #include <kerninc/ccs.h>
 #include <kerninc/Process.h>
-#include <hal/irq.h>
-
-#define NUM_VECTOR   (NUM_TRAP+NUM_IRQ)
+#include <kerninc/vector.h>
 
 /** @brief How we use the interrupt vectors. */
 enum Vectors {
@@ -60,7 +58,6 @@ enum Vectors {
   /* Following fall within the "interrupt space" portion of the
      numbering, but must not collide with hardware interrupts. */
   vec_Syscall		 = 0x30,
-  vec_LegacySyscall      = 0x80,
 };
 
 enum LegacyInterrupts {
@@ -69,10 +66,8 @@ enum LegacyInterrupts {
   irq_Cascade   = 2,	      /* master 8259 cascade from secondary */
 };
 
-/** @brief Initialize the vector table and the corresponding IDT
- * entries.
- */
-void irq_vector_init(void);
+/** @brief Number of interrupt sources */
+extern irq_t nIRQ;
 
 /** @brief Enable interrupt handling on current CPU.
  *
@@ -81,44 +76,8 @@ void irq_vector_init(void);
  */
 void irq_init(void);
 
-typedef void (*VecFn)(Process *, fixregs_t *saveArea);
-
-/** @brief Vector types.
- *
- * Values for VectorInfo.type field.
- */
-enum VecType {
-  vt_Unbound,		/**< @brief Not yet bound.  */
-  vt_HardTrap,		/**< @brief Hardware trap or exception.  */
-  vt_SysCall,		/**< @brief System call (software trap).  */
-  vt_Interrupt,		/**< @brief Interrupt source.  */
-};
-typedef enum VecType VecType;
-
-/** @brief Per-vector information.
- *
- * This structure stores the machine-dependent mapping from vectors to
- * handlers, and also from vectors to interrupt lines.
- *
- * The stall queue associated with a given interrupt pin is actually
- * stored in the VectorInfo structure.
- */
-struct VectorInfo {
-  VecFn    fn;			/**< @brief Handler function. */
-  uint64_t count;		/**< @brief Number of occurrences. */
-  uint8_t  type;		/**< @brief See VecType. */
-  uint8_t  user : 1;		/**< @brief User accessable */
-  uint8_t  edge : 1;		/**< @brief Edge triggered */
-  uint8_t  enabled : 1;		/**< @brief Vector enabled  */
-  uint8_t  irqSource;		/**< @brief Interrupt pin number. */
-  // StallQ stallQ;
-};
-typedef struct VectorInfo VectorInfo;
-extern struct VectorInfo VectorMap[NUM_VECTOR];
-extern uint8_t IrqVector[NUM_IRQ];
-
-#define IRQ_NO_VECTOR 0
-#define VECTOR_NO_IRQ 255
+// #define IRQ_NO_VECTOR 0
+// #define VECTOR_NO_IRQ 255
 
 /** @brief Dispatcher for an interrupt or exception that diverted us
  * from userland.
@@ -135,11 +94,6 @@ extern uint8_t IrqVector[NUM_IRQ];
  *
  */
 void irq_OnTrapOrInterrupt(Process *inProc, fixregs_t *saveArea);
-void irq_EnableInterrupt(uint32_t irq);
-void irq_DisableInterrupt(uint32_t irq);
-
-void irq_BindInterrupt(uint32_t irq, VecFn fn);
-void irq_UnbindInterrupt(uint32_t irq);
 
 void irq_DoTripleFault() NORETURN;
 

@@ -39,6 +39,8 @@ OBJECTS=\
 	$(BUILDDIR)/TSS.o \
 	$(BUILDDIR)/IRQ.o \
 	$(BUILDDIR)/PIC.o \
+	$(BUILDDIR)/8259.o \
+	$(BUILDDIR)/ioapic.o \
 	$(BUILDDIR)/PageFault.o \
 	$(BUILDDIR)/HardClock.o \
 	$(BUILDDIR)/init.o \

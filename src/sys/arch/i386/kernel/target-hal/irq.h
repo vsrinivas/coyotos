@@ -45,10 +45,17 @@
 /** @brief Number of hardware-defined trap entries */
 #define TARGET_HAL_NUM_TRAP        32
 
+/** @brief Number of hardware-defined vectors */
+#define TARGET_HAL_NUM_VECTOR      (TARGET_HAL_NUM_IRQ+TARGET_HAL_NUM_TRAP)
 
 #include "../IA32/EFLAGS.h"
 
 #ifndef __ASSEMBLER__
+
+/**@brief Type used for IRQ indices.
+ *
+ * @bug This type declaration should probably move into the HAL. */
+typedef uint8_t TARGET_IRQ_T;
 
 /** @brief Opaque flags type definition. 
  *

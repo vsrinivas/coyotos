@@ -22,6 +22,7 @@
 
 #include <stdbool.h>
 #include <hal/kerntypes.h>
+#include <kerninc/vector.h>
 
 /** @brief True if we should attempt to use local APIC.
  */
@@ -68,40 +69,11 @@ extern kpa_t ioapic_pa;
  */
 extern kva_t ioapic_va;
 
-/** @brief Return true if the system has a local APIC that is actually
- * in use by us.
- *
- * This is mainly used internal to the PIC implementation. It is
- * exported so that we can make decisions about which interval timer
- * to initialize.
- */
-bool pic_have_apic();
-
 /** @brief Initialize the preferred peripheral interrupt controller. */
 void pic_init();
 
 void pic_shutdown();
 
-/** @brief Return true IFF the interrupt line corresponding to @p vector
- * actually has a pending interrupt.
- *
- * This permits detection and suppression of spurious hardware
- * interrupts.
- */
-bool pic_isPending(uint32_t irq);
-
-/** @brief Enable the interrupt line corresponding to @p vector */
-void pic_enable(uint32_t irq);
-
-/** @brief Disable the interrupt line corresponding to @p vector */
-void pic_disable(uint32_t irq);
-
-/** @brief Acknowledge to the PIC that an interrupt on the interrupt line
- * corresponding to @p vector has been received by the OS.
- *
- * This should typically be done only after disabling the interrupt at
- * the PIC.
- */
-void pic_acknowledge(uint32_t irq);
+void pic_no_op(struct IrqController *chip, irq_t irq);
 
 #endif /* __I686_PIC_H__ */

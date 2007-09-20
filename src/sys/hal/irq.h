@@ -33,7 +33,7 @@
 #define NUM_TRAP     TARGET_HAL_NUM_TRAP
 
 /** @brief Number of hardware-defined vectors */
-// #define NUM_VECTOR   TARGET_HAL_NUM_VECTOR
+#define NUM_VECTOR   TARGET_HAL_NUM_VECTOR
 
 #ifndef __ASSEMBLER__
 
@@ -42,6 +42,12 @@
  * Target-specific HAL must define TARGET_FLAGS_T
 */
 typedef TARGET_FLAGS_T flags_t;
+
+/** @brief IRQ type. 
+ *
+ * Target-specific HAL must define TARGET_IRQ_T
+*/
+typedef TARGET_IRQ_T irq_t;
 
 /** @brief Disable interrupts on the local processor (only).
  *

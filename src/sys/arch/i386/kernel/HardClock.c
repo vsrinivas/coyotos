@@ -51,12 +51,12 @@
 static void 
 pit_wakeup(Process *inProc, fixregs_t *saveArea)
 {
-  uint32_t vecno = saveArea->ExceptNo;
+  VectorInfo *vector = &VectorMap[saveArea->ExceptNo];
 
   //  printf("%s Timer Interrupt!\n", inProc ? "Process" : "Kernel");
 
   /* Re-enable the periodic timer interrupt line: */
-  pic_enable(VectorMap[vecno].irqSource);
+  irq_Enable(vector->irq);
 
   /* Preemption has occurred. */
   if (inProc) {
@@ -92,7 +92,7 @@ pit_wakeup(Process *inProc, fixregs_t *saveArea)
 void
 hardclock_init()
 {
-  if (pic_have_apic()) {
+  if (lapic_pa) {
     bug("Need to configure PIT for round-robin\n");
   }
   else {
@@ -103,7 +103,7 @@ hardclock_init()
 
     /* CMOS chip is already programmed with a slow but acceptable
        interval timer. Just use that. */
-    irq_BindInterrupt(irq_PIT, pit_wakeup);
-    irq_EnableInterrupt(irq_PIT);
+    irq_Bind(irq_PIT, pit_wakeup);
+    irq_Enable(irq_PIT);
   }
 }

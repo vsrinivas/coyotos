@@ -44,7 +44,4 @@
 /** @brief Integral type sufficient to hold a user virtual address. */
 #define TARGET_HAL_UVA_T uint32_t
 
-/* Following does not appear in most other architectures, but is
-   needed for Pentium */
-
 #endif /* I386_HAL_KERNTYPES_H */

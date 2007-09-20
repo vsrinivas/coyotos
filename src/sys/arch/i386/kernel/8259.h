@@ -1,5 +1,3 @@
-#ifndef __I386_ACPI_H__
-#define __I386_ACPI_H__
 /*
  * Copyright (C) 2007, The EROS Group, LLC.
  *
@@ -21,25 +19,19 @@
  */
 
 /** @file
- *
- * @brief Minimal ACPI bootstrap support.
+ * @brief 8259 Peripheral interrupt controller support.
  */
-#include <stddef.h>
 
-/** @brief Populate the CPU structures for each of the available CPUs.
- *
- * Returns number of CPUs according to ACPI, or 0 if ACPI information
- * not available.  If successful, sets lapic_requires_8259_disable and
- * lapic_pa as a side effect.
+#define IO_8259_ICU1 0x20
+#define IO_8259_ICU1_IMR 0x21
+#define IO_8259_ICU2 0xA0
+#define IO_8259_ICU2_IMR 0xA1
+
+/** @brief Initialize the PC motherboard legacy ISA peripheral
+ *  interrupt controllers.
  */
-extern size_t acpi_probe_cpus(void);
+extern void i8259_init();
 
-/** @brief Probe the ACPI tables for IRQ sources and initialize vector
- * table if found.
- *
- * Return true if ACPI interrupt sources were found, in which case we
- * will not be using the 8259 PIC.
- */
-extern bool acpi_probe_apics(void);
+/** @brief Shut down the 8259 PIC so that IOAPIC can take over. */
+extern void i8259_shutdown();
 
-#endif /* __I386_ACPI_H__ */

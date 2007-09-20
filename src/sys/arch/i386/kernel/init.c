@@ -655,6 +655,17 @@ arch_init(void)
   /* Need to get the physical memory map before we do anything else. */
   config_physical_memory();
 
+  // Make sure that we don't overwrite the loaded modules during cache
+  // initialization.
+  protect_multiboot_regions();
+
+  /* Initialize the hardware exception vector table. */
+  vector_init();
+
+  /* Find all of our CPUs. Also checks the ACPI tables, which we
+     should probably do separately. Probing the ACPI tables may have
+     the side effect of updating the execption vector table as we
+     discover interrupt sources. */
   (void) cpu_probe_cpus();
 
   /* Need to get this estimate BEFORE we protect the multiboot
@@ -666,10 +677,6 @@ arch_init(void)
     pmem_Available(&pmem_need_pages, COYOTOS_PAGE_SIZE, false);
 
   printf("%d pages initially available\n", totPage);
-
-  // Make sure that we don't overwrite the loaded modules during cache
-  // initialization.
-  protect_multiboot_regions();
 
   {
     /* heap_base could nominally start at _end, but if we round it up
@@ -711,8 +718,6 @@ arch_init(void)
   cpu_vector_init();
 
   //  pmem_showall();
-
-  irq_vector_init();
 
   cpu_scan_features();
 

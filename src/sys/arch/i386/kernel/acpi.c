@@ -35,6 +35,7 @@
 #include <stddef.h>
 #include <hal/config.h>
 #include <hal/kerntypes.h>
+#include <hal/vm.h>
 #include <kerninc/string.h>
 #include <kerninc/pstring.h>
 #include <kerninc/util.h>
@@ -46,6 +47,7 @@
 #include "acpi.h"
 #include "PIC.h"
 #include "cpu.h"
+#include "ioapic.h"
 
 typedef struct RSDP_v3 {
   char     signature[8];
@@ -250,16 +252,30 @@ acpi_find_MADT()
     break;
   }
     
-  if (madt_pa == 0) return 0;
+  return madt_pa;
+}
 
-  memcpy_ptov(&lapic_pa, madt_pa + sizeof(madt_hdr), sizeof(uint32_t));
+bool
+acpi_probe_apics()
+{
+  uint32_t madt_pa = acpi_find_MADT();
+
+  if (madt_pa == 0)
+    return false;
+
+  memcpy_ptov(&lapic_pa, madt_pa + sizeof(SDT_hdr), sizeof(uint32_t));
 
   assert(lapic_pa != 0);
   pmem_AllocRegion(lapic_pa, lapic_pa + 4096,
 		   pmc_RAM, pmu_KERNEL, "LAPIC");
+
+  kmap_EnsureCanMap(I386_LOCAL_APIC_VA, "lapic");
+  kmap_map(I386_LOCAL_APIC_VA, lapic_pa, KMAP_R|KMAP_W|KMAP_NC);
+  lapic_va = I386_LOCAL_APIC_VA;
+
   {
     uint32_t multiple_apic_flags;
-    memcpy_ptov(&multiple_apic_flags, madt_pa + sizeof(madt_hdr) + 4, 
+    memcpy_ptov(&multiple_apic_flags, madt_pa + sizeof(SDT_hdr) + 4, 
 		sizeof(uint32_t));
 
     if (multiple_apic_flags & 0x1u) {
@@ -268,7 +284,75 @@ acpi_find_MADT()
     }
   }
 
-  return madt_pa;
+  SDT_hdr madt_hdr;
+
+  memcpy_ptov(&madt_hdr, madt_pa, sizeof(madt_hdr));
+
+  kpa_t madt_bound = madt_pa + madt_hdr.length;
+  kpa_t apicstruct_pa = madt_pa + sizeof(madt_hdr) + 8;
+
+  CpuIOAPIC ioapic;
+  IntSrcOverride isovr;
+
+  bool found = false;
+
+  size_t nIoAPIC = 0;
+
+  /* Issue: ACPI does not specify any ordering for entrys in the APIC
+   * table. This creates a problem, because we do not know if the
+   * first entry in the table corresponds to the IPL CPU.
+   *
+   * To ensure that logical CPU ID 0 is assigned to the boot
+   * processor, handle slot 0 as a special case.
+   */
+  for(kpa_t pa = apicstruct_pa; pa < madt_bound; pa += ioapic.length) {
+    memcpy_ptov(&ioapic, pa, 2);
+
+    assert(ioapic.length);
+
+    switch(ioapic.type) {
+    case LAPIC_type_IO_APIC:
+      {
+	memcpy_ptov(&ioapic, pa, sizeof(ioapic));
+
+	kpa_t ioapic_pa = ioapic.ioapicPA;
+	assert(ioapic_pa != 0);
+	pmem_AllocRegion(ioapic_pa, ioapic_pa + 4096,
+			 pmc_RAM, pmu_KERNEL, "IOAPIC");
+
+	kva_t va = I386_IO_APIC_VA + (nIoAPIC * COYOTOS_PAGE_SIZE);
+	kmap_EnsureCanMap(va, "ioapic");
+	kmap_map(va, ioapic_pa, KMAP_R|KMAP_W|KMAP_NC);
+
+	ioapic_register(ioapic.globalSystemInterruptBase, va);
+
+	printf("IOAPIC id=0x%02x at 0x%0p intBase %d\n",
+	       ioapic.ioapicID, ioapic.ioapicPA, 
+	       ioapic.globalSystemInterruptBase);
+
+	found = true;
+
+	break;
+      }
+
+    case LAPIC_type_Intr_Source_Override:
+      {
+	memcpy_ptov(&isovr, pa, sizeof(isovr));
+
+	assert(isovr.flags == 0);
+
+	fatal("Unimplemented: interrupt source override %d:%d -> %d\n",
+	       isovr.bus, isovr.source, 
+	       isovr.globalSystemInterrupt);
+
+	break;
+      }
+    default:
+      break;
+    }
+  }
+
+  return found;
 }
 
 size_t 
@@ -292,8 +376,6 @@ acpi_probe_cpus()
   kpa_t apicstruct_pa = madt_pa + sizeof(madt_hdr) + 8;
 
   CpuLocalAPIC lapic;
-  CpuIOAPIC ioapic;
-  IntSrcOverride isovr;
 
   /* Issue: ACPI does not specify any ordering for entrys in the APIC
    * table. This creates a problem, because we do not know if the
@@ -308,57 +390,20 @@ acpi_probe_cpus()
 
     assert(lapic.length);
 
-    switch(lapic.type) {
-    case LAPIC_type_Processor_Local_APIC:
-      {
-	memcpy_ptov(&lapic, pa, sizeof(lapic));
+    if (lapic.type == LAPIC_type_Processor_Local_APIC) {
+      memcpy_ptov(&lapic, pa, sizeof(lapic));
 
-	if ((lapic.flags & LAPIC_flag_Enabled) == 0)
-	  continue;
+      if ((lapic.flags & LAPIC_flag_Enabled) == 0)
+	continue;
 
-	size_t slot = ncpu;
-	if (lapic.lapicID == bootApicID)
-	  slot = 0;
+      size_t slot = ncpu;
+      if (lapic.lapicID == bootApicID)
+	slot = 0;
 
-	archcpu_vec[slot].lapic_id = lapic.lapicID;
-	// printf("Entry %d has lapic ID 0x%x\n", slot, lapic.lapicID);
+      archcpu_vec[slot].lapic_id = lapic.lapicID;
+      // printf("Entry %d has lapic ID 0x%x\n", slot, lapic.lapicID);
 
-	if (slot != 0) ncpu++;
-
-	break;
-      }
-
-    case LAPIC_type_IO_APIC:
-      {
-	memcpy_ptov(&ioapic, pa, sizeof(ioapic));
-
-	if (ioapic_pa)
-	  fatal("Multiple IOAPICs not (yet) supported.\n");
-
-	ioapic_pa = ioapic.ioapicPA;
-	assert(ioapic_pa != 0);
-	pmem_AllocRegion(ioapic_pa, ioapic_pa + 4096,
-			 pmc_RAM, pmu_KERNEL, "IOAPIC");
-
-	printf("IOAPIC id=0x%02x at 0x%0p intBase %d\n",
-	       ioapic.ioapicID, ioapic.ioapicPA, 
-	       ioapic.globalSystemInterruptBase);
-
-	break;
-      }
-
-    case LAPIC_type_Intr_Source_Override:
-      {
-	memcpy_ptov(&isovr, pa, sizeof(isovr));
-
-	assert(isovr.flags == 0);
-
-	fatal("Unimplemented: interrupt source override %d:%d -> %d\n",
-	       isovr.bus, isovr.source, 
-	       isovr.globalSystemInterrupt);
-
-	break;
-      }
+      if (slot != 0) ncpu++;
     }
   }
 
