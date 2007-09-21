@@ -540,10 +540,10 @@ cache_age_framecache(ObFrameCache *ofc)
       while (agelist_underHiWater(&ofc->check) &&
 	     agelist_hasMoreThan(&ofc->active, nInTrans)) {
 	ObjectHeader *hdr = agelist_oldest(&ofc->active);
-	/* If we're holding the object for this operation, it is in active
-	 * use.  Move it to the front of the active list.
+	/* If we're holding the object for this operation, or it is pinned,
+	 * it is in active use.  Move it to the front of the active list.
 	 */
-	if (mutex_isheld(&hdr->lock)) {
+	if (hdr->pinned || mutex_isheld(&hdr->lock)) {
 	  nInTrans++;
 	  agelist_removeOldest(&ofc->active, hdr);
 	  agelist_addFront(&ofc->active, hdr);
@@ -832,6 +832,78 @@ proc_gc(Process *p)
   cap_gc(&p->state.handler);
   for (size_t i = 0; i < NUM_CAP_REGS; i++)
     cap_gc(&p->state.capReg[i]);
+}
+
+Page *
+cache_get_physPage(kpa_t pa)
+{
+  oid_t oid = coyotos_Range_physOidStart + (pa / COYOTOS_PAGE_SIZE);  
+
+  /** @bug when we have physical ranges coming and going, this will
+   * need to do some locking
+   */
+  Page *page = obhdr_findPage(pa);
+  if (page == 0)
+    return 0;
+
+  HoldInfo hi = mutex_grab(&page->mhdr.hdr.lock);
+  if (page->mhdr.hdr.oid == oid) {
+    return page;
+  }
+
+  if (page->mhdr.hdr.pinned) {
+    // cannot allocate pinned object
+    mutex_release(hi);
+    return 0;
+  }
+
+  // we need to move aside the existing data, and invalidate any cached
+  // mappings
+  HoldInfo ob1_hi = obhash_grabMutex(ot_Page, oid);
+  HoldInfo ob2_hi = obhash_grabMutex(page->mhdr.hdr.ty,
+				     page->mhdr.hdr.oid);
+
+  Page *npage = cache_alloc_page();
+  
+  if (page != npage) {
+    /* now that we're holding the bucket lock, invalidate the existing page. */
+    memhdr_invalidate_cached_state(&page->mhdr);
+    obhdr_invalidate(&page->mhdr.hdr);
+
+    /* copy the data */
+    memcpy_ptop(npage->pa, page->pa, COYOTOS_PAGE_SIZE);
+
+    obhash_remove_obj(page);
+    npage->mhdr.hdr.ty = page->mhdr.hdr.ty;
+    npage->mhdr.hdr.oid = page->mhdr.hdr.oid;
+    npage->mhdr.hdr.allocCount = page->mhdr.hdr.allocCount;
+    npage->mhdr.hdr.hasDiskCaps = page->mhdr.hdr.hasDiskCaps;
+    npage->mhdr.hdr.current = page->mhdr.hdr.current;
+    npage->mhdr.hdr.snapshot = page->mhdr.hdr.snapshot;
+    npage->mhdr.hdr.dirty = page->mhdr.hdr.dirty;
+    npage->mhdr.hdr.pinned = 0;
+    npage->mhdr.hdr.cksum = page->mhdr.hdr.cksum;
+
+    obhash_insert_obj(npage);
+    cache_install_new_object(&npage->mhdr.hdr);  
+  }
+  mutex_release(ob2_hi);
+
+  memset_p(page->pa, 0, COYOTOS_PAGE_SIZE);
+
+  page->mhdr.hdr.ty = ot_Page;
+  page->mhdr.hdr.oid = oid;
+  page->mhdr.hdr.allocCount = 0;
+  page->mhdr.hdr.hasDiskCaps = 0;
+  page->mhdr.hdr.current = 1;
+  page->mhdr.hdr.snapshot = 0;
+  page->mhdr.hdr.dirty = 1;
+
+  obhash_insert_obj(page);
+
+  mutex_release(ob1_hi);
+
+  return page;
 }
 
 void

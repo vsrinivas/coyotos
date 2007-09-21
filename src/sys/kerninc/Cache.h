@@ -226,5 +226,13 @@ extern void cache_clear_object(ObjectHeader *ob);
  */
 void cache_upgrade_age(ObjectHeader *hdr, OTEntry *newidx);
 
+/** @brief gets a physical page key with physical address @p pa.
+ *
+ * The Page will be locked in memory until cache_release_physPage() is called.
+ */
+struct Page *cache_get_physPage(kpa_t pa);
+
+/** @brief release the pin on a physical page key. */
+void cache_release_physPage(struct Page *page);
 
 #endif /* __KERNINC_OBJECTCACHE_H__ */
