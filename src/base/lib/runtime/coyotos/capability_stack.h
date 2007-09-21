@@ -22,7 +22,31 @@
  */
 
 /** @file 
- * @brief interface definition for capability stack operations. */
+ * @brief interface definition for capability stack operations. 
+ *
+ *  Sample use:
+ *    if (!capability_canPush(3))
+ *      goto fail;
+ *    capability_push(CR_APP(0));
+ *    capability_push(CR_APP(1));
+ *    capability_push(CR_APP(2));
+ *    ... use CR_APP(0..2) with impunity ...
+ *    capability_pop(CR_APP(2));
+ *    capability_pop(CR_APP(1));
+ *    capability_pop(CR_APP(0));
+ *  (note the reverse order for popping)
+ *
+ *  @bug is this backwards?  Couldn't we have an interface where you do:
+ *    if (!capability_canPush(3))
+ *	goto fail;
+ *    caploc_t tmp1 = capability_push();
+ *    caploc_t tmp2 = capability_push();
+ *    caploc_t tmp3 = capability_push();
+ *    ... use them ...
+ *    capability_pop(3);
+ *  This seems less error prone to me.  It also sidesteps the "what if you
+ *  push a register that's an argument" question.
+ **/
 
 #include <coyotos/coytypes.h>
 #include <inttypes.h>
