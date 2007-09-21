@@ -716,3 +716,22 @@ irq_isEnabled(irq_t irq)
   return result;
 }
 
+/****************************************************************
+ * BRING-UP SUPPORT
+ ****************************************************************/
+#ifdef BRING_UP
+void irq_set_softled(VectorInfo *vi, bool on)
+{
+  uint32_t vecno = vi - &VectorMap[0];
+  if (vecno >= 72)
+    return;
+
+#define BlackOnGreen      0x20
+#define WhiteOnRed        0x47
+#define BlackOnLightGreen 0xa0
+#define WhiteOnLightRed   0xc7
+
+  ((char *) 0xc00b8F00)[16 + 2*vecno + 1] = 
+    on ? BlackOnLightGreen : WhiteOnLightRed;
+}
+#endif

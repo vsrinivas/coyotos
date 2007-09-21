@@ -275,8 +275,11 @@ process_command_line()
   if (cmdline_find_option(cmdline, "dbgwait") != 0)
     process_dbgwait();
 
-  if (cmdline_find_option(cmdline, "noapic") != 0)
+  if (cmdline_find_option(cmdline, "noioapic") != 0)
     use_ioapic = false;
+
+  if (cmdline_find_option(cmdline, "ioapic") != 0)
+    use_ioapic = true;
 }
 
 /** @brief Initialize physical memory.

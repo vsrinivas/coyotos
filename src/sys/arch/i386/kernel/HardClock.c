@@ -169,7 +169,7 @@ hardclock_init()
       printf("FSB speed %d mhz\n", fsb_clock/one_mhz);
     }
 
-#if 1
+#if 0
     uint32_t val = lapic_read_register(LAPIC_LVT_Timer);
     lapic_write_register(LAPIC_LVT_Timer, val | LAPIC_LVT_TIMER_PERIODIC|LAPIC_LVT_MASKED);
 

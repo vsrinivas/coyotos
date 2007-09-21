@@ -175,6 +175,10 @@ ioapic_enable(VectorInfo *vi)
   e.u.fld.masked = 0;
   ioapic_write_entry(vi->ctrlr, pin, e);
 
+#ifdef BRING_UP
+  irq_set_softled(vi, true);
+#endif
+
   spinlock_release(shi);
 }
 
@@ -187,6 +191,10 @@ ioapic_disable(VectorInfo *vi)
   IoAPIC_Entry e = ioapic_read_entry(vi->ctrlr, pin);
   e.u.fld.masked = 1;
   ioapic_write_entry(vi->ctrlr, pin, e);
+
+#ifdef BRING_UP
+  irq_set_softled(vi, false);
+#endif
 
   spinlock_release(shi);
 }
@@ -267,6 +275,10 @@ ioapic_ctrlr_init(IrqController *ctrlr)
     VectorMap[vec].ctrlr = ctrlr;
 
     irq_Disable(irq);
+
+#ifdef BRING_UP
+    irq_set_softled(&VectorMap[vec], false);
+#endif
   }
 }
 

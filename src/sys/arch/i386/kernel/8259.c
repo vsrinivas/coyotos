@@ -41,22 +41,6 @@
  * 8259 SUPPORT
  ****************************************************************/
 
-#ifdef BRING_UP
-void irq_set_softled(uint32_t vec, bool on)
-{
-  if (vec >= 72)
-    return;
-
-#define BlackOnGreen      0x20
-#define WhiteOnRed        0x47
-#define BlackOnLightGreen 0xa0
-#define WhiteOnLightRed   0xc7
-
-  ((char *) 0xc00b8F00)[16 + 2*vec + 1] = 
-    on ? BlackOnLightGreen : WhiteOnLightRed;
-}
-#endif
-
 static uint16_t i8259_irqMask   = (uint16_t) ~0u;
 
 /*******************************************************************************
@@ -83,7 +67,7 @@ i8259_enable(VectorInfo *vector)
 
   i8259_irqMask &= ~(1u << irq);
 #ifdef BRING_UP
-  irq_set_softled(vec_IRQ0 + irq, true);
+  irq_set_softled(vector, true);
 #endif
 
   if (irq >= 8) {
@@ -95,7 +79,7 @@ i8259_enable(VectorInfo *vector)
     if (i8259_irqMask & (1u << cascade_pin)) {
       i8259_irqMask &= ~(1u << cascade_pin);
 #ifdef BRING_UP
-      irq_set_softled(vec_IRQ0 + cascade_pin, true);
+      irq_set_softled(&vector[vec_IRQ0 + cascade_pin], true);
 #endif
     }
   }
@@ -120,7 +104,7 @@ i8259_disable(VectorInfo *vector)
 
   i8259_irqMask |= (1u << irq);
 #ifdef BRING_UP
-  irq_set_softled(vec_IRQ0 + irq, false);
+  irq_set_softled(vector, false);
 #endif
 
   if (irq >= 8)
@@ -235,7 +219,7 @@ i8259_init()
 
 #ifdef BRING_UP
   for (size_t irq = 0; irq < 16; irq++)
-    irq_set_softled(vec_IRQ0 + irq, false);
+    irq_set_softled(&VectorMap[vec_IRQ0 + irq], false);
 #endif
 }
 

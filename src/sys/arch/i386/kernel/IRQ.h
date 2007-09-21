@@ -106,4 +106,9 @@ void irq_OnTrapOrInterrupt(Process *inProc, fixregs_t *saveArea);
 
 void irq_DoTripleFault() NORETURN;
 
+/* For debugging the interrupt handler bring-up: */
+#ifdef BRING_UP
+void irq_set_softled(VectorInfo *vi, bool on);
+#endif
+
 #endif /* __I686_IRQ_H__ */
