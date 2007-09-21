@@ -46,7 +46,7 @@ bool lapic_requires_8259_disable = false;
 kpa_t lapic_pa = 0;		/* if present, certainly won't be here */
 kva_t lapic_va = 0;
 
-#define DEBUG_IOAPIC if (0)
+#define DEBUG_IOAPIC if (1)
 
 static void ioapic_setup(VectorInfo *vector);
 static void ioapic_enable(VectorInfo *vector);
@@ -271,15 +271,40 @@ ioapic_ctrlr_init(IrqController *ctrlr)
     VectorMap[vec].mode = VEC_MODE_FROMBUS; /* all legacy IRQs are edge triggered */
     VectorMap[vec].level = VEC_LEVEL_FROMBUS; /* all legacy IRQs are active high. */
     VectorMap[vec].irq = irq;
+    VectorMap[vec].fn = vh_UnboundIRQ;
     VectorMap[vec].enabled = 0;
     VectorMap[vec].ctrlr = ctrlr;
 
+    // Wire the IOAPIC's pin register to correspond to the selected vector.
+    IoAPIC_Entry e = ioapic_read_entry(ctrlr, pin);
+    e.u.fld.vector = vec;
+    e.u.fld.deliverMode = 0;	/* FIXED delivery */
+    e.u.fld.destMode = 0;	/* Physical destination (for now) */
+    // Polarity and trigger mode not yet known. Do not touch.
+    e.u.fld.masked = 1;
+    e.u.fld.dest = archcpu_vec[0].lapic_id; /* CPU0 for now */
+
+    ioapic_write_entry(ctrlr, pin, e);
+
     irq_Disable(irq);
+
+    DEBUG_IOAPIC {
+      irq_t irq = ctrlr->baseIRQ + pin;
+      printf("Vector %d -> irq %d  ", e.u.fld.vector, irq);
+      if ((irq % 3) == 2)
+	printf("\n");
+
+      IoAPIC_Entry e2 = ioapic_read_entry(ctrlr, pin);
+      if (e2.u.fld.vector != e.u.fld.vector)
+	fatal("e.vector %d e2.vector %d\n",
+	      e.u.fld.vector, e2.u.fld.vector);
+    }
 
 #ifdef BRING_UP
     irq_set_softled(&VectorMap[vec], false);
 #endif
   }
+  DEBUG_IOAPIC if (ctrlr->nIRQ % 3) printf("\n");
 }
 
 void
@@ -302,57 +327,6 @@ ioapic_init()
     
   outb(IMCR_SET_INTERRUPT_MODE, IMCR);
   outb(IMCR_LAPIC_MODE, IMCR_DATA);
-
-  // For each vector corresponding to a defined interrupt pin, wire
-  // the pin back to that vector
-  for (size_t vec = 0; vec < NUM_VECTOR; vec++) {
-    if (VectorMap[vec].type != vt_Interrupt)
-      continue;
-
-    IrqController *ctrlr = VectorMap[vec].ctrlr;
-    size_t pin = VectorMap[vec].irq - ctrlr->baseIRQ;
-
-    assert(VectorMap[vec].enabled == 0);
-
-    IoAPIC_Entry e = ioapic_read_entry(ctrlr, pin);
-    e.u.fld.vector = vec;
-    e.u.fld.deliverMode = 0;	/* FIXED delivery */
-    e.u.fld.destMode = 0;		/* Physical destination (for now) */
-    // Polarity and trigger mode not yet known.
-    e.u.fld.masked = 1;
-    e.u.fld.dest = archcpu_vec[0].lapic_id; /* CPU0 for now */
-
-    ioapic_write_entry(ctrlr, pin, e);
-
-    DEBUG_IOAPIC {
-      irq_t irq = ctrlr->baseIRQ + pin;
-      printf("Vector %d -> irq %d  ", e.u.fld.vector, irq);
-      if ((irq % 2) == 1)
-	printf("\n");
-
-      IoAPIC_Entry e2 = ioapic_read_entry(ctrlr, pin);
-      if (e2.u.fld.vector != e.u.fld.vector)
-	fatal("e.vector %d e2.vector %d\n",
-	      e.u.fld.vector, e2.u.fld.vector);
-    }
-  }
-  DEBUG_IOAPIC printf("\n");
-
-  DEBUG_IOAPIC {
-    for (size_t irq = 0; irq < nGlobalIRQ; irq++) {
-      VectorInfo *vector = IrqVector[irq];
-      size_t pin = irq - vector->ctrlr->baseIRQ;
-      IoAPIC_Entry e = ioapic_read_entry(vector->ctrlr, pin);
-      printf("IRQ %3d -> vector %d  ", 
-	     irq, e.u.fld.vector);
-      if ((irq % 2) == 1)
-	printf("\n");
-    }
-    if ((nGlobalIRQ % 2) == 1)
-      printf("\n");
-
-    fatal("Check map.\n");
-  }
 }
 
 void

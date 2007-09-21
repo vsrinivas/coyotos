@@ -192,6 +192,7 @@ i8259_init()
     VectorMap[vec].mode = VEC_MODE_FROMBUS; /* all legacy IRQs are edge triggered */
     VectorMap[vec].level = VEC_LEVEL_FROMBUS; /* all legacy IRQs are active high. */
     VectorMap[vec].irq = irq;
+    VectorMap[vec].fn = vh_UnboundIRQ;
     VectorMap[vec].enabled = 0;
     VectorMap[vec].ctrlr = &i8259;
   }

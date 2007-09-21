@@ -145,7 +145,7 @@ extern kva_t lapic_va;
 /** @brief LAPIC Local Vector Table (Timer) */
 #define LAPIC_LVT_Timer     0x320
 /** @brief LAPIC Performance Counter */
-#define LAPIC_LVT_PerfCntr  0x340
+#define LAPIC_LVT_PCINT  0x340
 /** @brief LAPIC Local Vector Table (LINT0) */
 #define LAPIC_LVT_LINT0     0x350
 /** @brief LAPIC Local Vector Table (LINT1) */

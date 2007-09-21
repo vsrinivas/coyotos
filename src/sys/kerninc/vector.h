@@ -158,4 +158,8 @@ void irq_Bind(irq_t irq, uint32_t mode, uint32_t level, VecFn fn);
 /** @brief Given an IRQ, return the appropriate vector entry. */
 VectorInfo *irq_MapInterrupt(irq_t irq);
 
+/** @brief Handler to use prior to interrupt binding, as a sanity
+ * provision. */
+__hal void vh_UnboundIRQ(Process *inProc, fixregs_t *saveArea);
+
 #endif /* __KERNINC_VECTOR_H__ */

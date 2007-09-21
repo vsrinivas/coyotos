@@ -146,6 +146,7 @@ pit_wakeup(Process *inProc, fixregs_t *saveArea)
   return;
 }
 
+#define USE_LAPIC
 void
 hardclock_init()
 {
@@ -169,16 +170,20 @@ hardclock_init()
       printf("FSB speed %d mhz\n", fsb_clock/one_mhz);
     }
 
-#if 0
     uint32_t val = lapic_read_register(LAPIC_LVT_Timer);
+    val &= ~LAPIC_LVT_TIMER_MODE;
     lapic_write_register(LAPIC_LVT_Timer, val | LAPIC_LVT_TIMER_PERIODIC|LAPIC_LVT_MASKED);
 
-    irq_Bind(irq_LAPIC_Timer, VEC_MODE_EDGE, VEC_LEVEL_ACTHIGH, pit_wakeup);
+    printf("LVT TIMER: 0x%08x\n", lapic_read_register(LAPIC_LVT_Timer));
+
+    irq_Bind(irq_LAPIC_Timer, VEC_MODE_FROMBUS, VEC_LEVEL_FROMBUS, pit_wakeup);
 
     lapic_write_register(LAPIC_TIMER_ICR, ratio * CMOS_TICK_DIVIDER);
+#ifdef USE_LAPIC
     irq_Enable(irq_LAPIC_Timer);
+#endif
 
-#else
+#ifndef USE_LAPIC
 
     outb(CMOS_SQUARE_WAVE0, CMOS_TIMER_MODE);
     outb(CMOS_TICK_DIVIDER & 0xffu, CMOS_TIMER_PORT_0);

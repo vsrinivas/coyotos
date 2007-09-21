@@ -76,6 +76,11 @@ pic_init()
 {
   bool have_ioapic = acpi_probe_apics();
 
+  if (use_ioapic && lapic_pa) {
+    lapic_init();
+    printf("LAPIC, ");
+  }
+
   if (use_ioapic && have_ioapic) {
     ioapic_init();
 
@@ -84,11 +89,6 @@ pic_init()
   else {
     i8259_init();
     printf("PIC, ");
-  }
-
-  if (use_ioapic && lapic_pa) {
-    lapic_init();
-    printf("LAPIC, ");
   }
 }
 

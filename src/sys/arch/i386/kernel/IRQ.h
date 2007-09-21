@@ -70,9 +70,12 @@ enum Interrupts {
   /* master 8259 cascade from secondary */
   irq_ISA_Cascade    = IRQ(IBUS_ISA,2),
 
-  irq_LAPIC_Spurious = IRQ(IBUS_LAPIC,0xef),
   irq_LAPIC_IPI      = IRQ(IBUS_LAPIC,0xf8),
-  irq_LAPIC_Timer    = IRQ(IBUS_LAPIC,0xff),
+  irq_LAPIC_Timer    = IRQ(IBUS_LAPIC,0xfe),
+  /* Note that SVR interrupt vector is required to have the least four
+   * bits set to 1, and therefore must end in 0xf. See Intel
+   * documentation of LAPIC SVR register. */
+  irq_LAPIC_SVR      = IRQ(IBUS_LAPIC,0xff),
 };
 
 /** @brief Number of global interrupt sources */
