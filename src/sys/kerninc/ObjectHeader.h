@@ -116,6 +116,9 @@ typedef struct ObjectHeader {
   /** @brief Object has been modified and requires write-back. */
   bool dirty;
 
+  /** @brief Object is pinned and cannot be aged out */
+  bool pinned;
+
   /** @brief Object checksum.
    *
    * Should be valid if object is !modified, or if object is modified

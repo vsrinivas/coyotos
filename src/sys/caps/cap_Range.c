@@ -164,6 +164,7 @@ void cap_Range(InvParam_t *iParam)
       }
       sched_commit_point();
 
+      obHdr->pinned = 0;
       cache_clear_object(obHdr);
 
       if (bumpAllocCount) {
@@ -215,13 +216,52 @@ void cap_Range(InvParam_t *iParam)
       INV_REQUIRE_ARGS(iParam, nCapArg);
 
       bool waitForRange = 
-	((opCode == OC_coyotos_Range_waitCap) || (opCode == OC_coyotos_Range_waitProcess));
+	((opCode == OC_coyotos_Range_waitCap) || 
+	 (opCode == OC_coyotos_Range_waitProcess));
 
       uint32_t capType = 0;
       capability *brand = NULL;
 
-      /** @bug Not handling physical address OIDs yet */
-      assert(oid < coyotos_Range_physOidStart);
+      /* handle physical ranges as a special case */
+      if (oid >= coyotos_Range_physOidStart) {
+	kpa_t kpa = (oid - coyotos_Range_physOidStart) * COYOTOS_PAGE_SIZE;
+	/* check for bad type or overflow */
+	if (obType != coyotos_Range_obType_otPage ||
+	    (kpa / COYOTOS_PAGE_SIZE + coyotos_Range_physOidStart) != oid) {
+	  sched_commit_point();
+	  InvErrorMessage(iParam, RC_coyotos_Cap_RequestError);
+	  return;
+	}
+	Page *retVal = cache_get_physPage(kpa);
+	if (retVal == 0) {
+	  sched_commit_point();
+	  InvErrorMessage(iParam, RC_coyotos_Range_RangeErr);
+	  return;
+	}
+
+	INIT_TO_ZERO(&iParam->srcCap[0].theCap);
+
+	/* Set up a deprepared cap, then prepare it. */
+	iParam->srcCap[0].theCap.type = ct_Page;
+	iParam->srcCap[0].theCap.swizzled = 0;
+	iParam->srcCap[0].theCap.restr = 0;
+	
+	iParam->srcCap[0].theCap.allocCount = retVal->mhdr.hdr.allocCount;
+	
+	/* Memory caps have a min GPT requirement. */
+	iParam->srcCap[0].theCap.u1.mem.l2g = COYOTOS_PAGE_ADDR_BITS;
+
+	iParam->srcCap[0].theCap.u2.oid = retVal->mhdr.hdr.oid;
+
+	cap_prepare(&iParam->srcCap[0].theCap);
+	
+	sched_commit_point();
+
+	retVal->mhdr.hdr.pinned = 1;
+
+	iParam->opw[0] = InvResult(iParam, 1);
+	return;
+      }
 
       /** We need to hunt down the target object so that we can
        * determine the allocation count.  If the object is not already
@@ -271,6 +311,11 @@ void cap_Range(InvParam_t *iParam)
       ObjectHeader *obHdr = 
 	obstore_require_object(ot, oid, waitForRange, NULL);
 
+      if (obHdr == 0) {
+	  sched_commit_point();
+	  InvErrorMessage(iParam, RC_coyotos_Range_RangeErr);
+	  return;
+      }
       INIT_TO_ZERO(&iParam->srcCap[0].theCap);
 
       /* Set up a deprepared cap, then prepare it. */
@@ -287,6 +332,9 @@ void cap_Range(InvParam_t *iParam)
       iParam->srcCap[0].theCap.u2.oid = obHdr->oid;
 
       cap_prepare(&iParam->srcCap[0].theCap);
+
+      if (brand)
+	obhdr_dirty(obHdr);
 
       sched_commit_point();
 

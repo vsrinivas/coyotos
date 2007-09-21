@@ -347,6 +347,8 @@ memhdr_invalidate_cached_state(MemHeader *hdr)
 {
   if (hdr->hdr.ty == ot_GPT)
     depend_invalidate((GPT *)hdr);
+  else if (hdr->hdr.ty == ot_Page || hdr->hdr.ty == ot_CapPage)
+    rm_whack_page((Page *)hdr);
 
   memhdr_destroy_products(hdr);
 }
