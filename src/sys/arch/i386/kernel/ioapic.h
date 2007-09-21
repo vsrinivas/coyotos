@@ -25,13 +25,6 @@
  * @brief IO APIC support.
  */
 
-/** @brief True if implementation has a redundant 8259 legacy PIC that
- * must be disabled before the local APIC is enabled.
- *
- * Set conditionally in acpi.c:acpi_find_MADT()
- */
-extern bool lapic_requires_8259_disable;
-
 /* I/O APIC Register numbers */
 /** @brief I/O APIC Identitification Register */
 #define IOAPIC_ID         0

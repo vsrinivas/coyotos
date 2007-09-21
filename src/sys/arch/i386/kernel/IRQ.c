@@ -49,7 +49,7 @@ irq_t nGlobalIRQ;
 
 
 /** @brief Hardware-level interrupt dispatch table. */
-PAGE_ALIGN static ia32_GateDescriptor IdtTable[NUM_TRAP+NUM_IRQ];
+PAGE_ALIGN static ia32_GateDescriptor IdtTable[NUM_VECTOR];
 
 static void irq_SetHardwareVector(int, void (*)(void), bool isUser);
 
@@ -533,9 +533,10 @@ void vector_init()
   VectorMap[vec_Syscall].user = 1;
   VectorMap[vec_Syscall].fn = vh_SysCall;
 
+  assert(sizeof(IdtTable) == sizeof(IdtTable[0])*NUM_VECTOR);
+
   /* Initialize all hardware table entries. */
   for (uint32_t vec = 0; vec < NUM_VECTOR; vec++) {
-    IdtTable[vec].present = 0;
     bool isUser = VectorMap[vec].user ? true : false;
     irq_SetHardwareVector(vec, irq_stubs[vec], isUser);
   }
@@ -563,8 +564,6 @@ void irq_init()
     sizeof(IdtTable),
     (uint32_t) IdtTable 
   };
-
-
 
   GNU_INLINE_ASM("lidt %0"
 		 : /* no output */

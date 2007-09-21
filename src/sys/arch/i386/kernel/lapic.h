@@ -24,6 +24,13 @@
 #include <hal/kerntypes.h>
 #include <kerninc/vector.h>
 
+/** @brief True if implementation has a redundant 8259 legacy PIC that
+ * must be disabled before the local APIC is enabled.
+ *
+ * Set conditionally in acpi.c:acpi_find_MADT()
+ */
+extern bool lapic_requires_8259_disable;
+
 /** @brief Physical address of local APIC 
  *
  * This is the physical memory address where each CPU can access its

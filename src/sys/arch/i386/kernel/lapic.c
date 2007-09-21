@@ -26,6 +26,7 @@
 #include "lapic.h"
 #include "IRQ.h"
 #include "PIC.h"
+#include "8259.h"
 
 static inline uint32_t 
 lapic_irq_register(irq_t irq)
@@ -206,7 +207,14 @@ lapic_init()
 {
   assert(cpu_ncpu == 1);
 
-
+  if (lapic_requires_8259_disable) {
+    /* Following disables all interrupts on the primary and secondary
+     * 8259. Disabling secondary shouldn't be necessary, but that
+     * assumes that the ASIC emulating the 8259 is sensible.
+     */
+    i8259_shutdown();
+  }
+    
   {
     VectorInfo *vector = irq_MapInterrupt(irq_LAPIC_Timer);
     vector->type = vt_Interrupt;
@@ -240,7 +248,10 @@ lapic_init()
     vector->ctrlr = &lapic;
   }
 
+  __asm__ __volatile__ ("sti;nop;nop");
+
   irq_Bind(irq_LAPIC_SVR, VEC_MODE_EDGE, VEC_LEVEL_ACTHIGH, 
 	   lapic_spurious_interrupt);
+  lapic_eoi();
   irq_Enable(irq_LAPIC_SVR);
 }

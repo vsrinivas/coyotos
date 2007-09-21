@@ -310,14 +310,6 @@ ioapic_ctrlr_init(IrqController *ctrlr)
 void
 ioapic_init()
 {
-  if (lapic_requires_8259_disable) {
-    /* Following disables all interrupts on the primary and secondary
-     * 8259. Disabling secondary shouldn't be necessary, but that
-     * assumes that the ASIC emulating the 8259 is sensible.
-     */
-    i8259_shutdown();
-  }
-    
   for (size_t i = 0; i < nIoAPIC; i++)
     ioapic_ctrlr_init(&ioapic[i]);
 
