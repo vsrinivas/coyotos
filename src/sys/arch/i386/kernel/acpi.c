@@ -138,6 +138,8 @@ acpi_find_MADT()
   if (!rsdp) rsdp = acpi_scan_region(0xe0000, 0xfffff);
   if (!rsdp) return 0;
     
+  printf("ACPI RSDP 0x%08x\n", (uint32_t) rsdp);
+
   /* ACPI RSDP has been found. This gives us location of RSDT. 
    *
    * We now need to search RSDT to find Multiple APIC Descriptor Table
@@ -158,6 +160,9 @@ acpi_find_MADT()
 
   size_t nEntries = (rsdt_hdr.length - sizeof(rsdt_hdr)) / 4;
 
+  printf("ACPI RSDT 0x%08x %d nEntries=%d\n", (uint32_t) rsdt_pa, 
+	rsdt_hdr.length, nEntries);
+
   for (size_t i = 0; i < nEntries; i++) {
     kpa_t pa;
     uint32_t pa32;
@@ -168,14 +173,21 @@ acpi_find_MADT()
     memcpy_ptov(&madt_hdr, pa, sizeof(madt_hdr));
 
     /* What the hell: */
-    if (acpi_cksum(pa, madt_hdr.length))
-      fatal("ACPI checksum on some table fail\n");
+    printf("ACPI %c%c%c%c 0x%08x %d\n",
+	   madt_hdr.signature[0],
+	   madt_hdr.signature[1],
+	   madt_hdr.signature[2],
+	   madt_hdr.signature[3],
+	   (uint32_t) pa, madt_hdr.length);
 
-    if (memcmp(madt_hdr.signature, "APIC", 4) != 0)
-      continue;
-
-    madt_pa = pa;
-    break;
+    if (acpi_cksum(pa, madt_hdr.length)) {
+      printf("  [ checksum fail ]\n");
+    }
+    else if (memcmp(madt_hdr.signature, "APIC", 4) == 0) {
+      /* Some BIOS's have been observed in the wild with multiple APIC
+	 tables. Believe only the first one: */
+      if (!madt_pa) madt_pa = pa;
+    }
   }
     
   return madt_pa;
@@ -218,7 +230,6 @@ acpi_probe_apics()
   kpa_t apicstruct_pa = madt_pa + sizeof(madt_hdr) + 8;
 
   CpuIOAPIC ioapic;
-  IntSrcOverride isovr;
 
   bool found = false;
 
@@ -236,45 +247,25 @@ acpi_probe_apics()
 
     assert(ioapic.length);
 
-    switch(ioapic.type) {
-    case LAPIC_type_IO_APIC:
-      {
-	memcpy_ptov(&ioapic, pa, sizeof(ioapic));
+    if (ioapic.type == LAPIC_type_IO_APIC) {
+      memcpy_ptov(&ioapic, pa, sizeof(ioapic));
 
-	kpa_t ioapic_pa = ioapic.ioapicPA;
-	assert(ioapic_pa != 0);
-	pmem_AllocRegion(ioapic_pa, ioapic_pa + 4096,
-			 pmc_RAM, pmu_KERNEL, "IOAPIC");
+      kpa_t ioapic_pa = ioapic.ioapicPA;
+      assert(ioapic_pa != 0);
+      pmem_AllocRegion(ioapic_pa, ioapic_pa + 4096,
+		       pmc_RAM, pmu_KERNEL, "IOAPIC");
 
-	kva_t va = I386_IO_APIC_VA + (nIoAPIC * COYOTOS_PAGE_SIZE);
-	kmap_EnsureCanMap(va, "ioapic");
-	kmap_map(va, ioapic_pa, KMAP_R|KMAP_W|KMAP_NC);
+      kva_t va = I386_IO_APIC_VA + (nIoAPIC * COYOTOS_PAGE_SIZE);
+      kmap_EnsureCanMap(va, "ioapic");
+      kmap_map(va, ioapic_pa, KMAP_R|KMAP_W|KMAP_NC);
 
-	ioapic_register(ioapic.globalSystemInterruptBase, va);
+      ioapic_register(ioapic.globalSystemInterruptBase, va);
 
-	printf("IOAPIC id=0x%02x at 0x%0p intBase %d\n",
-	       ioapic.ioapicID, ioapic.ioapicPA, 
-	       ioapic.globalSystemInterruptBase);
+      printf("IOAPIC id=0x%02x at 0x%0p intBase %d\n",
+	     ioapic.ioapicID, ioapic.ioapicPA, 
+	     ioapic.globalSystemInterruptBase);
 
-	found = true;
-
-	break;
-      }
-
-    case LAPIC_type_Intr_Source_Override:
-      {
-	memcpy_ptov(&isovr, pa, sizeof(isovr));
-
-	assert(isovr.flags == 0);
-
-	fatal("Unimplemented: interrupt source override %d:%d -> %d\n",
-	       isovr.bus, isovr.source, 
-	       isovr.globalSystemInterrupt);
-
-	break;
-      }
-    default:
-      break;
+      found = true;
     }
   }
 
