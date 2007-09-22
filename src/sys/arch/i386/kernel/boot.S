@@ -127,14 +127,28 @@ general_entry:
 	
 	cld
 
-	movl	$ EXT(_bss_start), %edi	/* destination */
-	movl	$ EXT(_end), %ecx	/* count */
-	subl	$ EXT(_bss_start), %ecx
-	mov	$0x0, %eax		/* value */
+	movl	$ EXT(_bss_start), %edi	/* start */
+	movl	$ EXT(_end), %ecx	/* end */
+	subl	%edi, %ecx		/* count */ 
 	subl	$KVA, %edi		/* bias the address */
+	mov	$0x0, %eax		/* value */
 
 	rep
 	stosb
+	
+	/* The pre-arranged mapping tables from ldscript.S do not
+	 * fall within either BSS or any initialized region, and
+	 * we need them in a known state. Zero those as well.
+	 */
+	movl	$EXT(__begin_maps), %edi	/* start */
+	movl	$EXT(__end_maps), %ecx	/* end */
+	subl	%edi, %ecx		/* count */
+	subl	$KVA, %edi		/* bias the address */
+	mov	$0x0, %eax		/* value */
+
+	rep
+	stosb
+	
 	
 	/* RUNTIME: BSS is now zeroed. */
 	
@@ -267,16 +281,18 @@ setup_legacy_map:
 	xorl	%edx,%edx
 	orl	$(PTE_V|PTE_W|PTE_ACC|PTE_DRTY),%edx
 
-	movl	1024,%ecx
+	movl	$1024,%ecx
 1:	movl	%edx,(%esi)
 	addl	$0x1000,%edx
 	addl	$4,%esi
-	decl	%ecx
-	jnz	1b
+	loop	1b
 	
 	/* Adjust the primary video adapter mapping to be write-through. */
+	movl	$8,%ecx
 	movl	$EXT(KernPageTable)-KVA+(0xB8*4),%esi
-	orl	$(PTE_PWT|PTE_PCD),(%esi)
+1:	orl	$(PTE_PWT|PTE_PCD),(%esi)
+	addl	$4,%esi
+	loop	1b
 	
 	movl	$EXT(KernPageDir)-KVA,%esi
 	movl	$EXT(KernPageTable)-KVA,%edx
@@ -293,17 +309,6 @@ setup_legacy_map:
 	movl	$0x076f0779,0x000b8004  /* "yo" */
 #endif
 	
-	/* Set up the desired configuration in CR4. While we are here,
-	 * initialize the debugging extensions and enable the TLB
-	 * Global bit.
-	 *
-	 * FIX:	we should also set MCE, OSFXSR, OSXMMEXCPT here when
-	 * we have implemented support for those.
-	 */
-	mov	%cr4,%edx
-	orl	$CR4_DE,%edx
-	mov	%edx,%cr4
-	
 	jmp	enable_paging
 	
 setup_pae_map:
@@ -316,12 +321,14 @@ setup_pae_map:
 	movl	$0,4(%esi)
 	addl	$8,%esi
 	addl	$0x1000,%edx
-	decl	%ecx
-	jnz	1b
+	loop	1b
 
 	/* Adjust the primary video adapter mapping to be write-through. */
+	movl	$8,%ecx
 	movl	$EXT(KernPageTable)-KVA+(0xB8*8),%esi
-	orl	$(PAE_PWT|PAE_PCD),(%esi)
+1:	orl	$(PAE_PWT|PAE_PCD),(%esi)
+	addl	$8,%esi
+	loop	1b
 	
 	movl	$EXT(KernPageDir)-KVA,%esi
 	movl	$EXT(KernPageTable)-KVA,%edx
@@ -359,7 +366,7 @@ setup_pae_map:
 	 * we have implemented support for those.
 	 */
 	mov	%cr4,%edx
-	orl	$(CR4_DE|CR4_PAE),%edx
+	orl	$CR4_PAE,%edx
 	mov	%edx,%cr4
 	
 enable_paging:	
