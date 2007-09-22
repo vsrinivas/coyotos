@@ -129,6 +129,10 @@ module coyotos.Constructor {
   primordial_tools[rt.TOOL.CONSTRUCTOR_VERIFY] = Verifier;
   primordial_tools[rt.TOOL.AUDIT_LOG] = NullCap();
 
+  export def fresh_tools(bank) {
+    return dup(bank, primordial_tools);
+  }
+
   /* Create a ProtoSpace-running process, with Address Space constructor
    * (or address space) as_cons, starting PC pc, and Handler constructor
    * (or handler) handler_cons

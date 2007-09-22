@@ -1,0 +1,13 @@
+package coyotos;
+
+/**
+ * @brief ElfProcessHandler
+ */
+interface ElfProcessHandler extends ProcessHandler {
+
+  /** @brief No Virtual Address Space is available */
+  exception NoSpace;
+
+  /** @brief Set the end of the heap, allowing further allocation */
+  void setBreak(unsigned long long newBreak) raises (NoSpace);
+};

@@ -19,13 +19,12 @@
  */
 
 /** @file
- * @brief Virtual Copy Space implementation
+ * @brief Elf Process Handler
  */
 
 /* Based on template for processing the following interfaces:
-    coyotos.SpaceHandler
-    coyotos.MemoryHandler
-    coyotos.VirtualCopySpace
+    coyotos.ElfProcessHandler
+    coyotos.ProcessHandler
  */
 
 #include <coyotos/capidl.h>
@@ -45,39 +44,36 @@
 #include <idl/coyotos/Process.h>
 #include <idl/coyotos/SpaceBank.h>
 
-#include "coyotos.VirtualCopySpace.h"
+#include "coyotos.ElfProcessHandler.h"
+#include "coyotos.TargetInfo.h"
 
 /* all of our handler procedures are static */
 #define IDL_SERVER_HANDLER_PREDECL static
 
-#include <idl/coyotos/VirtualCopySpace.server.h>
-#include <idl/coyotos/MemoryHandler.server.h>
-#include <idl/coyotos/SpaceHandler.server.h>
+#include <idl/coyotos/ElfProcessHandler.server.h>
+#include <idl/coyotos/ProcessHandler.server.h>
+
+#include "elf.h"
 
 typedef union {
-  _IDL_IFUNION_coyotos_VirtualCopySpace
-      coyotos_VirtualCopySpace;
-  _IDL_IFUNION_coyotos_MemoryHandler
-      coyotos_MemoryHandler;
-  _IDL_IFUNION_coyotos_SpaceHandler
-      coyotos_SpaceHandler;
+  _IDL_IFUNION_coyotos_ElfProcessHandler
+      coyotos_ElfProcessHandler;
+  _IDL_IFUNION_coyotos_ProcessHandler
+      coyotos_ProcessHandler;
   InvParameterBlock_t pb;
   InvExceptionParameterBlock_t except;
   uintptr_t icw;
 } _IDL_GRAND_SERVER_UNION;
 
-#define CR_SPACEGPT      coyotos_VirtualCopySpace_APP_SPACEGPT
-#define CR_OPAQUESPACE   coyotos_VirtualCopySpace_APP_OPAQUESPACE
-#define CR_BGGPT         coyotos_VirtualCopySpace_APP_BGGPT
-#define CR_HANDLER_ENTRY coyotos_VirtualCopySpace_APP_HANDLER_ENTRY
+#define CR_ELFFILE	 coyotos_ElfProcessHandler_APP_ELFFILE
+#define CR_ADDRSPACE	 coyotos_ElfProcessHandler_APP_ADDRSPACE
 
-#define CR_TMP1		 coyotos_VirtualCopySpace_APP_TMP1
-#define CR_TMP2		 coyotos_VirtualCopySpace_APP_TMP2
-#define CR_TMP3		 coyotos_VirtualCopySpace_APP_TMP3
+#define CR_TMP1		 coyotos_ElfProcessHandler_APP_TMP1
+#define CR_TMP2		 coyotos_ElfProcessHandler_APP_TMP2
+#define CR_TMP3		 coyotos_ElfProcessHandler_APP_TMP3
 
 typedef struct IDL_SERVER_Environment {
-  bool isHandlerFacet;
-  bool isVCSFacet;
+  bool __ignored;
 } ISE;
 
 IDL_Environment _IDL_E = {
@@ -87,49 +83,19 @@ IDL_Environment _IDL_E = {
 
 IDL_Environment * const IDL_E = &_IDL_E;
 
-bool frozen = false;
-
 static uint64_t
 HANDLE_coyotos_Cap_destroy(ISE *ise)
 {
-  /* Only builder caps can destroy the constructor. */
-  if (!ise->isVCSFacet)
-    return (RC_coyotos_Cap_NoAccess);
-
-  if (!coyotos_SpaceBank_destroyBankAndReturn(CR_SPACEBANK,
-					      CR_RETURN,
-					      RC_coyotos_Cap_OK, 
-					      IDL_E)) {
-    return (IDL_E->errCode);
-  }
-
-  /* Not reached */
-  return (RC_coyotos_Cap_RequestError);
+  /* we are always destroyed along with our process */
+  return (RC_coyotos_Cap_NoAccess);
 }
 
 static uint64_t
 HANDLE_coyotos_Cap_getType(uint64_t *out, ISE *_env)
 {
-  if (_env->isVCSFacet)
-    *out = IKT_coyotos_VirtualCopySpace;
-  else
-    *out = IKT_coyotos_MemoryHandler;
+  *out = IKT_coyotos_ElfProcessHandler;
 
   return RC_coyotos_Cap_OK;
-}
-
-static uint64_t
-HANDLE_coyotos_VirtualCopySpace_freeze(caploc_t _retVal, ISE *_env)
-{
-  return RC_coyotos_Cap_UnknownRequest;
-}
-
-static uint64_t
-HANDLE_coyotos_SpaceHandler_getSpace(caploc_t _retVal, ISE *_env)
-{
-  cap_copy(_retVal, CR_OPAQUESPACE);
-
-  return (RC_coyotos_Cap_OK);
 }
 
 /**
@@ -197,19 +163,18 @@ round_up(uint64_t a, uint64_t b)
 bool
 process_fault(uint64_t addr, bool wantCap)
 {
-  caploc_t cap = CR_SPACEGPT;
-  caploc_t next = CR_TMP1;
-  caploc_t spare = CR_TMP2;
-  caploc_t next_spare = CR_TMP3;
+  caploc_t cap = CR_TMP1;
+  caploc_t next = CR_TMP2;
+  caploc_t spare = CR_TMP3;
+  caploc_t next_spare = CR_TMP1;
 
   /*
    * We will loop as we go down;  the capability registers used looks like:
    *      cap        next     spare    next_spare
-   *  1.  SPACEGPT   TMP1     TMP2     TMP3
-   *  2.  TMP1       TMP2     TMP3     TMP1
-   *  3.  TMP2       TMP3     TMP1     TMP2
-   *  4.  TMP3       TMP1     TMP2     TMP3
-   *  5.  TMP1       TMP2     TMP3     TMP1
+   *  1.  TMP1       TMP2     TMP3     TMP1
+   *  2.  TMP2       TMP3     TMP1     TMP2
+   *  3.  TMP3       TMP1     TMP2     TMP3
+   *  4.  TMP1       TMP2     TMP3     TMP1
    *  ... etc ...
    */
 
@@ -408,28 +373,138 @@ process_fault(uint64_t addr, bool wantCap)
   }
 }
 
-static void
-HANDLE_coyotos_MemoryHandler_handle(caploc_t proc,
-				    coyotos_Process_FC faultCode,
-				    uint64_t faultInfo,
-				    ISE *_env)
+typedef struct region {
+  enum {
+    LOAD,
+    CAP,
+    STACK
+  } type;
+  uint32_t perms;
+  uint64_t vaddr;
+  uint64_t memsz;
+  uint64_t foffset;
+  uint64_t filesz;
+} region;
+
+region capRegion = { CAP, PF_R | PF_W, 0x0, COYOTOS_PAGE_SIZE, 0, 0 };
+region stackRegion =  { STACK, PF_R | PF_W };
+
+region textRegion;
+region dataRegion;
+
+static bool
+find_phdrs(const char *base)
 {
-  bool clearFault = false;
+  const Elf32_Ehdr *ehdr = (void *)base;
+
+  const char *PhdrBase = (base + ehdr->e_phoff);
+
+  bool foundText = false;
+  bool foundData = false;
+
+  int idx;
+  for (idx = 0; idx < ehdr->e_phnum; idx++) {
+    Elf32_Phdr *phdr = (Elf32_Phdr *)(PhdrBase + idx * ehdr->e_phentsize);
+
+    if (phdr->p_type == PT_GNU_STACK) {
+      stackRegion.perms = PF_R | PF_W | (phdr->p_flags & PF_X);
+      continue;
+    }
+    if (phdr->p_type != PT_LOAD)
+      continue;
+
+    region *nReg = 0;
+    switch (phdr->p_flags & (PF_R | PF_W | PF_X)) {
+    case (PF_R|PF_X):
+      if (foundText)
+	return false;
+      foundText = true;
+      nReg = &textRegion;
+      break;
+
+    case (PF_R|PF_W):
+      if (foundData)
+	return false;
+      foundData = true;
+      nReg = &dataRegion;
+      break;
+
+    default:
+      return false;
+    }
+    nReg->type = LOAD;
+    nReg->perms = (phdr->p_flags & (PF_R | PF_W | PF_X));
+    nReg->vaddr = phdr->p_vaddr;
+    nReg->memsz = phdr->p_memsz;
+    nReg->foffset = phdr->p_offset;
+    nReg->filesz = phdr->p_filesz;
+  }
+
+  /* set up a maximal stack region for now */
+  stackRegion.vaddr = COYOTOS_PAGE_SIZE;
+  stackRegion.memsz = 
+    coyotos_TargetInfo_large_stack_pointer - COYOTOS_PAGE_SIZE;
+
+  return true;
+}
+
+static bool
+in_region(region *r, uint64_t addr)
+{
+  return (addr - r->vaddr >= r->memsz);
+}
+
+static uint64_t
+HANDLE_coyotos_ElfProcessHandler_setBreak(uint64_t newBreak, ISE *_env)
+{
+  // right now, we only allow growing the break
+  if (newBreak < (dataRegion.vaddr + dataRegion.filesz) ||
+      newBreak < (dataRegion.vaddr + dataRegion.memsz))
+    return RC_coyotos_Cap_RequestError;
+
+  dataRegion.memsz = (newBreak - dataRegion.vaddr);
+  return RC_coyotos_Cap_OK;
+}
+
+static void
+HANDLE_coyotos_ProcessHandler_handle(caploc_t proc,
+				     coyotos_Process_FC faultCode,
+				     uint64_t faultInfo,
+				     ISE *_env)
+{
+  bool handled = false;
+
+  if (!coyotos_Process_getSlot(proc, 
+			       coyotos_Process_cslot_addrSpace,
+			       CR_TMP1, 
+			       IDL_E))
+    goto fail;
 
   switch (faultCode) {
   case coyotos_Process_FC_InvalidDataReference:
   case coyotos_Process_FC_AccessViolation:
-    clearFault = process_fault(faultInfo, false);
+    if (in_region(&stackRegion, faultInfo) ||
+	in_region(&dataRegion, faultInfo))
+      handled = process_fault(faultInfo, false);
     break;
+
   case coyotos_Process_FC_InvalidCapReference:
-    clearFault = process_fault(faultInfo, true);
+    if (!in_region(&capRegion, faultInfo))
+      break;
+    handled = process_fault(faultInfo, true);
     break;
 
   default:
     break;
   }
 
-  coyotos_Process_resume(proc, clearFault, IDL_E);
+ fail:
+  // process is only going to fault again.  Message the console?
+  if (!handled)
+    *(int *)0 = 0;
+
+  // clear the fault and resume the process
+  coyotos_Process_resume(proc, true, IDL_E);
 }
 				    
 /* You should supply a function that selects an interface
@@ -438,87 +513,66 @@ HANDLE_coyotos_MemoryHandler_handle(caploc_t proc,
 static inline uint64_t 
 choose_if(uint64_t epID, uint32_t pp)
 {
-  switch (pp) {
-  case coyotos_VirtualCopySpace_PP_VCS:
-    return IKT_coyotos_VirtualCopySpace;
-
-  case coyotos_VirtualCopySpace_PP_Handler:
-    return IKT_coyotos_MemoryHandler;
-
-  default:
+  if (epID != 1 || pp != 0)
     return IKT_coyotos_Cap;
-  }
+  return IKT_coyotos_ElfProcessHandler;
 } 
 
 bool
 initialize(void)
 {
-  guard_t theGuard = 0;
-  bool isInvalid = false;
+  guard_t theGuard = make_guard(0, COYOTOS_HW_ADDRESS_BITS);
+  coyotos_Memory_l2value_t l2v = COYOTOS_HW_ADDRESS_BITS - coyotos_GPT_l2slots;
+  coyotos_Memory_l2value_t unusedl2v = 0;
 
   if (!coyotos_AddressSpace_getSlot(CR_TOOLS, 
-				    coyotos_VirtualCopySpace_TOOLS_BACKGROUND,
-				    CR_BGGPT,
+				    coyotos_ElfProcessHandler_TOOL_ELFFILE,
+				    CR_ELFFILE,
 				    IDL_E))
     goto fail;
-
-  if (!coyotos_Memory_getGuard(CR_BGGPT, &theGuard, IDL_E)) {
-    theGuard = make_guard(0, COYOTOS_PAGE_ADDR_BITS);
-    isInvalid = true;
-  }
-
-  /* right now, we don't support full-size address spaces */
-  if (guard_l2g(theGuard) == COYOTOS_SOFTADDR_BITS)
-    goto fail;
-
-  if (!coyotos_Memory_reduce(CR_BGGPT,
-			     coyotos_Memory_restrictions_weak,
-			     CR_BGGPT,
-			     IDL_E))
-    goto fail;
-
-  coyotos_Memory_l2value_t old_l2v;
-
-  coyotos_AddressSpace_slot_t slot = 
-    (guard_matchValue(theGuard) >> (COYOTOS_SOFTADDR_BITS - 1)) ? 1 : 0;
 
   if (!coyotos_SpaceBank_alloc(CR_SPACEBANK,
 			       coyotos_Range_obType_otGPT,
 			       coyotos_Range_obType_otInvalid,
 			       coyotos_Range_obType_otInvalid,
-			       CR_SPACEGPT,
+			       CR_ADDRSPACE,
 			       CR_NULL,
 			       CR_NULL,
-			       IDL_E) ||
-      !coyotos_Endpoint_makeEntryCap(CR_INITEPT, 
-				     coyotos_VirtualCopySpace_PP_Handler, 
-				     CR_HANDLER_ENTRY, 
-				     IDL_E) ||
-      !coyotos_Memory_setGuard(CR_SPACEGPT,
-			       make_guard(0, COYOTOS_SOFTADDR_BITS),
-			       CR_SPACEGPT,
-			       IDL_E) ||
-      !coyotos_GPT_setl2v(CR_SPACEGPT,
-			  COYOTOS_SOFTADDR_BITS - 1, 
-			  &old_l2v,
-			  IDL_E) ||
-      !coyotos_AddressSpace_setSlot(CR_SPACEGPT,
-				    coyotos_GPT_handlerSlot,
-				    CR_HANDLER_ENTRY,
-				    IDL_E) ||
-      !coyotos_GPT_setHandler(CR_SPACEGPT, true, IDL_E) ||
-      (!isInvalid &&
-       !coyotos_AddressSpace_guardedSetSlot(CR_SPACEGPT,
-					    slot,
-					    CR_BGGPT,
-					    theGuard,
-					    IDL_E)) ||
-      !coyotos_Memory_reduce(CR_SPACEGPT,
-			     coyotos_Memory_restrictions_opaque,
-			     CR_OPAQUESPACE,
-			     IDL_E) ||
-      !coyotos_Endpoint_makeEntryCap(CR_INITEPT, 
-				     coyotos_VirtualCopySpace_PP_VCS, 
+			       IDL_E))
+    goto fail;
+
+  if (!coyotos_Memory_setGuard(CR_ADDRSPACE, theGuard, CR_ADDRSPACE, IDL_E) ||
+      !coyotos_GPT_setl2v(CR_ADDRSPACE, l2v, &unusedl2v, IDL_E))
+    goto fail;
+
+  if (!coyotos_Process_getSlot(CR_SELF, 
+			       coyotos_Process_cslot_addrSpace,
+			       CR_TMP1, IDL_E))
+    goto fail;
+
+  if (!coyotos_AddressSpace_setSlot(CR_ADDRSPACE, 0, CR_TMP1, IDL_E))
+    goto fail;
+
+  if (!coyotos_Process_setSlot(CR_SELF, 
+			       coyotos_Process_cslot_addrSpace,
+			       CR_ADDRSPACE, IDL_E))
+    goto fail;
+
+  // We're now running with the full address space available.  Install our
+  // file so that we can read it.
+  if (!coyotos_AddressSpace_setSlot(CR_ADDRSPACE, 1, CR_ELFFILE, IDL_E))
+    goto fail;
+
+  // process its elf sections
+  if (!find_phdrs((char *)(1ul << l2v)))
+    goto fail;
+
+  // and unmap it now that we're through.
+  if (!coyotos_AddressSpace_setSlot(CR_ADDRSPACE, 1, CR_NULL, IDL_E))
+    goto fail;
+
+  if (!coyotos_Endpoint_makeEntryCap(CR_INITEPT, 
+				     0,
 				     CR_REPLY0, 
 				     IDL_E))
     goto fail;
@@ -593,14 +647,11 @@ ProcessRequests(struct IDL_SERVER_Environment *_env)
     }
     
     switch(choose_if(gsu.pb.epID, gsu.pb.u.pp)) {
-    case IKT_coyotos_VirtualCopySpace:
-      _IDL_IFDISPATCH_coyotos_VirtualCopySpace(&gsu.coyotos_VirtualCopySpace, _env);
+    case IKT_coyotos_ElfProcessHandler:
+      _IDL_IFDISPATCH_coyotos_ElfProcessHandler(&gsu.coyotos_ElfProcessHandler, _env);
       break;
-    case IKT_coyotos_MemoryHandler:
-      _IDL_IFDISPATCH_coyotos_MemoryHandler(&gsu.coyotos_MemoryHandler, _env);
-      break;
-    case IKT_coyotos_SpaceHandler:
-      _IDL_IFDISPATCH_coyotos_SpaceHandler(&gsu.coyotos_SpaceHandler, _env);
+    case IKT_coyotos_ProcessHandler:
+      _IDL_IFDISPATCH_coyotos_ProcessHandler(&gsu.coyotos_ProcessHandler, _env);
       break;
     default:
       {
