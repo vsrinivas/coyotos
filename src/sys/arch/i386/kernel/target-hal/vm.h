@@ -21,7 +21,6 @@ union IA32_PTE {
     uint32_t SW2     :  1;	/**< software use */
     uint32_t frameno : 20;	/**< frame number */
   } bits;
-  /* Declared in IPC-vars.cxx: */
 
   uint32_t value;
 };
@@ -46,7 +45,6 @@ union IA32_PAE {
     uint64_t resvd   : 11;      /**< must be zero */
     uint64_t NX      :  1;      /**< No-execute */
   } bits;
-  /* Declared in IPC-vars.cxx: */
 
   uint64_t value;
 };
