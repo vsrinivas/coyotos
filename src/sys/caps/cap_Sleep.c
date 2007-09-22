@@ -28,6 +28,9 @@
 
 extern void cap_Cap(InvParam_t* iParam);
 
+// Temporary hack:
+const uint64_t restart_epoch = 1;
+
 void cap_Sleep(InvParam_t *iParam)
 {
   uintptr_t opCode = iParam->opCode;
@@ -41,6 +44,58 @@ void cap_Sleep(InvParam_t *iParam)
       InvTypeMessage(iParam, IKT_coyotos_Sleep);
       break;
     }
+  case OC_coyotos_Sleep_sleepTill:
+    {
+      iParam->invoker->wakeTime.epoch = now.epoch;
+      iParam->invoker->wakeTime.sec = get_iparam32(iParam);
+      iParam->invoker->wakeTime.usec = get_iparam32(iParam);
+
+      INV_REQUIRE_ARGS(iParam, 0);
+
+      if (iParam->invoker->wakeTime.usec >= 1000000) {
+	InvErrorMessage(iParam, RC_coyotos_Cap_RequestError);
+	return;
+      }
+
+      interval_delay(iParam->invoker);
+
+      sched_commit_point();
+
+      iParam->opw[0] = InvResult(iParam, 0);
+      return;
+    }
+
+  case OC_coyotos_Sleep_sleepFor:
+    {
+      iParam->invoker->wakeTime.epoch = now.epoch;
+      iParam->invoker->wakeTime.sec = get_iparam32(iParam);
+      iParam->invoker->wakeTime.usec = get_iparam32(iParam);
+
+      INV_REQUIRE_ARGS(iParam, 0);
+
+      if (iParam->invoker->wakeTime.usec >= 1000000) {
+	InvErrorMessage(iParam, RC_coyotos_Cap_RequestError);
+	return;
+      }
+
+      iParam->invoker->wakeTime.sec += now.sec;
+      iParam->invoker->wakeTime.usec += now.usec;
+      if (iParam->invoker->wakeTime.usec >= 1000000) {
+	iParam->invoker->wakeTime.usec -= 10000000;
+	iParam->invoker->wakeTime.sec ++;
+      }
+
+      /* In case this restarts for some reason: */
+      set_pw(iParam->invoker, 1, OC_coyotos_Sleep_sleepTill);
+
+      interval_delay(iParam->invoker);
+
+      sched_commit_point();
+
+      iParam->opw[0] = InvResult(iParam, 0);
+      return;
+    }
+
   default:
     bug("Unimplemented cap type %d\n", iParam->iCap.cap->type);
 

@@ -5,12 +5,20 @@ package coyotos;
 /// The sleep capability allows a process to block for a specified
 /// period of time. Note that the sleep(), if any, happens before the
 /// reply. It is the invoker rather than the invokee who blocks.
+  ///
+  /// In contrast to all other kernel interfaces, the sleep capability
+  /// contrives to be in a non-receiving state until the requested
+  /// interval has expired.
 interface Sleep extends Cap {
-  /// @brief Sleep until the specified number of milliseconds has
-  /// passed or the system is rebooted.
-  void sleep(unsigned long long ms);
+  /// @brief Sleep until the specified number of seconds @p sec and
+  /// microseconds @p usec have passed since the beginning of the
+  /// current restart epoch.
+  ///
+  /// Raises RequestError if @p usec &gt;= 10<sup>6</sup>
+  void sleepTill(unsigned long sec, unsigned long usec);
 
-  /// @brief Sleep until the specified number of milliseconds from
-  /// epoch or until the system is rebooted.
-  void sleepTill(unsigned long long ms);
+  /// @brief Sleep until the specified number of seconds @p sec and
+  /// microseconds @p usec have passed. Note that this will be
+  /// re-written by the kernel into a sleepTill invocation.
+  void sleepFor(unsigned long sec, unsigned long usec);
 };

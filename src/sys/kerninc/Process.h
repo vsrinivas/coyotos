@@ -32,6 +32,7 @@
 #include <kerninc/ObjectHeader.h>
 #include <kerninc/CPU.h>
 #include <kerninc/Sched.h>
+#include <kerninc/Interval.h>
 #include <obstore/Process.h>
 #include <idl/coyotos/Process.h>
 
@@ -157,7 +158,10 @@ struct Process {
    * May only be set to a non-NULL value with hdr.lock held.  After it is
    * set, may only be cleared by the CPU it points to.
    */
-  struct CPU *onCPU;
+  struct CPU       *onCPU;
+
+  /** @brief For a process that is sleeping: when to wake up. */
+  Interval          wakeTime;
 
   /** @brief Link structure used when this process is on a stall queue
    * or ready queue. 
