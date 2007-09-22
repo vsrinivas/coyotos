@@ -365,24 +365,38 @@ config_physical_memory(void)
      * region. We will actually treat it as ROM, but it's a RAM
      * region.
      *
-     * In this case, the call to pmem_AllocRegion below succeeds on
-     * all platforms we know about because it exactly overlaps the
-     * previously defined ROM region (and therefore replaces it
-     * without signalling any error).
+     * Unfortunately, some BIOS's report an overlap. For example, the
+     * HP Pavilion a6030n reports an initial RAM region of [0,0x9f400],
+     * a BIOS ROM region of [0x9f400,0x9fc00], and then we get here and
+     * discover a claimed EBDA region of [0x9f000,0x9fc00]. Obviously
+     * the various people who worked on that BIOS didn't talk to each
+     * other. The problem is that we do not know who has it right, and
+     * the EBDA may contain various bits of information that we will
+     * need later for ACPI. The conservative solution is to ensure
+     * that the EBDA gets reserved, which is what we do here.
      *
-     * This is sloppy. They should be kpa_t, but we know the uint32_t
-     * span will work, and declaring them this way avoids cast
-     * complaints.
+     * 16-bit segment base of EBDA appears at address 0x403. First
+     * byte of the EBDA gives size of EBDA in kilobytes.
      */
-    kpa_t ebda_base = (* PTOKV(0x40e, uint16_t *)) << 4;
-    kpa_t ebda_bound = (* PTOKV(ebda_base, uint32_t *)) * 1024;
-    ebda_bound += ebda_base;
+    uint32_t ebda_base = (* PTOKV(0x40e, uint16_t *)) << 4;
+    uint32_t ebda_size = (* PTOKV(ebda_base, uint8_t *));
+    ebda_size *= 1024;
+    uint32_t ebda_bound = ebda_base + ebda_size;
 
-    //    fatal("EBDA = [0x%x:0x%x]\n", ebda_base, ebda_bound);
+    while (ebda_base < ebda_bound) {
+      PmemInfo *pmi = pmem_FindRegion(ebda_base);
+      uint32_t bound = ebda_bound;
+      if (pmi->bound < ebda_bound)
+	bound = pmi->bound;
 
-    // ebda_base = align_down(ebda_base, COYOTOS_PAGE_SIZE);
-    pmem_AllocRegion(ebda_base, ebda_bound, pmc_RAM, pmu_BIOS, 
-    		     "Extended BIOS Data Area");
+      pmem_AllocRegion(ebda_base, bound, pmc_RAM, pmu_BIOS,
+		       "Extended BIOS Data Area");
+
+      ebda_base = bound;
+    }
+
+    printf("EBDA = [0x%lx:%lx] (0x%lx)\n", ebda_base, ebda_bound, 
+	   ebda_size);
   }
 
   pmem_AllocRegion(KVTOP(_start), KVTOP(_etext), pmc_RAM, pmu_KERNEL,

@@ -77,7 +77,7 @@ static unsigned nPmemInfo = 0;
 
 
 static void pmem_cleanup();
-static PmemInfo *pmem_FindRegion(kpa_t addr);
+PmemInfo *pmem_FindRegion(kpa_t addr);
 static PmemInfo *pmem_NewRegion(kpa_t base, kpa_t bound, PmemClass cls, 
 				PmemUse use, const char *descrip);
 
@@ -115,7 +115,7 @@ pmem_init(kpa_t base, kpa_t bound)
 
 /** @brief Given a physical address, find the containing region.
  */
-static PmemInfo *
+PmemInfo *
 pmem_FindRegion(kpa_t addr)
 {
   for (unsigned i = 0; i < PHYSMEM_NREGION; i++) {
@@ -243,7 +243,7 @@ pmu_descrip(PmemUse use)
   }
 }
 
-/** @brief Allocate a portion of a physical region for some particulat
+/** @brief Allocate a portion of a physical region for some particular
  * purpose.
  */
 kpa_t
@@ -258,10 +258,18 @@ pmem_AllocRegion(kpa_t base, kpa_t bound, PmemClass cls, PmemUse use,
   if (!pmi)
     return PMEM_ALLOC_FAIL;
 
-  assert( pmi->base <= base );
-  assert( pmi->bound >= base );
-  assert( pmi->base <= bound );
-  assert( pmi->bound >= bound );
+  if (pmi->base > base ||
+		 pmi->bound < bound ||
+		 pmi->base > bound ||
+		 pmi->bound < bound) {
+    //    pmem_showall();
+    fatal("?ALOC [%llx,%llx] %s %s %s\n"
+	   "  PMI [%llx,%llx] %s %s\n", 
+	  base, bound, pmc_descrip(cls), pmu_descrip(use),
+	  descrip,
+	  pmi->base, pmi->bound, pmc_descrip(pmi->cls),
+	  pmu_descrip(pmi->use));
+  }
 
   if (base != pmi->base) {
     assert (base > pmi->base);
@@ -283,6 +291,10 @@ pmem_AllocRegion(kpa_t base, kpa_t bound, PmemClass cls, PmemUse use,
     assert(bound != obound);
     pmem_NewRegion(bound, obound, pmi->cls, pmi->use, pmi->descrip);
   }
+
+  DEBUG_PMEM
+    printf("ALC physregion [%llx,%llx] %s %s\n", base, bound,
+	   pmc_descrip(cls), pmu_descrip(use));
 
   assert(pmi->base == base);
   assert(pmi->bound == bound);

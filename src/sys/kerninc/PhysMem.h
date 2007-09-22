@@ -176,6 +176,8 @@ kpa_t      pmem_AllocBytes(const PmemConstraint *, size_t sz,
 kpsize_t   pmem_Available(const PmemConstraint *, kpsize_t unitSize, 
 			  bool contiguous);
 
+PmemInfo * pmem_FindRegion(kpa_t addr);
+
 void       pmem_showall();
 
 /* Local Variables: */
