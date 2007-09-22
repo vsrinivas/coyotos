@@ -254,7 +254,7 @@ general_entry:
 	/* Check for PAE mode and decide which way to build the map */
 	movl	%edx,%eax
 	andl	$CPUID_EDX_PAE,%eax
-#if 0
+#if 1
 	jnz	setup_pae_map
 #endif
 	
