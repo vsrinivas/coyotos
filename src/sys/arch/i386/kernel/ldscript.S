@@ -123,8 +123,6 @@ SECTIONS
   . = . + KSTACK_SIZE;
   kstack_hi = .;
 
-  __cpu_private_end = .;
-
   /* PAGE DATA REGION (all data whose size is a page multiple and 
      is page aligned) */
   . = ALIGN(COYOTOS_PAGE_SIZE);
