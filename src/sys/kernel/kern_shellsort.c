@@ -20,6 +20,18 @@
 
 /** @file
  * @brief Shellsort implementation
+ *
+ * Shellsort is like insertion sort, except that we do insertion sort in a
+ * number of passes.  At each pass, we k-sort the file, which means that
+ * for all N, element N is sorted with respect to elements N + ak, where a is
+ * any integer yielding a result in range.  k starts large, and decreases.
+ * This means that disordered elements are moved towards their eventual spot
+ * early on, so that the later passes have to do less and less work.
+ *
+ * See Knuth, Vol 3, section 5.2.1, for a discussion of the algorithm.
+ *
+ * This algorithm is preferable to the standard Quicksort, since it works
+ * without recursion.
  */
 
 #include <kerninc/shellsort.h>
@@ -31,11 +43,12 @@
 void
 shellsort(void *a, size_t n, size_t es, int (*cmp)(const void *, const void *))
 {
+  char buffer[es];	// Temporary storage used for the insertion.
+
   char *array = a;
-  char buffer[es];
   size_t stride;
 
-  // Calculate the initial stride (Knuth's increment sequence)
+  // Calculate the initial stride (Knuth's "simple" increment sequence)
   for (stride = 1;
        stride <= n/9;
        stride = 3 * stride + 1)
@@ -57,7 +70,7 @@ shellsort(void *a, size_t n, size_t es, int (*cmp)(const void *, const void *))
 	  break;
       }
 
-      // Do the insertion
+      /* Do the insertion */
       if (nidx != idx) {
 	size_t curidx;
 	memcpy(buffer, entry, es);
