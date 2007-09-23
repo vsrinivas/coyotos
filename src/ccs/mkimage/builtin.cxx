@@ -698,16 +698,8 @@ pf_downgrade(PrimFnValue& pfv,
 	     InterpState& is,
 	     CVector<GCPtr<Value> >& args)
 {
-  GCPtr<Value> v = args[0];
-
-  if (v->kind != Value::vk_cap) {
-    is.errStream << is.curAST->loc << " "
-		 << "Inappropriate dynamic types to "
-		 << pfv.nm << '\n';
-    THROW(excpt::BadValue, "Bad interpreter result");
-  }
-
-  GCPtr<CapValue> out = new CapValue(*v.upcast<CapValue>());
+  GCPtr<CapValue> v_cap = needAnyCapArg(is, pfv.nm, args, 0);
+  GCPtr<CapValue> out = new CapValue(*v_cap);
 
   if (cap_isType(out->cap, ct_Null))
     return out;				/* Null caps are as weak as they get */
@@ -756,43 +748,24 @@ pf_guard_cap(PrimFnValue& pfv,
 	     InterpState& is,
 	     CVector<GCPtr<Value> >& args)
 {
-  GCPtr<Value> v = args[0];
+  GCPtr<CapValue> v_cap = needAnyCapArg(is, pfv.nm, args, 0);
+  GCPtr<IntValue> v_offset = needIntArg(is, pfv.nm, args, 1);
 
-  if (v->kind != Value::vk_cap) {
-    is.errStream << is.curAST->loc << " "
-		 << "Inappropriate argument type to "
-		 << pfv.nm << '\n';
-    THROW(excpt::BadValue, "Bad interpreter result");
-  }
-  if (args[1]->kind != Value::vk_int) {
-    is.errStream << is.curAST->loc << " "
-		 << "guard value argument to"
-		 << pfv.nm << "() must be an integer value\n";
-    THROW(excpt::BadValue, "Bad interpreter result");
-  }
-  if (args.size() > 2 && args[2]->kind != Value::vk_int) {
-    is.errStream << is.curAST->loc << " "
-		 << "l2g argument to "
-		 << pfv.nm << "() must be an integer value\n";
-    THROW(excpt::BadValue, "Bad interpreter result");
-  }
-
-  GCPtr<CapValue> v_cap = v.upcast<CapValue>();
   if (!cap_isMemory(v_cap->cap)) {
     is.errStream << is.curAST->loc << " "
 		 << "Inappropriate capability type to "
 		 << pfv.nm << "()\n";
     THROW(excpt::BadValue, "Bad interpreter result");
   }
-  GCPtr<IntValue> v_offset = args[1].upcast<IntValue>();
-  
+
   GCPtr<CapValue> ocap = new CapValue(*v_cap);
 
   // This function relies on the layout pun for window capabilities.
   coyaddr_t guard = v_offset->bn.as_uint64();
   uint32_t l2g = ocap->cap.u1.mem.l2g;
+
   if (args.size() > 2) {
-    GCPtr<IntValue> v_l2g = args[2].upcast<IntValue>();
+    GCPtr<IntValue> v_l2g = needIntArg(is, pfv.nm, args, 2);
     l2g = v_l2g->bn.as_uint32();
   }
 
