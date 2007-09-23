@@ -298,18 +298,32 @@ abstract interface Process extends Cap {
   void setCapReg(capRegister reg, Cap c) raises(RequestError);
 
   /// @brief Identify whether the passed entry capability @p ent is an
-  /// entry capability to a process whose brand matches ours.
+  /// entry capability to a process whose brand matches @p brand.
   /// 
   /// Returns true if @p ent is an entry capability, and the
   /// <tt>brand</tt> slot of the process designated (indirectly) by
-  /// the entry capability matches the <tt>brand</tt> slot of the
-  /// invoked process.  Otherwise, returns false, @p epID and @p pp are
-  /// zero, and @p isMe is false.
+  /// the entry capability matches the argument capability @p
+  /// brand. If so, then the endpoint ID value of the endpoint named
+  /// by @p ent is returned in @p epID and the protected payload value
+  /// of @p ent is returned in @p pp.  Otherwise, returns false, @p
+  /// epID and @p pp are zero, and @p isMe is false.
   ///
-  /// If the capability @p ent @em is a peer entry capability, returns
-  /// the endpoint ID value in @p epID and the entry capability's
-  /// protected payload value in @p pp. If the endpoint names the
-  /// invoked process capability, @p isMe will be true.
+  /// If the endpoint names the invoked process capability, @p isMe
+  /// will be true.
+  ///
+  boolean identifyEntryWithBrand(Cap ent,
+				 Cap brand,
+				 out payload_t pp,
+				 out unsigned long long epID, 
+				 out boolean isMe);
+
+  /// @brief Identify whether the passed entry capability @p ent is an
+  /// entry capability to a process whose brand matches ours.
+  /// 
+  /// Functional specification is identical to
+  /// Process.identifyEntryWithBrand, except that the brand used for
+  /// comparison will be taken from the brand slot of the process
+  /// designated by the process capability that was invoked.
   ///
   boolean identifyEntry(Cap ent, 
 			out payload_t pp,

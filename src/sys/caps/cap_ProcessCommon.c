@@ -31,6 +31,44 @@
 
 extern void cap_Cap(InvParam_t* iParam);
 
+/** @brief Returns NULL if entry cap and brand are unrelated, pointer
+ * to endpoint if target of entry capability has matching brand
+ * (cmpBrand == true) or cohort (cmpBrand == false). */
+Endpoint *
+brand_identify(capability *entCap, capability *brand, bool cmpBrand)
+{
+  cap_prepare(entCap);
+  cap_prepare(brand);
+
+  if (entCap->type == ct_Entry) {
+    Endpoint *ep = (Endpoint *)entCap->u2.prepObj.target;
+
+    if ((ep->state.pm == 0) || 
+	(ep->state.protPayload == entCap->u1.protPayload)) {
+      capability *pCap = &ep->state.recipient;
+
+      cap_prepare(pCap);
+      if (pCap->type == ct_Process) {
+	Process *pEntryTarget = (Process *) pCap->u2.prepObj.target;
+
+	capability *target = 
+	  cmpBrand 
+	  ? &pEntryTarget->state.brand 
+	  : &pEntryTarget->state.cohort;
+
+	/* Prepare both cohort capabilities so that we can compare
+	 * them. */
+	cap_prepare(target);
+
+	if (memcmp(brand, target, sizeof(capability)) == 0)
+	  return ep;
+      }
+    }
+  }
+
+  return 0;
+}
+
 void cap_ProcessCommon(InvParam_t *iParam)
 {
   uintptr_t opCode = iParam->opCode;
@@ -297,6 +335,39 @@ void cap_ProcessCommon(InvParam_t *iParam)
       iParam->opw[0] = InvResult(iParam, 0);
       return;
     }
+  case OC_coyotos_Process_identifyEntryWithBrand:
+    {
+      INV_REQUIRE_ARGS(iParam, 1);
+
+      bool result = false;
+      uint32_t pp = 0u;
+      uint64_t epID = 0ull;
+      bool isMe = false;
+
+      Endpoint *ep = 
+	brand_identify(iParam->srcCap[1].cap, 
+		       iParam->srcCap[2].cap, true);
+
+      if (ep) {
+	result = true;
+	capability *pCap = &ep->state.recipient;
+	Process *dest = (Process *) pCap->u2.prepObj.target;
+	if (dest == p)
+	  isMe = true;
+	pp = iParam->srcCap[1].cap->u1.protPayload;
+	epID = ep->state.endpointID;
+      }
+      
+      sched_commit_point();
+
+      put_oparam32(iParam, pp);
+      put_oparam64(iParam, epID);
+      put_oparam32(iParam, isMe);
+      put_oparam32(iParam, result);
+
+      iParam->opw[0] = InvResult(iParam, 0);
+      break;
+    }
   case OC_coyotos_Process_identifyEntry:
     {
       INV_REQUIRE_ARGS(iParam, 1);
@@ -306,40 +377,17 @@ void cap_ProcessCommon(InvParam_t *iParam)
       uint64_t epID = 0ull;
       bool isMe = false;
 
-      cap_prepare(iParam->srcCap[1].cap);
+      Endpoint *ep = 
+	brand_identify(iParam->srcCap[1].cap, &p->state.brand, true);
 
-      if (iParam->srcCap[1].cap->type == ct_Entry) {
-	Endpoint *ep = (Endpoint *)iParam->srcCap[1].cap->u2.prepObj.target;
-
-	if ((ep->state.pm == 0) || (ep->state.protPayload == pp)) {
-	  capability *pCap = &ep->state.recipient;
-	  
-	  cap_prepare(pCap);
-
-	  if (pCap->type == ct_Process) {
-	    Process *pEntryTarget = 
-	      (Process *) pCap->u2.prepObj.target;
-
-	    if (pEntryTarget == p) {
-	      result = true;
-	      isMe = true;
-	    }
-	    else {
-	      /* Prepare both brand capabilities so that we can compare
-	       * them. */
-	      cap_prepare(&p->state.brand);
-	      cap_prepare(&pEntryTarget->state.brand);
-	      
-	      if (memcmp(&p->state.brand, &pEntryTarget->state.brand, 
-			 sizeof(capability)) == 0)
-		result = true;
-	    }
-	  }
-	}
-	if (result == true) {
-	  pp = iParam->srcCap[1].cap->u1.protPayload;
-	  epID = ep->state.endpointID;
-	}
+      if (ep) {
+	result = true;
+	capability *pCap = &ep->state.recipient;
+	Process *dest = (Process *) pCap->u2.prepObj.target;
+	if (dest == p)
+	  isMe = true;
+	pp = iParam->srcCap[1].cap->u1.protPayload;
+	epID = ep->state.endpointID;
       }
       
       sched_commit_point();
@@ -364,40 +412,18 @@ void cap_ProcessCommon(InvParam_t *iParam)
       uint32_t pp = 0u;
       uint64_t epID = 0ull;
 
-      cap_prepare(iParam->srcCap[1].cap);
+      Endpoint *ep = 
+	brand_identify(iParam->srcCap[1].cap, &p->state.cohort, false);
 
-      if (iParam->srcCap[1].cap->type == ct_Entry) {
-	Endpoint *ep = (Endpoint *)iParam->srcCap[1].cap->u2.prepObj.target;
-
-	if ((ep->state.pm == 0) || (ep->state.protPayload == pp)) {
-	  capability *pCap = &ep->state.recipient;
-
-	  cap_prepare(pCap);
-	  if (pCap->type == ct_Process) {
-	    Process *pEntryTarget = (Process *) pCap->u2.prepObj.target;
-
-	    if (pEntryTarget == p)
-	      result = true;
-	    else {
-	      /* Prepare both cohort capabilities so that we can compare
-	       * them. */
-	      cap_prepare(&p->state.cohort);
-	      cap_prepare(&pEntryTarget->state.cohort);
-
-	      if (memcmp(&p->state.cohort, &pEntryTarget->state.cohort,
-			 sizeof(capability)) == 0)
-		result = true;
-	    }
-	  }
-	  if (result == true) {
-	    pp = iParam->srcCap[1].cap->u1.protPayload;
-	    epID = ep->state.endpointID;
-	    cap_set(&iParam->srcCap[0].theCap, pCap);
-	  }
-	  else
-	    cap_init(&iParam->srcCap[0].theCap);
-	}
+      if (ep) {
+	result = true;
+	capability *pCap = &ep->state.recipient;
+	pp = iParam->srcCap[1].cap->u1.protPayload;
+	epID = ep->state.endpointID;
+	cap_set(&iParam->srcCap[0].theCap, pCap);
       }
+      else
+	cap_init(&iParam->srcCap[0].theCap);
       
       sched_commit_point();
 
