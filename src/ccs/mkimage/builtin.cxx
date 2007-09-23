@@ -829,6 +829,36 @@ pf_guard_cap(PrimFnValue& pfv,
 }
 
 GCPtr<Value>
+pf_memcap_ops(PrimFnValue& pfv,
+	     InterpState& is,
+	     CVector<GCPtr<Value> >& args)
+{
+  GCPtr<CapValue> v_cap = needAnyCapArg(is, pfv.nm, args, 0);
+
+  if (! (cap_isMemory(v_cap->cap) && cap_isObjectCap(v_cap->cap)) ) {
+    is.errStream << is.curAST->loc << " "
+		 << "Inappropriate capability type to "
+		 << pfv.nm << "()\n";
+    THROW(excpt::BadValue, "Bad interpreter result");
+  }
+
+  // This function relies on the layout pun for window capabilities.
+  uint32_t match = v_cap->cap.u1.mem.match;
+  uint32_t l2g =   v_cap->cap.u1.mem.l2g;
+
+  if (pfv.nm == "get_l2g")
+    return new IntValue(l2g);
+
+  if (pfv.nm == "get_match")
+    return new IntValue(match);
+
+  is.errStream << is.curAST->loc << " "
+	       << "Buggered mkimage binding of \""
+	       << pfv.nm << "\" in builtin.cxx.\n";
+  THROW(excpt::BadValue, "Bad interpreter result");
+}
+
+GCPtr<Value>
 pf_guarded_space(PrimFnValue& pfv,
 		 InterpState& is,
 		 CVector<GCPtr<Value> >& args)
@@ -1594,7 +1624,7 @@ getBuiltinEnv(GCPtr<CoyImage> ci)
     builtins->addConstant("KernLog", 
 			 new PrimFnValue("KernLog", 0, 0, pf_mk_misccap));
 
-    // CAPABILITY TRANDFORMERS:
+    // CAPABILITY TRANSFORMERS:
 
     builtins->addConstant("readonly", 
 			 new PrimFnValue("readonly", 1, 1, pf_downgrade));
@@ -1608,6 +1638,13 @@ getBuiltinEnv(GCPtr<CoyImage> ci)
 
     builtins->addConstant("guard", 
 			 new PrimFnValue("guard", 2, 3, pf_guard_cap));
+
+    // CAPABILITY ACCESSORS:
+
+    builtins->addConstant("get_l2g", 
+			 new PrimFnValue("l2g", 1, 1, pf_memcap_ops));
+    builtins->addConstant("get_match", 
+			 new PrimFnValue("get_match", 1, 1, pf_memcap_ops));
 
     // UTILITY FUNCTIONS
 
