@@ -49,7 +49,7 @@
 
 #define CMOS_HARD_TICK_RATE     1193182L
 #define CMOS_READ_GUARD         16
-#define BASETICK                1000 /* millisecond interrupts */
+#define BASETICK                200 /* millisecond interrupts - QEMU */
 
 /* CMOS_TICK_DIVIDER is the divider to use to get the soft tick rate down
  * as close as possible to the value specified by BASETICK. The soft tick
