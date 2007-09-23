@@ -92,22 +92,29 @@ module coyotos.VirtualCopySpace {
     return weaken(gpt);
   }
 
-  def zeroPg = weaken(new Page(PrimeBank));
-  /// @bug we need to built this based on get_l2g(zeroPg)
-  def zeroSpc =
-      make_filled_gpt(63, 60,
-      make_filled_gpt(60, 56,
-      make_filled_gpt(56, 52,
-      make_filled_gpt(52, 48,
-      make_filled_gpt(48, 44,
-      make_filled_gpt(44, 40,
-      make_filled_gpt(40, 36,
-      make_filled_gpt(36, 32,
-      make_filled_gpt(32, 28,
-      make_filled_gpt(28, 24,
-      make_filled_gpt(24, 20,
-      make_filled_gpt(20, 16,
-      make_filled_gpt(16, 12, zeroPg)))))))))))));
+  def zeroSpc = weaken(new Page(PrimeBank));
+  do {
+    def l2v = get_l2g(zeroSpc);
+    def l2g = min(l2v+4, 63);
+    zeroSpc = make_filled_gpt(l2g, l2v, zeroSpc);
+  } while (get_l2g(zeroSpc) < 63);
+
+  //   def zeroPg = weaken(new Page(PrimeBank));
+  //   /// @bug we need to built this based on get_l2g(zeroPg)
+  //  def zeroSpc =
+  //      make_filled_gpt(63, 60,
+  //      make_filled_gpt(60, 56,
+  //      make_filled_gpt(56, 52,
+  //      make_filled_gpt(52, 48,
+  //      make_filled_gpt(48, 44,
+  //      make_filled_gpt(44, 40,
+  //      make_filled_gpt(40, 36,
+  //      make_filled_gpt(36, 32,
+  //      make_filled_gpt(32, 28,
+  //      make_filled_gpt(28, 24,
+  //      make_filled_gpt(24, 20,
+  //      make_filled_gpt(20, 16,
+  //      make_filled_gpt(16, 12, zeroPg)))))))))))));
 
   export def zeroVCS = make(PrimeBank, zeroSpc);
 }
