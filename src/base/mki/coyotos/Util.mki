@@ -25,6 +25,20 @@ module coyotos.Util {
   import rt = coyotos.RunTime;
   import TargetInfo = coyotos.TargetInfo;
 
+  export def min(a, b) {
+    if (a <= b) {
+      return a;
+    }
+    return b;
+  }
+
+  export def max(a, b) {
+    if (a >= b) {
+      return a;
+    }
+    return b;
+  }
+
   /* Allocate a bare-bones process, and set up its capRegs. 
    *
    * bank should be a freshly created bank.

@@ -21,6 +21,7 @@
 module coyotos.VirtualCopySpace {
   import rt = coyotos.RunTime;
   import Constructor = coyotos.Constructor;
+  import Util = coyotos.Util;
 
   /* Our protected payload values */
   export enum PP {
@@ -95,7 +96,7 @@ module coyotos.VirtualCopySpace {
   def zeroSpc = weaken(new Page(PrimeBank));
   do {
     def l2v = get_l2g(zeroSpc);
-    def l2g = min(l2v+4, 63);
+    def l2g = Util.min(l2v+4, 63);
     zeroSpc = make_filled_gpt(l2g, l2v, zeroSpc);
   } while (get_l2g(zeroSpc) < 63);
 
