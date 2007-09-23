@@ -441,7 +441,7 @@ printf_guts(register const char *fmt, va_list ap)
   }
 }
 
-static spinlock_t printf_lock;
+static irqlock_t printf_lock;
 
 /** @brief Kernel version of the venerable libc function. */
 void
@@ -453,13 +453,11 @@ printf(const char *fmt, ...)
   /* This is mildly tricky, because we need a critical section that
      guards against local interrupts as well. */
 
-  flags_t flags = locally_disable_interrupts();
-  SpinHoldInfo shi = spinlock_grab(&printf_lock);
+  IrqHoldInfo ihi = irqlock_grab(&printf_lock);
 
   printf_guts (fmt, listp);
 
-  spinlock_release(shi);
-  locally_enable_interrupts(flags);
+  irqlock_release(ihi);
 
   va_end(listp);
 }
@@ -472,13 +470,11 @@ fatal(const char *fmt, ...)
   va_list	listp;
   va_start(listp, fmt);
 
-  flags_t flags = locally_disable_interrupts();
-  SpinHoldInfo shi = spinlock_grab (&printf_lock);
+  IrqHoldInfo ihi = irqlock_grab (&printf_lock);
 
   printf_guts (fmt, listp);
 
-  spinlock_release(shi);
-  locally_enable_interrupts(flags);
+  irqlock_release(ihi);
 
   va_end(listp);
 
@@ -491,13 +487,11 @@ bug(const char *fmt, ...)
   va_list	listp;
   va_start(listp, fmt);
 
-  flags_t flags = locally_disable_interrupts();
-  SpinHoldInfo shi = spinlock_grab (&printf_lock);
+  IrqHoldInfo ihi = irqlock_grab (&printf_lock);
 
   printf_guts (fmt, listp);
 
-  spinlock_release(shi);
-  locally_enable_interrupts(flags);
+  irqlock_release(ihi);
 
   va_end(listp);
 

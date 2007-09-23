@@ -27,6 +27,7 @@
 #include <inttypes.h>
 #include <stdbool.h>
 #include <hal/atomic.h>
+#include <hal/irq.h>
 #include "CPU.h"
 
 /** 
@@ -155,12 +156,12 @@ typedef struct SpinHoldInfo {
 } SpinHoldInfo;
 
 /**
- * @brief Grab @p spl unconditionally, returning a HoldInfo structure
- * for its release.
+ * @brief Grab @p spl unconditionally, returning a SpinHoldInfo
+ * structure for its release.
  *
  * Will not yield to a higher priority process. This should only be
  * used within critical sections, when you know that no yield is
- * possible. Spinlocks may @em not be recursivelyacquired.
+ * possible. Spinlocks may @em not be recursively acquired.
  */
 SpinHoldInfo spinlock_grab(spinlock_t *spl);
 
@@ -168,8 +169,8 @@ SpinHoldInfo spinlock_grab(spinlock_t *spl);
  * @brief Release a held spinlock.
  *
  * Spinlocks must be released in a strict stack fashion; the argument
- * must be from the most recent mutex_grab() or successful
- * mutex_trygrab() which has not yet been released.
+ * must be from the most recent spinlock_grab() which has not yet been
+ * released.
  */
 static inline void spinlock_release(SpinHoldInfo shi)
 {
@@ -183,30 +184,80 @@ static inline bool spinlock_isheld(spinlock_t *spl)
   return mutex_isheld(&spl->m);
 }
 
-#if 0
-typedef struct CritSection {
-  HoldInfo hi;
-  flags_t  flags;
-} CritSection;
-
-/** @brief Start a cross-CPU criticical section.
+/**
+ * @brief irqlock type.
  *
- * This disable interrupts locally and then spins for a critical
- * section lock. This ensures that neither local nor foreign
- * concurrency can intervene with this critical region.  There is only
- * ONE critical section lock (globally).
- * 
- * No further locks should be taken from within the
- * critical section.
+ * An irqlock is a spinlock that must be held with interrupts locally
+ * disabled. It is used when a lock may governs an interaction between
+ * a driver running within an interrupt context and the normal code
+ * path running on the same processor. 
  *
- * Realistically, the only code that should be calling this is
- * printf(), and that only because we may want to call printf() from
- * within debugging code.
+ * Examples in the current code base include:
+ *
+ * - The printf() lock, so that printf can be called safely from
+ *   interrupt context.
+ * - The interval timer structures @tt interval_now and @tt
+ *   interval_wakeup, so that the wakeup check can be done from
+ *   within the interrupt handler.
+ * - The vector update locks on the interrupt vectors.
+ *
+ * As with spinlock_t and mutex_t, and irqlock_t is really just a
+ * wrapper around a spinlock_t. 
+ *
+ * Interrupts are disabled while an irqlock_t is held. The
+ * irqlock_grab() routine internally makes a call to
+ * locally_disable_interrupts(), which is later undone by
+ * irqlock_release(). IT IS AN ERROR to call any procedure that might
+ * yield() while holding a spinlock. Further, you may reliably assume
+ * that the kernel will stop working mysteriously if hte irqlock calls
+ * are not properly bracketing.
+ *
+ * We use a different type to help catch misuse errors and facilitate
+ * static analysis.
  */
-CritSection BEGIN_CRITICAL_SECTION();
+typedef struct irqlock_t {
+  spinlock_t s;
+} irqlock_t;
 
-/** @brief End a criticical section. */
-void END_CRITICAL_SECTION(CritSection);
-#endif
+#define IRQLOCK_INIT { SPINLOCK_INIT }
+
+/** @brief Encapsulation of held irqlock.
+ *
+ * We use a different type to help catch misuse errors and facilitate
+ * static analysis.
+ */
+typedef struct IrqHoldInfo {
+  SpinHoldInfo shi;
+  flags_t oldFlags;
+} IrqHoldInfo;
+
+/**
+ * @brief Grab @p irql unconditionally, returning an IrqHoldInfo structure
+ * for its release.
+ *
+ * Will not yield to a higher priority process. This should only be
+ * used within critical sections, when you know that no yield is
+ * possible. Spinlocks may @em not be recursively acquired.
+ */
+static inline IrqHoldInfo irqlock_grab(irqlock_t *irql)
+{
+  IrqHoldInfo ihi;
+  ihi.oldFlags = locally_disable_interrupts();
+  ihi.shi = spinlock_grab(&irql->s);
+
+  return ihi;
+}
+
+/**
+ * @brief Release a held irqlock.
+ *
+ * Irqlocks must be released in a strict stack fashion; the argument
+ * must be from the most recent irqlock_grab()  which has not yet been released.
+ */
+static inline void irqlock_release(IrqHoldInfo ihi)
+{
+  spinlock_release(ihi.shi);
+  locally_enable_interrupts(ihi.oldFlags);
+}
 
 #endif /* __KERNINC_MUTEX_H__ */
