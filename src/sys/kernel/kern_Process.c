@@ -425,7 +425,7 @@ proc_dispatch_current()
 
     /** @bug what to do here? */
     if (p->issues & pi_Preempted) {
-      assert(MY_CPU(curCPU)->hasPreempted);
+      assert(atomic_read(&MY_CPU(curCPU)->flags) & CPUFL_WAS_PREEMPTED);
 
       /* Stick current at back of ready queue. */
       rq_add(&mainRQ, p, false);
@@ -445,6 +445,9 @@ proc_dispatch_current()
 	   MY_CPU(current) ? MY_CPU(current)->hdr.oid : -1ull);
   }
 
+  if (atomic_read(&MY_CPU(curCPU)->flags) & CPUFL_NEED_WAKEUP)
+    interval_do_wakeups();
+
   flags_t f = locally_disable_interrupts();
 
   // Last check for preemption interrupt:
@@ -453,12 +456,12 @@ proc_dispatch_current()
     locally_enable_interrupts(f);
 
     /* Stick current at back of ready queue. */
-    assert(MY_CPU(curCPU)->hasPreempted);
+    assert(atomic_read(&MY_CPU(curCPU)->flags) & CPUFL_WAS_PREEMPTED);
     rq_add(&mainRQ, p, false);
     sched_abandon_transaction();
   }
 
-  MY_CPU(curCPU)->hasPreempted = false;
+  atomic_clear_bits(&MY_CPU(curCPU)->flags, CPUFL_WAS_PREEMPTED);
 
   // Last check for IPI response obligations
   // Set interval timer for preemption

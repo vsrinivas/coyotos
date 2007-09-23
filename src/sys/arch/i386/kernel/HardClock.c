@@ -167,28 +167,24 @@ cmos_pit_wakeup(Process *inProc, fixregs_t *saveArea)
 
   cmos_ticks_since_start += delta;
 
-  uint32_t sec = cmos_ticks_since_start / CMOS_HARD_TICK_RATE;
-  uint32_t usec = cmos_ticks_since_start % CMOS_HARD_TICK_RATE;
-  usec *= 50000;
-  usec /= 59659;
+  Interval curTick;
 
-  now.sec = sec;
-  now.usec = usec;
+  curTick.sec = cmos_ticks_since_start / CMOS_HARD_TICK_RATE;
+  curTick.usec = cmos_ticks_since_start % CMOS_HARD_TICK_RATE;
+  curTick.usec *= 50000;
+  curTick.usec /= 59659;
 
-  /** @bug This is not good. What we need to do is set a global "need
-   * wakeup processing" flag on the current CPU, and deal with it
-   * after we have released the interrupt. */
-  interval_wakeup();
-
-  //  printf("%s Timer Interrupt!\n", inProc ? "Process" : "Kernel");
+  interval_update_now(curTick);
 
   /* Re-enable the periodic timer interrupt line: */
   irq_Enable(vector->irq);
 
+  //  printf("%s Timer Interrupt!\n", inProc ? "Process" : "Kernel");
+
   /* Preemption has occurred. */
   if (inProc) {
     LOG_EVENT(ety_UserPreempt, inProc, 0, 0);
-    MY_CPU(curCPU)->hasPreempted = true;
+    atomic_set_bits(&MY_CPU(curCPU)->flags, CPUFL_WAS_PREEMPTED);
     rq_add(&mainRQ, inProc, 0);
     sched_abandon_transaction();
   }
@@ -200,13 +196,14 @@ cmos_pit_wakeup(Process *inProc, fixregs_t *saveArea)
    * motion before there is any process on the current CPU. In that
    * case there is nothing to preempt yet.
      */
-  if (!MY_CPU(curCPU)->hasPreempted && MY_CPU(current)) {
+  if (MY_CPU(current) &&
+      ((atomic_read(&MY_CPU(curCPU)->flags) & CPUFL_WAS_PREEMPTED) == 0)) {
     /* If the timer is free-running, it may be set in motion before
      * there is any process on the current CPU. In that case there is
      * nothing to preempt yet.
      */
     MY_CPU(current)->issues |= pi_Preempted;
-    MY_CPU(curCPU)->hasPreempted = true;
+    atomic_set_bits(&MY_CPU(curCPU)->flags, CPUFL_WAS_PREEMPTED);
 
     LOG_EVENT(ety_KernPreempt, MY_CPU(current), 0, 0);
     printf("Current process preempted by timer (from %s).\n",
@@ -315,8 +312,6 @@ lapic_interval_init()
 void
 hardclock_init()
 {
-  now.epoch = 0;		/* HACK */
-
   // For testing, set things up to use the legacy PIT even in APIC mode.
 #ifdef USE_LAPIC
   if (use_ioapic && lapic_pa) {

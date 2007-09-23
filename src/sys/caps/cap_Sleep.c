@@ -46,6 +46,7 @@ void cap_Sleep(InvParam_t *iParam)
     }
   case OC_coyotos_Sleep_sleepTill:
     {
+      Interval now = interval_now();
       iParam->invoker->wakeTime.epoch = now.epoch;
       iParam->invoker->wakeTime.sec = get_iparam32(iParam);
       iParam->invoker->wakeTime.usec = get_iparam32(iParam);
@@ -67,6 +68,7 @@ void cap_Sleep(InvParam_t *iParam)
 
   case OC_coyotos_Sleep_sleepFor:
     {
+      Interval now = interval_now();
       iParam->invoker->wakeTime.epoch = now.epoch;
       iParam->invoker->wakeTime.sec = get_iparam32(iParam);
       iParam->invoker->wakeTime.usec = get_iparam32(iParam);

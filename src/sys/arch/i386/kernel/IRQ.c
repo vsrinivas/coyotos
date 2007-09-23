@@ -386,8 +386,8 @@ irq_OnTrapOrInterrupt(Process *inProc, fixregs_t *saveArea)
   LOG_EVENT(ety_Trap, inProc, saveArea->ExceptNo, saveArea->Error);
 
   if (inProc) {
-    MY_CPU(curCPU)->hasPreempted = false;
-    GNU_INLINE_ASM("sti");
+    atomic_write(&MY_CPU(curCPU)->flags, 0);
+    GNU_INLINE_ASM("sti");	/* re-enable interrupts */
   }
 
   // printf("OnTrapOrInterrupt with vector %d\n", vecno);

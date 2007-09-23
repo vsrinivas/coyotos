@@ -35,9 +35,14 @@ typedef struct Interval {
   uint32_t usec;
 } Interval;
 
-extern Interval now;
-
-void interval_wakeup();
+/** @brief Update the current "time".
+ *
+ * If wakeup processing is needed, marks the current CPU state to
+ * run the wakeup processing logic on the way out of the kernel.
+ */
+void interval_update_now(Interval);
+void interval_do_wakeups();
+Interval interval_now();
 void interval_delay(struct Process *p);
 
 #endif /* __KERNINC_INTERVALCLOCK_H__ */

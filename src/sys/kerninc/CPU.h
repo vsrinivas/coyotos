@@ -27,6 +27,7 @@
 #include <stddef.h>
 #include <stdbool.h>
 #include <hal/config.h>
+#include <hal/atomic.h>
 #include <kerninc/ccs.h>
 
 #if MAX_NCPU <= 256
@@ -35,6 +36,17 @@ typedef uint8_t cpuid_t;
 typedef uint32_t cpuid_t;
 #error "Need to reconsider type of MutexValue fields"
 #endif
+
+/** @brief Process executing on current CPU has been preempted. */
+#define CPUFL_WAS_PREEMPTED 0x1
+/** @brief Wakeup processing is required on current CPU.
+ *
+ * This bit is "owned" by the interval management logic. It is set
+ * and cleared in the interval code, and it is checked just before
+ * returning from traps/interrupts to determine if wakeup processing
+ * is needed. 
+ */
+#define CPUFL_NEED_WAKEUP  0x2
 
 typedef struct CPU {
   /** @brief Mutex value for locks held by this CPU. */
@@ -55,21 +67,21 @@ typedef struct CPU {
    * does not immediately succeed and we are NOT in a
    * mutex_spinlock().
    */
-  bool     shouldDefer;
+  bool       shouldDefer;
 
   /** @brief true iff this CPU has been found and activated. */
-  bool      active;
+  bool       active;
 
   /** @brief Priority of current process on CPU */
-  uint32_t  priority;
+  uint32_t   priority;
 
-  /** @brief Whether a preemption has already been taken on this CPU.
+  /** @brief Per-CPU action flags for this CPU.
    * 
-   * False on kernel entry. Set to true if we abort the
-   * current transaction or we take a preemption timer interrupt 
-   * during execution of the initially entering transaction.
+   * Zero on kernel entry. Bits set in various places if the
+   * preemption timer goes off, and/or if we need to do wakeup
+   * processing on the sleeping process queue.
    */
-  bool      hasPreempted;
+  Atomic32_t  flags;
 
   /** @brief Mapping context currently loaded on this CPU.
    *

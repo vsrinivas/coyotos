@@ -52,7 +52,7 @@ sched_abandon_transaction()
 
     /* Since process is being abandoned, take notice that we have
        already performed a preemption in case the interval timer goes off. */
-    MY_CPU(curCPU)->hasPreempted = true;
+    atomic_set_bits(&MY_CPU(curCPU)->flags, CPUFL_WAS_PREEMPTED);
     p->issues &= ~pi_Preempted;
 
     /// @bug Should this path put the process back on to the ready queue

@@ -31,31 +31,90 @@
 #include <coyotos/coytypes.h>
 #include <kerninc/Process.h>
 
-Interval now;
-Interval wakeup;
+/** @brief Guards manipulations of interval_now and interval_wakeup.
+ *
+ * A holder of this stall queue must lock out local interrupts as well as
+ * grabbing the stall queue, so the correct protocol is to disable
+ * interrupts locally first.
+ */
+static irqlock_t interval_irql = IRQLOCK_INIT;
 
-DEFQUEUE(sleepers);
+/** @brief Current epoch, seconds and microseconds since boot. */
+static Interval now = {0, 0, 0};
+
+/** @brief Time when next wakeup needs to occur. */
+static Interval wakeTime;
+
+static DEFQUEUE(sleepers);
+
+Interval
+interval_now()
+{
+  Interval curNow;
+
+  IrqHoldInfo ihi = irqlock_grab(&interval_irql);
+
+  curNow = now;
+
+  irqlock_release(ihi);
+
+  return curNow;
+}
 
 void 
-interval_wakeup()
+interval_update_now(Interval i)
 {
-  if (now.sec < wakeup.sec)
-    return;
-  if (now.sec == wakeup.sec && now.usec < wakeup.usec)
-    return;
+  IrqHoldInfo ihi = irqlock_grab(&interval_irql);
+
+  now = i;
+
+  if (now.sec < wakeTime.sec ||
+      (now.sec == wakeTime.sec && now.usec < wakeTime.usec)) {
+    wakeTime.sec = 0;
+    wakeTime.usec = 0;
+    atomic_set_bits(&MY_CPU(curCPU)->flags, CPUFL_NEED_WAKEUP);
+  }
+
+  irqlock_release(ihi);
+}
+
+void 
+interval_do_wakeups()
+{
+  /* Must grab the interval_irql here, because otherwise we might get
+     into a livelock with interval_delay. */
+  IrqHoldInfo ihi = irqlock_grab(&interval_irql);
 
   sq_WakeAll(&sleepers, false);
+  atomic_clear_bits(&MY_CPU(curCPU)->flags, CPUFL_NEED_WAKEUP);
+
+  irqlock_release(ihi);
 }
 
 void
 interval_delay(Process *p)
 {
+  IrqHoldInfo ihi = irqlock_grab(&interval_irql);
+
   assert (p->wakeTime.epoch <= now.epoch);
 
-  if (p->wakeTime.epoch < now.epoch ||
-      p->wakeTime.sec < now.sec ||
-      (p->wakeTime.sec == now.sec && p->wakeTime.usec < now.usec))
-    return;
+  if (p->wakeTime.epoch >= now.epoch &&
+      (p->wakeTime.sec > now.sec ||
+       (p->wakeTime.sec == now.sec && p->wakeTime.usec > now.usec))) {
 
-  sq_EnqueueOn(&sleepers);
+    if (p->wakeTime.sec < wakeTime.sec ||
+	(p->wakeTime.sec == wakeTime.sec && p->wakeTime.usec < wakeTime.usec)) {
+      
+      wakeTime = p->wakeTime;
+
+      /* Note that the following call involves a spinlock acquisition
+       * that is technically unnecessary, because the sleeper stall
+       * queue is already guarded by the irqlock. It isn't worth
+       * optimizing until we have cause to do so.
+       */
+      sq_EnqueueOn(&sleepers);
+    }
+
+    irqlock_release(ihi);
+  }
 }
