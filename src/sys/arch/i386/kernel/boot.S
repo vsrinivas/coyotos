@@ -334,6 +334,7 @@ setup_pae_map:
 	movl	$EXT(KernPageTable)-KVA,%edx
 	orl	$(PAE_V|PAE_W|PAE_ACC|PAE_DRTY),%edx
 	movl	%edx,(%esi)	/* Map it at VA=0 */
+	movl	$0,4(%esi)
 	
 	/* Now set up the PDBR */
 	movl	$EXT(KernPageDir)-KVA,%edx
