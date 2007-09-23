@@ -100,6 +100,7 @@ inline int mkilex(YYSTYPE *lvalp, Lexer *lexer)
 %token <tok> tk_DEF
 %token <tok> tk_EXPORT
 %token <tok> tk_IMPORT
+%token <tok> tk_WHILE tk_DO
 
 %token <tok> tk_NEW
 
@@ -197,12 +198,12 @@ fnparms: '(' idlist ')' {
   $$ = $2;
 };
 
-/* These definitions may only appear at module scope: */
 statement: fndef_stmt {
   SHOWPARSE("mod_stmt -> fndef_stmt");
   $$ = $1;
 };
 
+/* Exported definitions may only appear at module scope: */
 mod_stmt: tk_EXPORT fndef_stmt {
   SHOWPARSE("mod_stmt -> EXPORT fndef_stmt");
   $$ = $2;
@@ -257,6 +258,16 @@ block_stmt:  statement {
   SHOWPARSE("block_stmt -> statement");
   $$ = $1;
 };
+
+block_stmt: tk_WHILE '(' expr ')' block {
+  SHOWPARSE("block_stmt -> WHILE '(' expr ')' block");
+  $$ = new AST (at_s_while, $1.loc, $3, $5);
+}
+
+block_stmt: tk_DO block tk_WHILE '(' expr ')' ';' {
+  SHOWPARSE("block_stmt -> DO block WHILE '(' expr ')' ';'");
+  $$ = new AST (at_s_do, $1.loc, $2, $5);
+}
 
 block_stmt_seq: block_stmt {
   SHOWPARSE("block_stmt_seq -> block_stmt");

@@ -206,6 +206,10 @@ AST::tagName(const AstType at)
     return "at_enum_bind";
   case at_s_bank:
     return "at_s_bank";
+  case at_s_while:
+    return "at_s_while";
+  case at_s_do:
+    return "at_s_do";
   case at_fncall:
     return "at_fncall";
   case at_ifelse:
@@ -309,6 +313,10 @@ AST::astName() const
     return "enum_bind";
   case at_s_bank:
     return "s_bank";
+  case at_s_while:
+    return "s_while";
+  case at_s_do:
+    return "s_do";
   case at_fncall:
     return "fncall";
   case at_ifelse:
@@ -395,20 +403,22 @@ static const unsigned char *astMembers[] = {
   (unsigned char *)"\x00\x00\x00\x08\x00\x00", // at_s_export_capreg
   (unsigned char *)"\x00\x00\x00\x10\x00\x00", // at_enum_bind
   (unsigned char *)"\x00\x00\x00\x20\x00\x00", // at_s_bank
-  (unsigned char *)"\x00\x00\x00\x40\x00\x00", // at_fncall
-  (unsigned char *)"\x00\x00\x00\x80\x00\x00", // at_ifelse
-  (unsigned char *)"\x00\x00\x00\x00\x01\x00", // at_dot
-  (unsigned char *)"\x00\x00\x00\x00\x02\x00", // at_vecref
-  (unsigned char *)"\x00\x00\x00\x00\x04\x00", // at_docString
-  (unsigned char *)"\x24\x00\x00\x00\x08\x00", // agt_var
-  (unsigned char *)"\x80\x06\x00\x00\x10\x00", // agt_literal
-  (unsigned char *)"\x84\xf4\xdf\xcf\x23\x04", // agt_stmt
-  (unsigned char *)"\x05\x00\x00\x00\x40\x00", // agt__AnonGroup0
-  (unsigned char *)"\x05\x00\x00\x00\x80\x00", // agt__AnonGroup1
-  (unsigned char *)"\x05\x00\x00\x00\x00\x01", // agt__AnonGroup2
-  (unsigned char *)"\x05\x00\x00\x00\x00\x02", // agt__AnonGroup3
-  (unsigned char *)"\x84\x14\x00\xc0\x03\x04", // agt_expr
-  (unsigned char *)"\x00\x10\x00\x80\x00\x08"  // agt__AnonGroup4
+  (unsigned char *)"\x00\x00\x00\x40\x00\x00", // at_s_while
+  (unsigned char *)"\x00\x00\x00\x80\x00\x00", // at_s_do
+  (unsigned char *)"\x00\x00\x00\x00\x01\x00", // at_fncall
+  (unsigned char *)"\x00\x00\x00\x00\x02\x00", // at_ifelse
+  (unsigned char *)"\x00\x00\x00\x00\x04\x00", // at_dot
+  (unsigned char *)"\x00\x00\x00\x00\x08\x00", // at_vecref
+  (unsigned char *)"\x00\x00\x00\x00\x10\x00", // at_docString
+  (unsigned char *)"\x24\x00\x00\x00\x20\x00", // agt_var
+  (unsigned char *)"\x80\x06\x00\x00\x40\x00", // agt_literal
+  (unsigned char *)"\x84\xf4\xdf\x0f\x8f\x10", // agt_stmt
+  (unsigned char *)"\x05\x00\x00\x00\x00\x01", // agt__AnonGroup0
+  (unsigned char *)"\x05\x00\x00\x00\x00\x02", // agt__AnonGroup1
+  (unsigned char *)"\x05\x00\x00\x00\x00\x04", // agt__AnonGroup2
+  (unsigned char *)"\x05\x00\x00\x00\x00\x08", // agt__AnonGroup3
+  (unsigned char *)"\x84\x14\x00\x00\x0f\x10", // agt_expr
+  (unsigned char *)"\x00\x10\x00\x00\x02\x20"  // agt__AnonGroup4
 };
 
 bool
@@ -1034,6 +1044,68 @@ AST::isValid() const
     }
     if (!ISSET(astMembers[at_block], child(c)->astType)) {
       astChTypeError(*this, at_block, child(c)->astType, c);
+      errorsPresent = true;
+    }
+    c++;
+
+    if(c != children->size()) {
+      astChNumError(*this, c, children->size());
+      errorsPresent = true;
+    }
+    break;
+
+  case at_s_while: // normal AST:
+    // match agt_expr
+    if(c >= children->size()) {
+      astChNumError(*this, c+1, children->size());
+      errorsPresent = true;
+      break;
+    }
+    if (!ISSET(astMembers[agt_expr], child(c)->astType)) {
+      astChTypeError(*this, agt_expr, child(c)->astType, c);
+      errorsPresent = true;
+    }
+    c++;
+
+    // match at_block
+    if(c >= children->size()) {
+      astChNumError(*this, c+1, children->size());
+      errorsPresent = true;
+      break;
+    }
+    if (!ISSET(astMembers[at_block], child(c)->astType)) {
+      astChTypeError(*this, at_block, child(c)->astType, c);
+      errorsPresent = true;
+    }
+    c++;
+
+    if(c != children->size()) {
+      astChNumError(*this, c, children->size());
+      errorsPresent = true;
+    }
+    break;
+
+  case at_s_do: // normal AST:
+    // match at_block
+    if(c >= children->size()) {
+      astChNumError(*this, c+1, children->size());
+      errorsPresent = true;
+      break;
+    }
+    if (!ISSET(astMembers[at_block], child(c)->astType)) {
+      astChTypeError(*this, at_block, child(c)->astType, c);
+      errorsPresent = true;
+    }
+    c++;
+
+    // match agt_expr
+    if(c >= children->size()) {
+      astChNumError(*this, c+1, children->size());
+      errorsPresent = true;
+      break;
+    }
+    if (!ISSET(astMembers[agt_expr], child(c)->astType)) {
+      astChTypeError(*this, agt_expr, child(c)->astType, c);
       errorsPresent = true;
     }
     c++;

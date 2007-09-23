@@ -159,11 +159,13 @@ struct KeyWord {
 } keywords[] = {
   { "capreg",           tk_CAPREG },
   { "def",              tk_DEF },
+  { "do",               tk_DO },
   { "else",             tk_ELSE },
   { "enum",             tk_ENUM },
   { "export",           tk_EXPORT },
   { "external",         tk_Reserved },
   { "false",            tk_FALSE },
+  { "for",              tk_Reserved },
   { "if",               tk_IF },
   { "import",           tk_IMPORT },
   { "lambda",           tk_Reserved },
@@ -172,6 +174,7 @@ struct KeyWord {
   { "print",            tk_PRINT },
   { "return",           tk_RETURN },
   { "true",             tk_TRUE },
+  { "while",            tk_WHILE },
 
   { 0,                  0 }	// sentinal
 };

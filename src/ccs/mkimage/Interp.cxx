@@ -89,6 +89,28 @@ canDereference(GCPtr<Value> v)
   return false;
 }
 
+bool conditional_expr_is_true(InterpState& is, GCPtr<AST> ast)
+{
+  GCPtr<Value> vcond = ast->child(0)->interp(is)->get();
+
+  if (vcond->kind == Value::vk_int) {
+    GCPtr<IntValue> a = vcond.upcast<IntValue>();
+    return (a->bn != 0);
+  }
+  else if (vcond->kind == Value::vk_float) {
+    GCPtr<FloatValue> a = vcond.upcast<FloatValue>();
+    return (a->d != 0.0);
+  }
+  else if (vcond->kind == Value::vk_string) {
+    return true;
+  }
+  else {
+    is.errStream << ast->loc << " "
+		 << "Inappropriate dynamic types for conditional\n";
+    THROW(excpt::BadValue, "Bad interpreter result");
+  }
+}
+
 GCPtr<Value>
 AST::interp(InterpState& is)
 {
@@ -154,29 +176,7 @@ AST::interp(InterpState& is)
 
   case at_ifelse:
     {
-      GCPtr<Value> vcond = 
-	child(0)->interp(is)->get();
-
-      bool cond;
-
-      if (vcond->kind == Value::vk_int) {
-	GCPtr<IntValue> a = vcond.upcast<IntValue>();
-	cond = (a->bn != 0);
-      }
-      else if (vcond->kind == Value::vk_float) {
-	GCPtr<FloatValue> a = vcond.upcast<FloatValue>();
-	cond = (a->d != 0.0);
-      }
-      else if (vcond->kind == Value::vk_string) {
-	cond = true;
-      }
-      else {
-	is.errStream << loc << " "
-		  << "Inappropriate dynamic types to operator +\n";
-	THROW(excpt::BadValue, "Bad interpreter result");
-      }
-      
-      if (cond)
+      if (conditional_expr_is_true(is, child(0)))
 	return child(1)->interp(is);
 
       // Else process 'else' clause if present:
@@ -185,6 +185,25 @@ AST::interp(InterpState& is)
 
       // Else return unit:
       return &TheUnitValue;
+    }
+
+  case at_s_do:
+    {
+      GCPtr<Value> val = &TheUnitValue;
+      do {
+	val = child(0)->interp(is);
+      } while (conditional_expr_is_true(is, child(1)));
+
+      return val;
+    }
+
+  case at_s_while:
+    {
+      GCPtr<Value> val = &TheUnitValue;
+      while (conditional_expr_is_true(is, child(0)))
+	val = child(1)->interp(is);
+
+      return val;
     }
 
   case at_fncall:
@@ -761,7 +780,7 @@ AST::interp(InterpState& is)
     {
       InterpState blockState(is);
       blockState.env = new Environment<Value>(is.env);
-      GCPtr<Value> v;
+      GCPtr<Value> v = &TheUnitValue;
 
       for (size_t c = 0; c < children->size(); c++)
 	v = child(c)->interp(blockState);

@@ -718,6 +718,31 @@ print sb.a;</literallayout>
           scope. Any statement following a <progident>return</progident>
           statement will not be executed.
         </p>
+        <p>
+          The statement:
+        </p>
+        <literallayout indent="no">
+<em>while_stmt</em>: <b>while</b> '(' <em>expr</em> ')' <em>block</em></literallayout>
+        <p indent="no">
+          Causes the sequence of statements within the block to be
+          executed as long as the value of <em>expr</em> evaluates to
+          true (see <progident>if</progident> statement, above). The
+          return value of this statement is the value of the last
+          iteration of executed block, or <progident>Unit</progident>
+          if the loop is not executed at all.
+        </p>
+        <p>
+          The statement:
+        </p>
+        <literallayout indent="no">
+<em>do_stmt</em>: <b>do</b> <em>block</em> <b>while</b> '(' <em>expr</em> ')' ';'</literallayout>
+        <p indent="no">
+          Causes the sequence of statements within the block until the
+          value of <em>expr</em> evaluates to true (see
+          <progident>if</progident> statement, above). The return
+          value of this statement is the value of the last iteration
+          of executed block.
+        </p>
       </sect2>
       <sect2>
         <title>General Statements</title>

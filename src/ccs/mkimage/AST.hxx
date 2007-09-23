@@ -53,6 +53,8 @@ enum AstType {
     at_s_export_capreg,
     at_enum_bind,
     at_s_bank,
+    at_s_while,
+    at_s_do,
     at_fncall,
     at_ifelse,
     at_dot,
