@@ -259,12 +259,12 @@ block_stmt:  statement {
   $$ = $1;
 };
 
-block_stmt: tk_WHILE '(' expr ')' block {
+statement: tk_WHILE '(' expr ')' block {
   SHOWPARSE("block_stmt -> WHILE '(' expr ')' block");
   $$ = new AST (at_s_while, $1.loc, $3, $5);
 }
 
-block_stmt: tk_DO block tk_WHILE '(' expr ')' ';' {
+statement: tk_DO block tk_WHILE '(' expr ')' ';' {
   SHOWPARSE("block_stmt -> DO block WHILE '(' expr ')' ';'");
   $$ = new AST (at_s_do, $1.loc, $2, $5);
 }

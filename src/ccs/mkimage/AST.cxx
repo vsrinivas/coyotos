@@ -412,7 +412,7 @@ static const unsigned char *astMembers[] = {
   (unsigned char *)"\x00\x00\x00\x00\x10\x00", // at_docString
   (unsigned char *)"\x24\x00\x00\x00\x20\x00", // agt_var
   (unsigned char *)"\x80\x06\x00\x00\x40\x00", // agt_literal
-  (unsigned char *)"\x84\xf4\xdf\x0f\x8f\x10", // agt_stmt
+  (unsigned char *)"\x84\xf4\xdf\xcf\x8f\x10", // agt_stmt
   (unsigned char *)"\x05\x00\x00\x00\x00\x01", // agt__AnonGroup0
   (unsigned char *)"\x05\x00\x00\x00\x00\x02", // agt__AnonGroup1
   (unsigned char *)"\x05\x00\x00\x00\x00\x04", // agt__AnonGroup2

@@ -91,7 +91,7 @@ canDereference(GCPtr<Value> v)
 
 bool conditional_expr_is_true(InterpState& is, GCPtr<AST> ast)
 {
-  GCPtr<Value> vcond = ast->child(0)->interp(is)->get();
+  GCPtr<Value> vcond = ast->interp(is)->get();
 
   if (vcond->kind == Value::vk_int) {
     GCPtr<IntValue> a = vcond.upcast<IntValue>();
