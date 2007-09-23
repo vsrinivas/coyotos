@@ -104,7 +104,7 @@ void cap_ProcessCommon(InvParam_t *iParam)
       sched_commit_point();
 
       if (cancelFault) {
-	p->issues &= ~pi_Faulted;
+	atomic_clear_bits(&p->issues, pi_Faulted);
 	p->state.faultCode = 0;
 	p->state.faultInfo = 0;
       }
@@ -188,7 +188,7 @@ void cap_ProcessCommon(InvParam_t *iParam)
 	pSlot = &p->state.addrSpace;
 	break;
       case coyotos_Process_cslot_schedule:
-	p->issues |= pi_Schedule;
+	atomic_set_bits(&p->issues, pi_Schedule);
 	pSlot = &p->state.schedule;
 	break;
       case coyotos_Process_cslot_ioSpace:
@@ -292,7 +292,7 @@ void cap_ProcessCommon(InvParam_t *iParam)
 
       p->state.faultCode = faultCode;
       p->state.faultInfo = faultInfo;
-      p->issues |= pi_Faulted;
+      atomic_set_bits(&p->issues, pi_Faulted);
 	
       iParam->opw[0] = InvResult(iParam, 0);
       return;

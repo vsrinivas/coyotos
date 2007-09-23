@@ -58,7 +58,7 @@ proc_load_cpu_private_map()
 void 
 proc_clear_arch_issues(Process *p)
 {
-  if (p->issues & ~(pi_SysCallDone | pi_Preempted))
+  if (atomic_read(&p->issues) & ~(pi_SysCallDone | pi_Preempted))
     bug("Process has arch issues\n");
 }
 

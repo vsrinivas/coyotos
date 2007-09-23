@@ -346,7 +346,7 @@ vh_SysCall(Process *inProc, fixregs_t *saveArea)
 
   proc_syscall();
 
-  if (inProc->issues & pi_SysCallDone)
+  if (atomic_read(&inProc->issues) & pi_SysCallDone)
     inProc->state.fixregs.EIP += 2;
 }
 
@@ -423,16 +423,19 @@ irq_OnTrapOrInterrupt(Process *inProc, fixregs_t *saveArea)
     /// read up on that.
     irq_Disable(irq);
     ctrlr->earlyAck(vector);
-  }
 
-  if (inProc)
-    mutex_grab(&inProc->hdr.lock);
+    vector->count++;
+    vector->fn(inProc, saveArea);
 
-  vector->count++;
-  vector->fn(inProc, saveArea);
-
-  if (vector->type == vt_Interrupt)
     vector->ctrlr->lateAck(vector);
+  }
+  else {
+    if (inProc)
+      mutex_grab(&inProc->hdr.lock);
+
+    vector->count++;
+    vector->fn(inProc, saveArea);
+  }
 
   /* We do NOT re-enable the taken interrupt on the way out. That is
    * the driver's job to do if it wants to do it.
@@ -654,7 +657,7 @@ irq_Bind(irq_t irq, uint32_t mode, uint32_t level, VecFn fn)
 
   assert(vector);
 
-  SpinHoldInfo shi = spinlock_grab(&vector->lock);
+  IrqHoldInfo ihi = irqlock_grab(&vector->lock);
 
   vector->count = 0;
   vector->fn = fn;
@@ -663,7 +666,7 @@ irq_Bind(irq_t irq, uint32_t mode, uint32_t level, VecFn fn)
   vector->level = level;
   vector->ctrlr->setup(vector);
 
-  spinlock_release(shi);
+  irqlock_release(ihi);
 }
 
 void
@@ -673,12 +676,12 @@ irq_Enable(irq_t irq)
 
   assert(vector);
 
-  SpinHoldInfo shi = spinlock_grab(&vector->lock);
+  IrqHoldInfo ihi = irqlock_grab(&vector->lock);
 
   vector->ctrlr->enable(vector);
   vector->enabled = 1;
 
-  spinlock_release(shi);
+  irqlock_release(ihi);
 }
 
 void
@@ -688,12 +691,12 @@ irq_Disable(irq_t irq)
 
   assert(vector);
 
-  SpinHoldInfo shi = spinlock_grab(&vector->lock);
+  IrqHoldInfo ihi = irqlock_grab(&vector->lock);
 
   vector->ctrlr->disable(vector);
   vector->enabled = 0;
 
-  spinlock_release(shi);
+  irqlock_release(ihi);
 }
 
 bool
@@ -704,13 +707,13 @@ irq_isEnabled(irq_t irq)
   VectorInfo *vector = irq_MapInterrupt(irq);
   assert(vector);
 
-  SpinHoldInfo shi = spinlock_grab(&vector->lock);
+  IrqHoldInfo ihi = irqlock_grab(&vector->lock);
 
   vector->ctrlr->enable(vector);
   if (vector->enabled)
     result = true;
 
-  spinlock_release(shi);
+  irqlock_release(ihi);
 
   return result;
 }

@@ -226,14 +226,14 @@ proc_handle_process_fault()
 
     p->state.faultCode = coyotos_Process_FC_NoFault;
     p->state.faultInfo = 0;
-    p->issues &= ~pi_Faulted;
+    atomic_clear_bits(&p->issues, pi_Faulted);
     return;
   }
 
   if (p->state.faultCode == coyotos_Process_FC_NoFault) {
     assert(false);
 
-    p->issues &= ~pi_Faulted;
+    atomic_clear_bits(&p->issues, pi_Faulted);
     return;
   }
 
@@ -411,20 +411,22 @@ proc_dispatch_current()
 
   vm_switch_curcpu_to_map(p->mappingTableHdr);
 
-  if (p->issues) {
-    if (p->issues & pi_Schedule) {
+  uint32_t issues = atomic_read(&p->issues);
+  if (issues) {
+    if (issues & pi_Schedule) {
       cap_prepare(&p->state.schedule);
 
       // ??? Set Priority ???
 
-      p->issues &= ~pi_Schedule;
+      atomic_clear_bits(&p->issues, ~pi_Schedule);
+      issues &= ~pi_Schedule;
     }
 
-    if (p->issues & pi_Faulted)
+    if (issues & pi_Faulted)
       proc_handle_process_fault();
 
     /** @bug what to do here? */
-    if (p->issues & pi_Preempted) {
+    if (issues & pi_Preempted) {
       assert(atomic_read(&MY_CPU(curCPU)->flags) & CPUFL_WAS_PREEMPTED);
 
       /* Stick current at back of ready queue. */
@@ -432,10 +434,12 @@ proc_dispatch_current()
       sched_abandon_transaction();
     }
 
-    if (p->issues)
+    if (issues) {
       proc_clear_arch_issues(p);
+      issues = atomic_read(&p->issues);
+    }
 
-    assert((p->issues & ~(pi_SysCallDone | pi_Preempted)) == 0);
+    assert((issues & ~(pi_SysCallDone | pi_Preempted)) == 0);
   }
 
   DEBUG_DISPATCH {
@@ -451,7 +455,7 @@ proc_dispatch_current()
   flags_t f = locally_disable_interrupts();
 
   // Last check for preemption interrupt:
-  if (p->issues & pi_Preempted) {
+if (atomic_read(&p->issues) & pi_Preempted) {
     printf("  process was preempted at last gasp!\n");
     locally_enable_interrupts(f);
 
@@ -695,7 +699,7 @@ proc_copy_cap(Process *p, caploc_t source, caploc_t dest)
 
   /** @bug clean up destCap? */
 
-  p->issues |= pi_SysCallDone;
+  atomic_set_bits(&p->issues, pi_SysCallDone);
 
   return;
 }
@@ -1221,7 +1225,7 @@ proc_invoke_cap(void)
 
   /* Syscall has completed. It is therefore okay to return via fast
      system call return if this architecture has one. */
-  p->issues |= pi_SysCallDone;
+  atomic_set_bits(&p->issues, pi_SysCallDone);
 
   return;
 }

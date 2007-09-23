@@ -133,7 +133,7 @@ struct Process {
    * Meanings of individual bit positions are defined above in the
    * Issues enumeration. 
    */
-  uint32_t          issues;
+  Atomic32_t        issues;
 
   cpuid_t           lastCPU;
 
@@ -217,7 +217,7 @@ proc_SetFault(Process *p, uint32_t code, uva_t faultInfo)
 {
   p->state.faultCode = code;
   p->state.faultInfo = faultInfo;
-  p->issues |= pi_Faulted;
+  atomic_set_bits(&p->issues, pi_Faulted);
 }
 
 static inline void

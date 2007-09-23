@@ -202,7 +202,7 @@ cmos_pit_wakeup(Process *inProc, fixregs_t *saveArea)
      * there is any process on the current CPU. In that case there is
      * nothing to preempt yet.
      */
-    MY_CPU(current)->issues |= pi_Preempted;
+    atomic_set_bits(&MY_CPU(current)->issues, pi_Preempted);
     atomic_set_bits(&MY_CPU(curCPU)->flags, CPUFL_WAS_PREEMPTED);
 
     LOG_EVENT(ety_KernPreempt, MY_CPU(current), 0, 0);

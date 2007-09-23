@@ -117,7 +117,7 @@ struct VectorInfo {
   uint8_t  level : 2;		/**< @brief Active hi/lo */
   uint8_t  enabled : 1;		/**< @brief Vector enabled  */
   uint32_t  irq;			/**< @brief Global interrupt pin number. */
-  spinlock_t lock;		/**< @brief For manipulation of this vector. */
+  irqlock_t lock;		/**< @brief For manipulation of this vector. */
   IrqController* ctrlr;		/**< @brief Controller chip */
   // StallQ stallQ;
 };

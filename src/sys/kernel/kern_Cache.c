@@ -757,7 +757,7 @@ cache_clear_object(ObjectHeader *ob)
       /** @bug Process must not be running or receiving! */
       /** @bug Need to hold the per-process receive wait lock */
       Process *p = (Process *)ob;
-      p->issues = 0;
+      atomic_write(&p->issues, 0);
       p->lastCPU = 0;		/* doesn't really matter */
       p->readyQ = 0;
       assert(p->onQ == 0);
@@ -1039,7 +1039,7 @@ cache_preload_image(const char *name, kpa_t base, size_t size)
     proc->hdr.oid = idx;
     proc->hdr.allocCount = 0;
     proc->hdr.current = 1;
-    proc->issues = pi_IssuesOnLoad;
+    atomic_write(&proc->issues, pi_IssuesOnLoad);
 
     proc->mappingTableHdr = 0;
 
@@ -1057,12 +1057,9 @@ cache_preload_image(const char *name, kpa_t base, size_t size)
 
     // Add it to the end of the ready queue, but only if it is marked
     // as having a startup fault.
-    //
-    // FIX: This is not right, because it should also be marked as
-    // running, but we haven't introduced enough of the flags word to
-    // check that yet.
     if (proc->state.faultCode == coyotos_Process_FC_Startup) {
-      proc->issues = pi_Faulted;
+      proc->state.runState = PRS_RUNNING;
+      atomic_write(&proc->issues, pi_Faulted);
       rq_add(&mainRQ, proc, false);
     }
   }
