@@ -85,10 +85,11 @@ __assert_fail(const char *file, int lineno, const char *desc)
   char m[256];
 
   strcpy(m, "SpaceBank: assertion failed: ");
-  strcat(m, desc);
+  strcat(m, file);
   strcat(m, ":");
   strcat_number(m, lineno);
   strcat(m, ": ");
+  strcat(m, desc);
   strcat(m, "\n");
   
   log_message(m);
