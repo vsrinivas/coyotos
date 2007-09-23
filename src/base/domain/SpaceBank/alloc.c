@@ -38,44 +38,37 @@ void alloc_init(void)
   // address space.
   MUST_SUCCEED(coyotos_Memory_setGuard(CR_INITGPT, 
 				       make_guard(0, COYOTOS_HW_ADDRESS_BITS),
-				       CR_ADDRSPACE,
-				       IDL_E));
+				       CR_ADDRSPACE));
   MUST_SUCCEED(coyotos_GPT_setl2v(CR_ADDRSPACE, 
 				  addrspace_l2v, 
-				  &oldl2v, 
-				  IDL_E));
+				  &oldl2v));
   
   // Put the existing address space in slot 0 of the initial GPT
   MUST_SUCCEED(coyotos_Process_getSlot(CR_SELF, 
 				       coyotos_Process_cslot_addrSpace,
-				       CR_TMP1, 
-				       IDL_E));
+				       CR_TMP1));
 
   MUST_SUCCEED(coyotos_AddressSpace_setSlot(CR_ADDRSPACE, 
 					    0, 
-					    CR_TMP1,
-					    IDL_E));
+					    CR_TMP1));
 
   // And install the new address space
   MUST_SUCCEED(coyotos_Process_setSlot(CR_SELF, 
 				       coyotos_Process_cslot_addrSpace,
-				       CR_ADDRSPACE, 
-				       IDL_E));
+				       CR_ADDRSPACE));
 
-  MUST_SUCCEED(coyotos_GPT_getl2v(CR_ADDRSPACE, &addrspace_l2v, IDL_E));
+  MUST_SUCCEED(coyotos_GPT_getl2v(CR_ADDRSPACE, &addrspace_l2v));
 
   /* Set up a read-only Page zero mapping */
   get_pagecap(CR_TMP1, 0);
   MUST_SUCCEED(coyotos_Memory_reduce(CR_TMP1, 
 				     coyotos_Memory_restrictions_readOnly,
-				     CR_TMP1,
-				     IDL_E));
+				     CR_TMP1));
 
   /* And install it as the first page in the break */
   MUST_SUCCEED(coyotos_AddressSpace_setSlot(CR_ADDRSPACE, 
 					    1,
-					    CR_TMP1, 
-					    IDL_E));
+					    CR_TMP1));
 
   /* Now, set up our break state to match. */
   mybrk = ((uintptr_t)1 << addrspace_l2v);
@@ -124,8 +117,7 @@ install_Page(caploc_t pageCap, uintptr_t addr)
   {
     guard_t theGuard = 0;
     
-    MUST_SUCCEED(coyotos_Memory_getGuard(pageCap,
-					 &theGuard, IDL_E));
+    MUST_SUCCEED(coyotos_Memory_getGuard(pageCap, &theGuard));
     assert3(guard_match(theGuard), ==, 0);
     assert3(guard_l2g(theGuard), ==, COYOTOS_PAGE_ADDR_BITS);
   }
@@ -136,21 +128,21 @@ install_Page(caploc_t pageCap, uintptr_t addr)
   // the top-level GPT always has a guard of zero and an l2g of the HW
   // address limit
   for (;;) {
-    MUST_SUCCEED(coyotos_GPT_getl2v(cap, &l2v, IDL_E));
+    MUST_SUCCEED(coyotos_GPT_getl2v(cap, &l2v));
 
     uintptr_t slot = highbits_shifted(addr, l2v);
     uintptr_t remaddr = lowbits(addr, l2v);
     
     if (l2v == COYOTOS_PAGE_ADDR_BITS) {
-      MUST_SUCCEED(coyotos_AddressSpace_setSlot(cap, slot, pageCap, IDL_E));
+      MUST_SUCCEED(coyotos_AddressSpace_setSlot(cap, slot, pageCap));
       return;
     }
-    MUST_SUCCEED(coyotos_AddressSpace_getSlot(cap, slot, next, IDL_E));
+    MUST_SUCCEED(coyotos_AddressSpace_getSlot(cap, slot, next));
 
     guard_t theGuard;
-    if (!coyotos_Memory_getGuard(next, &theGuard, IDL_E)) {
+    if (!coyotos_Memory_getGuard(next, &theGuard)) {
       assert3(remaddr, ==, 0);
-      MUST_SUCCEED(coyotos_AddressSpace_setSlot(cap, slot, pageCap, IDL_E));
+      MUST_SUCCEED(coyotos_AddressSpace_setSlot(cap, slot, pageCap));
       return;
     }
 
@@ -164,22 +156,22 @@ install_Page(caploc_t pageCap, uintptr_t addr)
     if (matchbits != 0) {
       // we need to add a GPT
       require_GPT(spare);
-      MUST_SUCCEED(coyotos_GPT_setl2v(spare, l2g, &l2v, IDL_E));
+      MUST_SUCCEED(coyotos_GPT_setl2v(spare, l2g, &l2v));
       MUST_SUCCEED(coyotos_Memory_setGuard(spare, 
 					   make_guard(0, 
 						      l2g + 
 						      coyotos_GPT_l2slots),
-					   spare, IDL_E));
+					   spare));
       MUST_SUCCEED(coyotos_Memory_setGuard(next, 
 					   make_guard(0, l2g),
-					   next, IDL_E));
-      MUST_SUCCEED(coyotos_AddressSpace_setSlot(spare, 0, next, IDL_E));
-      MUST_SUCCEED(coyotos_AddressSpace_setSlot(cap, slot, spare, IDL_E));
+					   next));
+      MUST_SUCCEED(coyotos_AddressSpace_setSlot(spare, 0, next));
+      MUST_SUCCEED(coyotos_AddressSpace_setSlot(cap, slot, spare));
       continue;  // re-execute loop with newly inserted GPT
     }
     if (l2g == COYOTOS_PAGE_ADDR_BITS) {
       // replacing a page.  Just overwrite it.
-      MUST_SUCCEED(coyotos_AddressSpace_setSlot(cap, slot, pageCap, IDL_E));
+      MUST_SUCCEED(coyotos_AddressSpace_setSlot(cap, slot, pageCap));
       return;
     }
 

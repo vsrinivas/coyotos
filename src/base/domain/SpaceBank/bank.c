@@ -122,7 +122,7 @@ object_getCap(Object *obj, caploc_t out)
   coyotos_Range_obType type = object_getType(obj);
   oid_t oid = object_getOid(obj);
 
-  MUST_SUCCEED(coyotos_Range_getCap(CR_RANGE, oid, type, out, IDL_E));
+  MUST_SUCCEED(coyotos_Range_getCap(CR_RANGE, oid, type, out));
 }
 
 /** @brief Free an object and tell the kernel to rescind it */
@@ -133,8 +133,8 @@ object_rescindAndFree(Object *obj)
   oid_t oid = object_getOid(obj);
   coyotos_Range_obType ty = object_getType(obj);
 
-  MUST_SUCCEED(coyotos_Range_getCap(CR_RANGE, oid, ty, CR_TMP1, IDL_E));
-  MUST_SUCCEED(coyotos_Range_rescind(CR_RANGE, CR_TMP1, IDL_E));
+  MUST_SUCCEED(coyotos_Range_getCap(CR_RANGE, oid, ty, CR_TMP1));
+  MUST_SUCCEED(coyotos_Range_rescind(CR_RANGE, CR_TMP1));
 
   // rescind obj and free it.
   bank_unreserveSpace(obj->bank, ty);
@@ -152,7 +152,7 @@ require_object(coyotos_Range_obType ty, caploc_t out)
   oid_t oid = ext->baseOID + ext->preallocated + ext->bootstrapped;
   ext->bootstrapped++;
 
-  MUST_SUCCEED(coyotos_Range_getCap(CR_RANGE, oid, ty, out, IDL_E));
+  MUST_SUCCEED(coyotos_Range_getCap(CR_RANGE, oid, ty, out));
 }
 
 void
@@ -173,8 +173,7 @@ get_pagecap(caploc_t out, oid_t oid)
   MUST_SUCCEED(coyotos_Range_getCap(CR_RANGE,
 				    oid,
 				    coyotos_Range_obType_otPage,
-				    out,
-				    IDL_E));
+				    out));
 }
 
 bool
@@ -250,13 +249,11 @@ bank_create(Bank *parent, caploc_t out)
   parent->firstChild = bank;
 
   // set up the endpoint, and make the initial Entry cap.
-  MUST_SUCCEED(coyotos_Endpoint_setRecipient(out, CR_SELF, IDL_E));
+  MUST_SUCCEED(coyotos_Endpoint_setRecipient(out, CR_SELF));
   // we offset the endpointID by one, since 0 is our reply endpoint.
-  MUST_SUCCEED(coyotos_Endpoint_setEndpointID(out,
-					      object_getOid(endpt) + 1,
-					      IDL_E));
+  MUST_SUCCEED(coyotos_Endpoint_setEndpointID(out, object_getOid(endpt) + 1));
   // a protected payload of 0 gives all permissions
-  MUST_SUCCEED(coyotos_Endpoint_makeEntryCap(out, 0, out, IDL_E));
+  MUST_SUCCEED(coyotos_Endpoint_makeEntryCap(out, 0, out));
 
   return true;
 }
@@ -332,7 +329,7 @@ load_initial_extent(coyotos_Range_obType type)
   oid_t bound = 0;
 
   MUST_SUCCEED(coyotos_Range_nextBackedSubrange(CR_RANGE, 0, type,
-						&base, &bound, IDL_E));
+						&base, &bound));
 
   assert((size_t)(bound - base) == (bound - base));
 
@@ -453,7 +450,7 @@ bank_alloc(Bank *bank, coyotos_Range_obType type, caploc_t out)
   Object *obj = bank_do_alloc(bank, type, out);
   if (obj) {
     oid_t oid = object_getOid(obj);
-    MUST_SUCCEED(coyotos_Range_getCap(CR_RANGE, oid, type, out, IDL_E));
+    MUST_SUCCEED(coyotos_Range_getCap(CR_RANGE, oid, type, out));
   }
   return obj;
 }
@@ -464,7 +461,7 @@ bank_alloc_proc(Bank *bank, caploc_t brand, caploc_t out)
   Object *obj = bank_do_alloc(bank, coyotos_Range_obType_otProcess, out);
   if (obj) {
     oid_t oid = object_getOid(obj);
-    MUST_SUCCEED(coyotos_Range_getProcess(CR_RANGE, oid, brand, out, IDL_E));
+    MUST_SUCCEED(coyotos_Range_getProcess(CR_RANGE, oid, brand, out));
   }
   return obj;
 }
@@ -476,10 +473,9 @@ bank_getEntry(Bank *bank, coyotos_SpaceBank_restrictions restr, caploc_t out)
   MUST_SUCCEED(coyotos_Range_getCap(CR_RANGE,
 				    object_getOid(endpt),
 				    object_getType(endpt),
-				    out,
-				    IDL_E));
+				    out));
 
-  MUST_SUCCEED(coyotos_Endpoint_makeEntryCap(out, restr, out, IDL_E));
+  MUST_SUCCEED(coyotos_Endpoint_makeEntryCap(out, restr, out));
 
 }
 
@@ -499,7 +495,7 @@ object_identify(caploc_t cap)
   coyotos_Range_obType type = coyotos_Range_obType_otNUM_TYPES;
   oid_t oid;
 
-  if (!coyotos_Range_identify(CR_RANGE, cap, &type, &oid, IDL_E))
+  if (!coyotos_Range_identify(CR_RANGE, cap, &type, &oid))
     return 0;
   if (type == coyotos_Range_obType_otInvalid)
     return 0;
@@ -554,12 +550,11 @@ setup_banks(CoyImgBank *banks, size_t count)
     MUST_SUCCEED(coyotos_Range_getCap(CR_RANGE,
 				      oid,
 				      coyotos_Range_obType_otEndpoint,
-				      CR_TMP1,
-				      IDL_E));
+				      CR_TMP1));
 
-    MUST_SUCCEED(coyotos_Endpoint_setRecipient(CR_TMP1, CR_SELF, IDL_E));
+    MUST_SUCCEED(coyotos_Endpoint_setRecipient(CR_TMP1, CR_SELF));
     // we offset the endpoint ID by 1, since 0 is our reply endpoint.
-    MUST_SUCCEED(coyotos_Endpoint_setEndpointID(CR_TMP1, oid + 1, IDL_E));
+    MUST_SUCCEED(coyotos_Endpoint_setEndpointID(CR_TMP1, oid + 1));
   }
   // There must have been a primeBank somewhere.
   assert(primeBank != 0);

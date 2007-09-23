@@ -27,22 +27,17 @@
 #define CR_ADDRSPACE	CR_APP(1)
 #define CR_TMP		CR_APP(2)
 
-IDL_Environment IDL_E = {
-    .epID = 0,
-    .replyCap = CR_REPLYEPT,
-};
-
 #define FAIL (void)(*(uint32_t *)0 = __LINE__)
 int
 main(int argc, char *argv[])
 {
   if (!coyotos_Process_getSlot(CR_SELF, coyotos_Process_cslot_addrSpace,
-			       CR_ADDRSPACE, &IDL_E))
+			       CR_ADDRSPACE))
     FAIL;
   if (!coyotos_Range_getCap(CR_RANGE,
-			    0, coyotos_Range_obType_otPage, CR_TMP, &IDL_E))
+			    0, coyotos_Range_obType_otPage, CR_TMP))
     FAIL;
-  if (!coyotos_AddressSpace_setSlot(CR_ADDRSPACE, 15, CR_TMP, &IDL_E))
+  if (!coyotos_AddressSpace_setSlot(CR_ADDRSPACE, 15, CR_TMP))
     FAIL;
 
   uint64_t oldval = *(uint64_t *)(15 * COYOTOS_PAGE_SIZE);
@@ -51,9 +46,9 @@ main(int argc, char *argv[])
 			    coyotos_Range_physOidStart +
 			    0x1a3000/COYOTOS_PAGE_SIZE,
 			    coyotos_Range_obType_otPage, 
-			    CR_TMP, &IDL_E))
+			    CR_TMP))
     FAIL;
-  if (!coyotos_AddressSpace_setSlot(CR_ADDRSPACE, 14, CR_TMP, &IDL_E))
+  if (!coyotos_AddressSpace_setSlot(CR_ADDRSPACE, 14, CR_TMP))
     FAIL;
 
   uint64_t newval = *(uint64_t *)(15 * COYOTOS_PAGE_SIZE);

@@ -56,11 +56,6 @@ typedef union {
   uintptr_t icw;
 } _IDL_GRAND_SERVER_UNION;
 
-IDL_Environment IDL_E = {
-  .replyCap = CR_REPLYEPT,
-  .epID = 0,
-};
-
 typedef struct IDL_SERVER_Environment {
   uint64_t epID;
   uint32_t pp;
@@ -93,7 +88,7 @@ log_message(const char *message)
     .max = 256, .len = len, .data = (char *)message
   };
   
-  (void) coyotos_KernLog_log(testHandler_APP_KERNLOG, str, &IDL_E);
+  (void) coyotos_KernLog_log(testHandler_APP_KERNLOG, str);
 }
 
 static uint64_t

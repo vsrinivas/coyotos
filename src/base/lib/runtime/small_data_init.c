@@ -44,46 +44,62 @@ void
 __small_data_init(uintptr_t data, uintptr_t end)
 {
   size_t cur;
-  IDL_Environment _IDL_E = {
-    .replyCap = CR_REPLYEPT,
-    .epID = 0ULL
-  };
   size_t first_slot = data / COYOTOS_PAGE_SIZE;
   size_t last_slot = (end + COYOTOS_PAGE_SIZE - 1) / COYOTOS_PAGE_SIZE;
 
+  /* Unlike most C routines, this code is run before the data segment is
+   * writable (in fact, its job in life is to make the data segment
+   * writable).  So it can't use the default IDL_Environment that the
+   * normal wrappers use.  Instead, it must define an environment on the
+   * stack, and use the IDL_ENV_* varients of the wrappers, which allow
+   * you to specify an environment to use.
+   *
+   * Note that we hard-code the replyCap and epID to the runtime defaults;
+   * since we're running before the program gets control, this is
+   * safe.
+   */
+  IDL_Environment local_env = {
+    .replyCap = CR_REPLYEPT,
+    .epID = 0
+  };
+
   for (cur = first_slot; cur < last_slot; cur++) {
-    if (!coyotos_AddressSpace_getSlot(CR_OLDADDR, cur, CR_OLDPAGE, &_IDL_E) ||
-	!coyotos_SpaceBank_alloc(CR_SPACEBANK,
-				 coyotos_Range_obType_otPage,
-				 coyotos_Range_obType_otInvalid,
-				 coyotos_Range_obType_otInvalid,
-				 CR_NEWPAGE,
-				 CR_NULL,
-				 CR_NULL,
-				 &_IDL_E) ||
-	!coyotos_AddressSpace_copyFrom(CR_NEWPAGE, CR_OLDPAGE, 
-				       CR_NEWPAGE, &_IDL_E) ||
-	!coyotos_AddressSpace_setSlot(CR_NEWADDR, cur, CR_NEWPAGE, &_IDL_E))
+    if (!IDL_ENV_coyotos_AddressSpace_getSlot(CR_OLDADDR, cur, CR_OLDPAGE,
+					      &local_env) ||
+	!IDL_ENV_coyotos_SpaceBank_alloc(CR_SPACEBANK,
+					 coyotos_Range_obType_otPage,
+					 coyotos_Range_obType_otInvalid,
+					 coyotos_Range_obType_otInvalid,
+					 CR_NEWPAGE,
+					 CR_NULL,
+					 CR_NULL, &local_env) ||
+	!IDL_ENV_coyotos_AddressSpace_copyFrom(CR_NEWPAGE, 
+					       CR_OLDPAGE, 
+					       CR_NEWPAGE, &local_env) ||
+	!IDL_ENV_coyotos_AddressSpace_setSlot(CR_NEWADDR, 
+					      cur,
+					      CR_NEWPAGE, &local_env))
       goto fail;
   }
 
   /* install a CapPage in slot 0 for the capability stack */
-  if (!coyotos_SpaceBank_alloc(CR_SPACEBANK,
-			       coyotos_Range_obType_otCapPage,
-			       coyotos_Range_obType_otInvalid,
-			       coyotos_Range_obType_otInvalid,
-			       CR_NEWPAGE,
-			       CR_NULL,
-			       CR_NULL,
-			       &_IDL_E) ||
-	!coyotos_AddressSpace_setSlot(CR_NEWADDR, 0, CR_NEWPAGE, &_IDL_E))
+  if (!IDL_ENV_coyotos_SpaceBank_alloc(CR_SPACEBANK,
+				       coyotos_Range_obType_otCapPage,
+				       coyotos_Range_obType_otInvalid,
+				       coyotos_Range_obType_otInvalid,
+				       CR_NEWPAGE,
+				       CR_NULL,
+				       CR_NULL, &local_env) ||
+      !IDL_ENV_coyotos_AddressSpace_setSlot(CR_NEWADDR, 
+					    0, 
+					    CR_NEWPAGE, &local_env))
     goto fail;
 
   return;
 
  fail:
-  coyotos_SpaceBank_destroyBankAndReturn(CR_SPACEBANK, CR_RETURN,
-                                         _IDL_E.errCode,
-                                         &_IDL_E);
+  IDL_ENV_coyotos_SpaceBank_destroyBankAndReturn(CR_SPACEBANK, CR_RETURN,
+						 local_env.errCode,
+						 &local_env);
   return;
 }

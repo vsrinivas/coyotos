@@ -1520,7 +1520,7 @@ emit_client_stub(GCPtr<Symbol> s, INOstream& out)
   else
     out << "static inline bool\n";
 
-  out << s->QualifiedName('_')
+  out << "IDL_ENV_" << s->QualifiedName('_')
       << "(caploc_t _invCap";
 
   for(size_t i = 0; i < s->children.size(); i++) {
@@ -1568,43 +1568,117 @@ emit_client_stub(GCPtr<Symbol> s, INOstream& out)
 
   if (declOnly) {
     out << ";\n";
-    return;
+
+  } else {
+    out << "{\n";
+    out.more();
+    
+    /* In principal, the input and output structures could be placed
+       within a union. This becomes complicated when we do dynamic
+       indirect arguments, and few stubs have direct components so large
+       that saving the extra stack words is worthwhile. For this reason
+       we do without the union here. */
+    out << "_INV_" << s->QualifiedName('_') << " _params;\n";
+    
+    emit_in_marshall(s, out, args.in);
+    emit_out_marshall(s, out, args.out);
+    
+    // What about cap marshall?
+    
+    emit_target_syscall(s, out, args);
+    
+    if (s->cls != sc_oneway) {
+      size_t nHardReg = MAX_DATA_REG;
+      if (targetArch->archID == COYOTOS_TARGET_i386)
+	nHardReg = 4;
+      emit_out_demarshall(s, out, args.out, nHardReg);
+    }
+    
+    
+    /*  if (!s->type->IsVoidType()) */
+    out << "return true;\n";
+    
+    out.less();
+    out << "}\n";
   }
 
-  out << "{\n";
-  out.more();
 
-  /* In principal, the input and output structures could be placed
-     within a union. This becomes complicated when we do dynamic
-     indirect arguments, and few stubs have direct components so large
-     that saving the extra stack words is worthwhile. For this reason
-     we do without the union here. */
-  out << "_INV_" << s->QualifiedName('_') << " _params;\n";
+  if (declOnly)
+    out << "extern bool\n";
+  else
+    out << "static inline bool\n";
 
-  emit_in_marshall(s, out, args.in);
-  emit_out_marshall(s, out, args.out);
+  out << "" << s->QualifiedName('_')
+      << "(caploc_t _invCap";
 
-  // What about cap marshall?
+  for(size_t i = 0; i < s->children.size(); i++) {
+    GCPtr<Symbol> child = s->children[i];
 
-  emit_target_syscall(s, out, args);
+    bool wantPtr = (child->cls == sc_outformal) || c_byreftype(child->type);
+    wantPtr = wantPtr && !child->type->IsInterface();
 
-  if (s->cls != sc_oneway) {
-    size_t nHardReg = MAX_DATA_REG;
-    if (targetArch->archID == COYOTOS_TARGET_i386)
-      nHardReg = 4;
-    emit_out_demarshall(s, out, args.out, nHardReg);
+    out << ", ";
+    output_c_type(child->type, out);
+    out << " ";
+    if (wantPtr)
+      out << "*";
+    out << child->name;
+
+    /* Normally would call output_c_type_trailer, but that is only
+       used to add the trailing "[size]" to vectors, and we don't want
+       that in the procedure signature. 
+
+       output_c_type_trailer(child->type, out);
+    */
   }
 
+  if (!s->type->IsVoidType()) {
+    GCPtr<Symbol> retType = s->type->ResolveType();
+    bool wantPtr = !retType->IsInterface();
 
-  /*  if (!s->type->IsVoidType()) */
-  out << "return true;\n";
+    out << ", ";
+    output_c_type(retType, out);
+    out << " ";
+    if (wantPtr)
+      out << "*";
+    out << "_retVal";
+  }
 
-  out.less();
-  out << "}\n";
-  {
-    size_t indent = out.indent_for_macro();
-    out << "#endif /* !__KERNEL__ */\n";
-    out.indent(indent);
+  out << ")\n";
+
+  for(size_t i = 0; i < s->raises.size(); i++) {
+    out.more();
+    out << "/* raises RC_"
+	<< s->raises[i]->QualifiedName('_')
+	<< " */\n";
+    out.less();
+  }
+
+  if (declOnly) {
+    out << ";\n";
+  } else {
+    out << "{\n";
+    out.more();
+    out << "return IDL_ENV_" << s->QualifiedName('_') 
+	<< "(_invCap";
+    for(size_t i = 0; i < s->children.size(); i++) {
+      GCPtr<Symbol> child = s->children[i];
+
+      out << ", " << child->name;
+    }
+
+    if (!s->type->IsVoidType())
+      out << ", " << "_retVal";
+
+    out << ", __IDL_Env);\n";
+
+    out.less();
+    out << "}\n";
+    {
+      size_t indent = out.indent_for_macro();
+      out << "#endif /* !__KERNEL__ */\n";
+      out.indent(indent);
+    }
   }
 }
 

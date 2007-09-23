@@ -27,12 +27,6 @@
 
 #include <string.h>
 
-
-IDL_Environment IDL_E = {
-    .epID = 0,
-    .replyCap = CR_REPLYEPT,
-};
-
 void
 kernlog(const char *message)
 {
@@ -45,7 +39,7 @@ kernlog(const char *message)
     .max = 256, .len = len, .data = (char *)message
   };
   
-  (void) coyotos_KernLog_log(testConstructor_REG_KERNLOG, str, &IDL_E);
+  (void) coyotos_KernLog_log(testConstructor_REG_KERNLOG, str);
 }
 
 int
@@ -57,10 +51,9 @@ main(int argc, char *argv[])
 				  testConstructor_REG_BANK,
 				  testConstructor_REG_SCHED,
 				  testConstructor_REG_RUNTIME,
-				  testConstructor_REG_TMP,
-				  &IDL_E))
+				  testConstructor_REG_TMP))
     kernlog("create failed\n");
-  else if (!coyotos_Cap_getType(testConstructor_REG_TMP, &type, &IDL_E))
+  else if (!coyotos_Cap_getType(testConstructor_REG_TMP, &type))
     kernlog("getType failed\n");
 
   else if (type != IKT_coyotos_Builder)

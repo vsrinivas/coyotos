@@ -42,11 +42,6 @@
 #define CR_TMP2		CR_UNSTABLE(2)
 #define CR_TMP3		CR_UNSTABLE(3)
 
-static IDL_Environment IDL_E = {
-  .replyCap = CR_REPLYEPT,
-  .epID = 0ULL
-};
-
 extern unsigned _end;		/* lie */
 static uintptr_t heap_ptr = (uintptr_t) &_end;
 
@@ -140,7 +135,7 @@ insert_page(uintptr_t addr,
   caploc_t next_spare = cap;
 
   if (!coyotos_Process_getSlot(CR_SELF, coyotos_Process_cslot_addrSpace,
-			       cap, &IDL_E))
+			       cap))
     return false;
 
   /* check the current address space to see if it is large enough to contain
@@ -152,7 +147,7 @@ insert_page(uintptr_t addr,
    */
   {
     guard_t theGuard;
-    if (!coyotos_Memory_getGuard(cap, &theGuard, &IDL_E))
+    if (!coyotos_Memory_getGuard(cap, &theGuard))
       return false;    /* shouldn't happen */
 
     uint32_t match = guard_match(theGuard);
@@ -174,11 +169,11 @@ insert_page(uintptr_t addr,
       coyotos_Memory_l2value_t l2v = l2g - coyotos_GPT_l2slots;
       coyotos_Memory_l2value_t l2v_ignored = 0;
       
-      if (!coyotos_GPT_setl2v(spare, l2v, &l2v_ignored, &IDL_E) ||
-	  !coyotos_Memory_setGuard(spare, make_guard(0, l2g), spare, &IDL_E) ||
-	  !coyotos_AddressSpace_setSlot(spare, 0, cap, &IDL_E) ||
+      if (!coyotos_GPT_setl2v(spare, l2v, &l2v_ignored) ||
+	  !coyotos_Memory_setGuard(spare, make_guard(0, l2g), spare) ||
+	  !coyotos_AddressSpace_setSlot(spare, 0, cap) ||
 	  !coyotos_Process_setSlot(CR_SELF, coyotos_Process_cslot_addrSpace,
-				   spare, &IDL_E)) {
+				   spare)) {
 	free_cap(spare);
 	return false;
       }
@@ -190,24 +185,24 @@ insert_page(uintptr_t addr,
   coyotos_Memory_l2value_t lastl2v = COYOTOS_SOFTADDR_BITS;
 
   for (;;) {
-    if (!coyotos_GPT_getl2v(cap, &l2v, &IDL_E))
+    if (!coyotos_GPT_getl2v(cap, &l2v))
       return false;
 
     uintptr_t slot = highbits_shifted(addr, l2v);
     uintptr_t remaddr = lowbits(addr, l2v);
     
     if (l2v == COYOTOS_PAGE_ADDR_BITS) {
-      if (!coyotos_AddressSpace_setSlot(cap, slot, pageCap, &IDL_E))
+      if (!coyotos_AddressSpace_setSlot(cap, slot, pageCap))
 	return false;
     }
-    if (!coyotos_AddressSpace_getSlot(cap, slot, next, &IDL_E))
+    if (!coyotos_AddressSpace_getSlot(cap, slot, next))
       return false;
 
     guard_t theGuard;
-    if (!coyotos_Memory_getGuard(next, &theGuard, &IDL_E)) {
+    if (!coyotos_Memory_getGuard(next, &theGuard)) {
       if (remaddr != 0)
 	return false;
-      if (!coyotos_AddressSpace_setSlot(cap, slot, pageCap, &IDL_E))
+      if (!coyotos_AddressSpace_setSlot(cap, slot, pageCap))
 	return false;
       return true;
     }
@@ -225,17 +220,17 @@ insert_page(uintptr_t addr,
       if (!alloc_cap(coyotos_Range_obType_otGPT, spare))
 	return false;
 
-      if (!coyotos_GPT_setl2v(spare, l2g, &l2v, &IDL_E) ||
+      if (!coyotos_GPT_setl2v(spare, l2g, &l2v) ||
 	  !coyotos_Memory_setGuard(spare, 
 				   make_guard(0, 
 					      l2g + 
 					      coyotos_GPT_l2slots),
-				   spare, &IDL_E) ||
+				   spare) ||
 	  !coyotos_Memory_setGuard(next, 
 				   make_guard(0, l2g),
-				   next, &IDL_E) ||
-	  !coyotos_AddressSpace_setSlot(spare, 0, next, &IDL_E) ||
-	  !coyotos_AddressSpace_setSlot(cap, slot, spare, &IDL_E)) {
+				   next) ||
+	  !coyotos_AddressSpace_setSlot(spare, 0, next) ||
+	  !coyotos_AddressSpace_setSlot(cap, slot, spare)) {
 	free_cap(spare);
 	return false;
       }
@@ -243,7 +238,7 @@ insert_page(uintptr_t addr,
     }
     if (l2g == COYOTOS_PAGE_ADDR_BITS) {
       // replacing a page.  Just overwrite it.
-      if (!coyotos_AddressSpace_setSlot(cap, slot, pageCap, &IDL_E))
+      if (!coyotos_AddressSpace_setSlot(cap, slot, pageCap))
 	return false;
       return true;
     }
@@ -273,14 +268,12 @@ alloc_cap(coyotos_Range_obType type, caploc_t cap)
 				 coyotos_Range_obType_otInvalid,
 				 cap,
 				 CR_NULL,
-				 CR_NULL,
-				 &IDL_E);
+				 CR_NULL);
 }
 
 static void
 free_cap(caploc_t cap)
 {
-  (void) coyotos_SpaceBank_free(CR_SPACEBANK, 1, 
-				cap, CR_NULL, CR_NULL, &IDL_E);
+  (void) coyotos_SpaceBank_free(CR_SPACEBANK, 1, cap, CR_NULL, CR_NULL);
 }
 

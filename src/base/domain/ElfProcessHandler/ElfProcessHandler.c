@@ -80,13 +80,6 @@ typedef struct IDL_SERVER_Environment {
   bool isEPH;
 } ISE;
 
-IDL_Environment _IDL_E = {
-  .epID = 0,
-  .replyCap = CR_REPLYEPT,
-};
-
-IDL_Environment * const IDL_E = &_IDL_E;
-
 static uint64_t
 HANDLE_coyotos_Cap_destroy(ISE *ise)
 {
@@ -189,7 +182,7 @@ process_fault(uint64_t addr, bool wantCap)
   coyotos_Memory_l2value_t lastl2v = COYOTOS_SOFTADDR_BITS;
 
   for (;;) {
-    if (!coyotos_GPT_getl2v(cap, &l2v, IDL_E))
+    if (!coyotos_GPT_getl2v(cap, &l2v))
       return false;
 
     uintptr_t slot = highbits_shifted(addr, l2v);
@@ -197,7 +190,7 @@ process_fault(uint64_t addr, bool wantCap)
 
     /// @bug at some point, we need to deal with too-low l2v values.
     /// For now, we'll just fail.
-    if (!coyotos_AddressSpace_getSlot(cap, slot, next, IDL_E))
+    if (!coyotos_AddressSpace_getSlot(cap, slot, next))
       return false;
 
     guard_t theGuard;
@@ -207,7 +200,7 @@ process_fault(uint64_t addr, bool wantCap)
     //
     // This simplifies the code below, at the expense of adding
     // unnecessary GPTs along the way, if remaddr is non-zero.
-    if (!coyotos_Memory_getGuard(next, &theGuard, IDL_E)) {
+    if (!coyotos_Memory_getGuard(next, &theGuard)) {
       theGuard = make_guard(0, COYOTOS_PAGE_ADDR_BITS);
       invalidCap = true;
     }
@@ -250,27 +243,26 @@ process_fault(uint64_t addr, bool wantCap)
 				   coyotos_Range_obType_otInvalid,
 				   spare,
 				   CR_NULL,
-				   CR_NULL,
-				   IDL_E)) {
+				   CR_NULL)) {
 	return false;
       }
 
       // If the cap was invalid (i.e. Null), don't install anything in
       // the chosen slot.
-      if (!coyotos_GPT_setl2v(spare, new_l2v, &unusedl2v, IDL_E) ||
+      if (!coyotos_GPT_setl2v(spare, new_l2v, &unusedl2v) ||
 	  !coyotos_AddressSpace_guardedSetSlot(cap,
 					       slot,
 					       spare,
-					       make_guard(new_match, new_l2g),
-					       IDL_E) ||
+					       make_guard(new_match, 
+							  new_l2g)) ||
 	  (!invalidCap && 
 	   !coyotos_AddressSpace_guardedSetSlot(spare,
 						the_slot,
 						next,
-						make_guard(the_match, l2g),
-						IDL_E))) {
-	(void) coyotos_SpaceBank_free(CR_SPACEBANK, 1, spare, CR_NULL, CR_NULL,
-				      IDL_E);
+						make_guard(the_match, 
+							   l2g)))) {
+	(void) coyotos_SpaceBank_free(CR_SPACEBANK, 1, 
+				      spare, CR_NULL, CR_NULL);
 	return false;
       }
       continue;  // re-execute loop with newly inserted GPT
@@ -280,7 +272,7 @@ process_fault(uint64_t addr, bool wantCap)
 
     if (invalidCap)
       restr = coyotos_Memory_restrictions_readOnly;
-    else if (!coyotos_Memory_getRestrictions(next, &restr, IDL_E)) {
+    else if (!coyotos_Memory_getRestrictions(next, &restr)) {
       return false;  // shouldn't happen
     }
     if (restr & coyotos_Memory_restrictions_opaque) {
@@ -297,7 +289,7 @@ process_fault(uint64_t addr, bool wantCap)
 
       // we need to replace this capability with a strong capability.
       coyotos_Cap_AllegedType type = 0;
-      if (!coyotos_Cap_getType(next, &type, IDL_E)) {
+      if (!coyotos_Cap_getType(next, &type)) {
 	return false;
       }
 
@@ -331,24 +323,21 @@ process_fault(uint64_t addr, bool wantCap)
 				   coyotos_Range_obType_otInvalid,
 				   spare,
 				   CR_NULL,
-				   CR_NULL,
-				   IDL_E))
+				   CR_NULL))
 	return false;
 
       // copy the existing data, reduce the cap appropriately, and install it.
       if (invalidCap) {
-	if (!coyotos_AddressSpace_setSlot(cap, slot, spare, IDL_E)) {
+	if (!coyotos_AddressSpace_setSlot(cap, slot, spare)) {
 	  (void) coyotos_SpaceBank_free(CR_SPACEBANK, 1, 
-					spare, CR_NULL, CR_NULL,
-					IDL_E);
+					spare, CR_NULL, CR_NULL);
 	  return false;
 	}
-      } else if (!coyotos_AddressSpace_copyFrom(spare, next, spare, IDL_E) ||
-		 !coyotos_Memory_reduce(spare, new_restr, spare, IDL_E) ||
-		 !coyotos_AddressSpace_setSlot(cap, slot, spare, IDL_E)) {
+      } else if (!coyotos_AddressSpace_copyFrom(spare, next, spare) ||
+		 !coyotos_Memory_reduce(spare, new_restr, spare) ||
+		 !coyotos_AddressSpace_setSlot(cap, slot, spare)) {
 	(void) coyotos_SpaceBank_free(CR_SPACEBANK, 1, 
-				      spare, CR_NULL, CR_NULL,
-				      IDL_E);
+				      spare, CR_NULL, CR_NULL);
 	return false;
       }
 
@@ -510,7 +499,7 @@ HANDLE_coyotos_MemoryHandler_handle(caploc_t proc,
   }
 
   // resume the process, clearing the fault if we handled it
-  coyotos_Process_resume(proc, handled, IDL_E);
+  coyotos_Process_resume(proc, handled);
 }
 				    
 /* You should supply a function that selects an interface
@@ -540,8 +529,7 @@ initialize(void)
 
   if (!coyotos_AddressSpace_getSlot(CR_TOOLS, 
 				    coyotos_ElfProcessHandler_TOOL_ELFFILE,
-				    CR_ELFFILE,
-				    IDL_E))
+				    CR_ELFFILE))
     goto fail;
 
   if (!coyotos_SpaceBank_alloc(CR_SPACEBANK,
@@ -550,30 +538,29 @@ initialize(void)
 			       coyotos_Range_obType_otInvalid,
 			       CR_ADDRSPACE,
 			       CR_NULL,
-			       CR_NULL,
-			       IDL_E))
+			       CR_NULL))
     goto fail;
 
-  if (!coyotos_Memory_setGuard(CR_ADDRSPACE, theGuard, CR_ADDRSPACE, IDL_E) ||
-      !coyotos_GPT_setl2v(CR_ADDRSPACE, l2v, &unusedl2v, IDL_E))
+  if (!coyotos_Memory_setGuard(CR_ADDRSPACE, theGuard, CR_ADDRSPACE) ||
+      !coyotos_GPT_setl2v(CR_ADDRSPACE, l2v, &unusedl2v))
     goto fail;
 
   if (!coyotos_Process_getSlot(CR_SELF, 
 			       coyotos_Process_cslot_addrSpace,
-			       CR_TMP1, IDL_E))
+			       CR_TMP1))
     goto fail;
 
-  if (!coyotos_AddressSpace_setSlot(CR_ADDRSPACE, 0, CR_TMP1, IDL_E))
+  if (!coyotos_AddressSpace_setSlot(CR_ADDRSPACE, 0, CR_TMP1))
     goto fail;
 
   if (!coyotos_Process_setSlot(CR_SELF, 
 			       coyotos_Process_cslot_addrSpace,
-			       CR_ADDRSPACE, IDL_E))
+			       CR_ADDRSPACE))
     goto fail;
 
   // We're now running with the full address space available.  Install our
   // file so that we can read it.
-  if (!coyotos_AddressSpace_setSlot(CR_ADDRSPACE, 1, CR_ELFFILE, IDL_E))
+  if (!coyotos_AddressSpace_setSlot(CR_ADDRSPACE, 1, CR_ELFFILE))
     goto fail;
 
   // process its elf sections
@@ -581,20 +568,18 @@ initialize(void)
     goto fail;
 
   // and unmap it now that we're through.
-  if (!coyotos_AddressSpace_setSlot(CR_ADDRSPACE, 1, CR_NULL, IDL_E))
+  if (!coyotos_AddressSpace_setSlot(CR_ADDRSPACE, 1, CR_NULL))
     goto fail;
 
   // now, set up our capabilities and return our entry cap.
   if (!coyotos_AddressSpace_getSlot(CR_TOOLS, 
 				    coyotos_ElfProcessHandler_TOOL_BACKGROUND,
-				    CR_BGGPT,
-				    IDL_E))
+				    CR_BGGPT))
     goto fail;
 
   if (!coyotos_Memory_reduce(CR_BGGPT,
 			     coyotos_Memory_restrictions_weak,
-			     CR_BGGPT,
-			     IDL_E))
+			     CR_BGGPT))
     goto fail;
 
   coyotos_Memory_l2value_t old_l2v;
@@ -605,37 +590,29 @@ initialize(void)
 			       coyotos_Range_obType_otInvalid,
 			       CR_SPACEGPT,
 			       CR_NULL,
-			       CR_NULL,
-			       IDL_E) ||
+			       CR_NULL) ||
       !coyotos_Endpoint_makeEntryCap(CR_INITEPT, 
 				     coyotos_ElfProcessHandler_PP_Handler, 
-				     CR_HANDLER_ENTRY, 
-				     IDL_E) ||
+				     CR_HANDLER_ENTRY) ||
       !coyotos_Memory_setGuard(CR_SPACEGPT,
 			       make_guard(0, COYOTOS_SOFTADDR_BITS),
-			       CR_SPACEGPT,
-			       IDL_E) ||
+			       CR_SPACEGPT) ||
       !coyotos_GPT_setl2v(CR_SPACEGPT,
 			  COYOTOS_SOFTADDR_BITS - 1, 
-			  &old_l2v,
-			  IDL_E) ||
+			  &old_l2v) ||
       !coyotos_AddressSpace_setSlot(CR_SPACEGPT,
 				    coyotos_GPT_handlerSlot,
-				    CR_HANDLER_ENTRY,
-				    IDL_E) ||
-      !coyotos_GPT_setHandler(CR_SPACEGPT, true, IDL_E) ||
+				    CR_HANDLER_ENTRY) ||
+      !coyotos_GPT_setHandler(CR_SPACEGPT, true) ||
       !coyotos_AddressSpace_setSlot(CR_SPACEGPT,
 				    0,
-				    CR_BGGPT,
-				    IDL_E) ||
+				    CR_BGGPT) ||
       !coyotos_Memory_reduce(CR_SPACEGPT,
 			     coyotos_Memory_restrictions_opaque,
-			     CR_OPAQUESPACE,
-			     IDL_E) ||
+			     CR_OPAQUESPACE) ||
       !coyotos_Endpoint_makeEntryCap(CR_INITEPT, 
 				     coyotos_ElfProcessHandler_PP_EPH, 
-				     CR_REPLY0, 
-				     IDL_E))
+				     CR_REPLY0))
     goto fail;
     
   reply_coyotos_Constructor_create(CR_RETURN, CR_REPLY0);
@@ -645,8 +622,7 @@ initialize(void)
  fail:
   (void) coyotos_SpaceBank_destroyBankAndReturn(CR_SPACEBANK, 
 						CR_RETURN,
-						IDL_E->errCode, 
-						IDL_E);
+						IDL_exceptCode);
   return false;
 }
 
