@@ -921,8 +921,6 @@ pf_readfile(PrimFnValue& pfv,
     THROW(excpt::BadValue, "Bad interpreter result");
   }
 
-  // XXX range check
-  offset = args[1].upcast<IntValue>()->bn.as_uint64();
   if (offset & (is.ci->target.pageSize -1u)) {
     is.errStream << is.curAST->loc << " "
 		 << pfv.nm << "() offset must be a pagesize-multiple\n";
