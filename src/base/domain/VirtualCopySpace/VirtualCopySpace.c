@@ -23,7 +23,6 @@
  */
 
 /* Based on template for processing the following interfaces:
-    coyotos.SpaceHandler
     coyotos.MemoryHandler
     coyotos.VirtualCopySpace
  */

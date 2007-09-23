@@ -38,11 +38,11 @@ SYS_IDL_FILES=$(wildcard $(SYS_IDL_DIR)/*.idl)
 
 SERVER_INTERFACES=\
     ElfProcessHandler \
-    ProcessHandler
+    MemoryHandler
 
 SERVER_IDL_FILES=\
     ../../idl/ElfProcessHandler.idl \
-    ../../../sys/idl/ProcessHandler.idl
+    ../../../sys/idl/MemoryHandler.idl
 
 IDL_FILES=\
     $(BASE_IDL_FILES) \

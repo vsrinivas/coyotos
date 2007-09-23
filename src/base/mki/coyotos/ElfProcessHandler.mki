@@ -23,9 +23,18 @@ module coyotos.ElfProcessHandler {
   import util = coyotos.Util;
   import Constructor = coyotos.Constructor;
 
+  export enum PP {
+    EPH = 0,
+    Handler = 1
+  };
+
   export capreg APP {
-    ELFFILE,
+    ELFFILE = rt.REG.APP0,
     ADDRSPACE,
+    OPAQUESPACE,
+    SPACEGPT,
+    BGGPT,
+    HANDLER_ENTRY,
 
     TMP1,
     TMP2,
@@ -33,7 +42,8 @@ module coyotos.ElfProcessHandler {
   };
 
   export enum TOOL {
-    ELFFILE = rt.TOOL.APP0
+    ELFFILE = rt.TOOL.APP0,
+    BACKGROUND  /* pre-set-up image of ELF file */
   };
 
   def elf_image = loadimage(PrimeBank, "coyotos/ElfProcessHandler");
@@ -46,10 +56,12 @@ module coyotos.ElfProcessHandler {
     def cons_bank = Constructor.get_bank(cons);
 
     def image = loadimage(cons_bank, file);
-    Constructor.set_tool(cons, TOOL.ELFFILE, readfile(cons_bank, file));
+    Constructor.set_tool(cons, TOOL.ELFFILE, 
+                         weaken(readfile(cons_bank, file)));
+    Constructor.set_tool(cons, TOOL.BACKGROUND, 
+                         weaken(image.space));
 
-    def prog_cons = Constructor.create(bank, 
-				       weaken(image.space), image.pc, cons);
+    def prog_cons = Constructor.create(bank, cons, image.pc, NullCap());
 
     return prog_cons;
   }
@@ -58,15 +70,16 @@ module coyotos.ElfProcessHandler {
   export def make_process(src_bank, file) {
     def bank = new Bank(src_bank);
 
-    def handler = util.make_running_process(bank, elf_space, elf_pc);
-    def tools = Constructor.fresh_tools(bank);
-    tools[TOOL.ELFFILE] = readfile(bank, file);
-    handler.capReg[rt.REG.TOOLS] = readonly(tools);
+    def cons = Constructor.create(bank, elf_space, elf_pc, NullCap());
+    def cons_bank = Constructor.get_bank(cons);
+    def image = loadimage(cons_bank, file);
 
-    def image = loadimage(bank, file);
-    def prog = util.make_running_process(bank, weaken(image.space), image.pc);
-    prog.handler = enter(handler.capReg[rt.REG.INITEPT], 0);
+    Constructor.set_tool(cons, TOOL.ELFFILE, 
+                         weaken(readfile(cons_bank, file)));
+    Constructor.set_tool(cons, TOOL.BACKGROUND, 
+                         weaken(image.space));
 
+    def prog = Constructor.make_process(bank, cons, image.pc, NullCap());
     return prog;
   }
 }

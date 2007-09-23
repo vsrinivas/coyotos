@@ -20,10 +20,9 @@
 
 module testLargeModel {
    import vcs = coyotos.VirtualCopySpace;
+   import eph = coyotos.ElfProcessHandler;
    import cons = coyotos.Constructor;
 
-   def image = loadimage(PrimeBank, "testLargeModel");
-   def my_vcs = vcs.make(PrimeBank, image.space);
    def my_bank = new Bank(PrimeBank);
-   def test = cons.make_process(my_bank, my_vcs, image.pc, NullCap());
+   def test = eph.make_process(my_bank, "testLargeModel");
 }
