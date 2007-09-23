@@ -1186,7 +1186,7 @@ pf_loadimage(PrimFnValue& pfv,
     }
   }
 
-  imageEnv->addConstant("space", new CapValue(is.ci, addrSpace));
+  imageEnv->addBinding("space", new CapValue(is.ci, addrSpace));
 
   return new EnvValue(imageEnv);
 }
