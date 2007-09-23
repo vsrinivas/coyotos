@@ -54,4 +54,9 @@ static inline void * atomic_read_ptr(AtomicPtr_t *a);
 /** @brief Atomic pointer write. */
 static inline void atomic_write_ptr(AtomicPtr_t *a, void *vp);
 
+/** @brief Atomic set bits into word. */
+static inline void atomic_set_bits(Atomic32_t *a, uint32_t mask);
+/** @brief Atomic clear bits into word. */
+static inline void atomic_clear_bits(Atomic32_t *a, uint32_t mask);
+
 #endif /* __HAL_ATOMIC_H__ */

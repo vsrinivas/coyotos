@@ -44,7 +44,7 @@ compare_and_swap(TARGET_HAL_ATOMIC32_T *a, uint32_t oldval, uint32_t newval)
 
   __asm__ __volatile__("lock cmpxchgl %1,%2"
 		       : "=a" (result)
-		       : "r" (newval), "m"(*((uint32_t *)(a))), "0" (oldval)
+		       : "r" (newval), "m" (*((uint32_t *)(a))), "0" (oldval)
 		       : "memory", "cc");
   return result;
 
@@ -58,7 +58,7 @@ compare_and_swap_ptr(TARGET_HAL_ATOMICPTR_T *a, void *oldval, void *newval)
 
   __asm__ __volatile__("lock cmpxchgl %1,%2"
 		       : "=a" (result)
-		       : "r" (newval), "m"(*((uintptr_t *)(a))), "0" (oldval)
+		       : "r" (newval), "m" (*((uintptr_t *)(a))), "0" (oldval)
 		       : "memory", "cc");
   return result;
 
@@ -90,6 +90,26 @@ static inline void
 atomic_write_ptr(TARGET_HAL_ATOMICPTR_T *a, void *vp)
 {
   a->vp = vp;
+}
+
+/** @brief Atomic OR bits into word. */
+static inline void
+atomic_set_bits(TARGET_HAL_ATOMIC32_T *a, uint32_t mask)
+{ 
+  __asm__ __volatile__("lock orl %[mask],%[wval]"
+		       : [wval] "+m" (*((uint32_t *)(a)))
+		       : [mask] "r" (mask)
+		       : "cc");
+}
+
+/** @brief Atomic AND bits into word. */
+static inline void 
+atomic_clear_bits(TARGET_HAL_ATOMIC32_T *a, uint32_t mask)
+{
+  __asm__ __volatile__("lock andl %[mask],%[wval]"
+		       : [wval] "+m" (*((uint32_t *)(a)))
+		       : [mask] "r" (~mask)
+		       : "cc");
 }
 
 
