@@ -111,9 +111,6 @@ struct Bank {
   uint64_t usage[coyotos_Range_obType_otNUM_TYPES];
 };
 
-extern IDL_Environment _IDL_E;
-#define IDL_E (&_IDL_E)
-
 static inline bool
 check_obType(coyotos_Range_obType ty)
 {

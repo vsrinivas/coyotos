@@ -38,7 +38,7 @@ log_message(const char *message)
     .max = 256, .len = len, .data = (char *)message
   };
   
-  (void) coyotos_KernLog_log(CR_KERNLOG, str, IDL_E);
+  (void) coyotos_KernLog_log(CR_KERNLOG, str);
 }
 
 void

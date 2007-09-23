@@ -28,11 +28,6 @@
 #include <coyotos/runtime.h>
 #include <string.h>
 
-IDL_Environment IDL_E = {
-  .replyCap = CR_REPLYEPT,
-  .epID = 0,
-};
-
 static void
 log_message(const char *message)
 {
@@ -44,7 +39,7 @@ log_message(const char *message)
     .max = 256, .len = len, .data = (char *)message
   };
   
-  (void) coyotos_KernLog_log(testAppInt_APP_KERNLOG, str, &IDL_E);
+  (void) coyotos_KernLog_log(testAppInt_APP_KERNLOG, str);
 }
 
 void
@@ -113,7 +108,7 @@ main(int argc, char *argv[])
 
   log_message("Doing closed wait test\n");
 
-  test_testAppInt_testWhileClosedWait(testAppInt_APP_OTHER, &IDL_E);
+  test_testAppInt_testWhileClosedWait(testAppInt_APP_OTHER);
 
   log_message("closed wait finished, checking for notices\n");
 

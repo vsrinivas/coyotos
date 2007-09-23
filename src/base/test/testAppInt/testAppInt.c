@@ -54,11 +54,6 @@ typedef union {
   uintptr_t icw;
 } _IDL_GRAND_SERVER_UNION;
 
-IDL_Environment IDL_E = {
-  .replyCap = CR_REPLYEPT,
-  .epID = 0,
-};
-
 typedef struct IDL_SERVER_Environment {
   uint64_t epID;
   uint32_t pp;
@@ -79,7 +74,7 @@ log_message(const char *message)
     .max = 256, .len = len, .data = (char *)message
   };
   
-  (void) coyotos_KernLog_log(testAppInt_APP_KERNLOG, str, &IDL_E);
+  (void) coyotos_KernLog_log(testAppInt_APP_KERNLOG, str);
 }
 
 static uint64_t 
@@ -111,7 +106,7 @@ static uint64_t
 HANDLE_test_testAppInt_testWhileClosedWait(ISE *ise)
 {
   log_message("testWhileClosedWait()");
-  coyotos_AppNotice_postNotice(testAppInt_APP_APPNOTICE, 0x2, &IDL_E);
+  coyotos_AppNotice_postNotice(testAppInt_APP_APPNOTICE, 0x2);
   log_message("testWhileClosedWait() appNotice posted");
   return (RC_coyotos_Cap_OK);
 }
@@ -120,7 +115,7 @@ static void
 HANDLE_test_testAppInt_testWhileOpenWait(ISE *ise)
 {
   log_message("testWhileOpenWait()");
-  coyotos_AppNotice_postNotice(testAppInt_APP_APPNOTICE, 0x4, &IDL_E);
+  coyotos_AppNotice_postNotice(testAppInt_APP_APPNOTICE, 0x4);
   log_message("testWhileOpenWait() appNotice posted");
 }
   
@@ -207,7 +202,7 @@ main(int argc, char *argv[])
   ISE env;
 
   log_message("testAppInt started;  posting notice");
-  coyotos_AppNotice_postNotice(testAppInt_APP_APPNOTICE, 0x1, &IDL_E);
+  coyotos_AppNotice_postNotice(testAppInt_APP_APPNOTICE, 0x1);
 
   ProcessRequests(&env);
   return 0;

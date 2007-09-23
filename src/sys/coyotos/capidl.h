@@ -48,6 +48,11 @@ typedef struct {
   uint32_t   pp;		/* OUT: protected payload */
 } IDL_Environment;
 
+/** @bug eventually, this needs to be thread-local */
+extern IDL_Environment *__IDL_Env;
+
+#define IDL_exceptCode (__IDL_Env->errCode)
+
 #else /* __ASSEMBLER__ */
 
 #define CAPIDL_U8(x)  x

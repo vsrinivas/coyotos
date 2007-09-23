@@ -39,11 +39,6 @@
 #define REPLY_IPW0_CAP(ldw, lastcap) \
   REPLY_IPW0(ldw) | IPW0_SC | IPW0_MAKE_LSC(lastcap)
 
-IDL_Environment _IDL_E = {
-  .replyCap = CR_REPLYEPT,
-  .epID = 0,
-};
-
 /** @brief Process a single request, rewriting @p pb to do the reply.
  * @p limits is the recieve buffer. 
  */
@@ -253,7 +248,7 @@ process_request(InvParameterBlock_t *pb)
     MUST_SUCCEED(coyotos_Process_identifyEntry(CR_SELF, CR_ARG0,
 					       &payload, 
 					       &epID, &isMe,
-					       &success, IDL_E));
+					       &success));
     
     bool result = (success && isMe);
     pb->pw[1] = result;
