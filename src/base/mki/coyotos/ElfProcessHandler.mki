@@ -61,10 +61,11 @@ module coyotos.ElfProcessHandler {
     def handler = util.make_running_process(bank, elf_space, elf_pc);
     def tools = Constructor.fresh_tools(bank);
     tools[TOOL.ELFFILE] = readfile(bank, file);
+    handler.capReg[rt.REG.TOOLS] = readonly(tools);
 
     def image = loadimage(bank, file);
     def prog = util.make_running_process(bank, weaken(image.space), image.pc);
-    prog.handler = handler;
+    prog.handler = enter(handler.capReg[rt.REG.INITEPT], 0);
 
     return prog;
   }
