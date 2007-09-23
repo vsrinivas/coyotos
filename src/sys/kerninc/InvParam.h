@@ -116,7 +116,7 @@ get_iparam64(InvParam_t* iParam)
     return get_pw(iParam->invoker, iParam->next_idw-1);
   }
   else if (sizeof(uintptr_t) == 4) {
-    if ( (alignof(uint64_t) == 8) && ((iParam->next_idw % 2) != 0) )
+    if ( (alignof(uintptr_t) == 8) && ((iParam->next_idw % 2) != 0) )
       iParam->next_idw++;
 
     iParam->next_idw += 2;
@@ -157,7 +157,7 @@ put_oparam64(InvParam_t* iParam, uint64_t v)
     iParam->opw[iParam->next_odw++] = v;
   }
   else if (sizeof(uintptr_t) == 4) {
-    if ( (alignof(uint64_t) == 8) && ((iParam->next_odw % 2) == 1) )
+    if ( (alignof(uintptr_t) == 8) && ((iParam->next_odw % 2) == 1) )
       iParam->next_odw++;
 
     iParam->opw[iParam->next_odw++] = ((uint32_t *) &v)[0];
