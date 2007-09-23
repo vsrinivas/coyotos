@@ -1615,7 +1615,7 @@ getBuiltinEnv(GCPtr<CoyImage> ci)
     // CAPABILITY ACCESSORS:
 
     builtins->addConstant("get_l2g", 
-			 new PrimFnValue("l2g", 1, 1, pf_memcap_ops));
+			 new PrimFnValue("get_l2g", 1, 1, pf_memcap_ops));
     builtins->addConstant("get_match", 
 			 new PrimFnValue("get_match", 1, 1, pf_memcap_ops));
 
