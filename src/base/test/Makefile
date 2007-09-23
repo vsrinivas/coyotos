@@ -26,6 +26,7 @@ DIRS=\
     testConstructor \
     testHandler \
     testLargeModel \
+    testMalloc \
     testPhysRange
 
 include $(COYOTOS_SRC)/build/make/makerules.mk

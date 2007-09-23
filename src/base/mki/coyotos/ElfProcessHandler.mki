@@ -37,8 +37,8 @@ module coyotos.ElfProcessHandler {
   };
 
   def elf_image = loadimage(PrimeBank, "coyotos/ElfProcessHandler");
-  def elf_space = weaken(vcs_image.space);
-  def elf_pc = vcs_image.pc;
+  def elf_space = weaken(elf_image.space);
+  def elf_pc = elf_image.pc;
 
   /* Make a process constructor for a given ELF file */
   export def make_constructor(bank, file) {
@@ -46,7 +46,7 @@ module coyotos.ElfProcessHandler {
     def cons_bank = Constructor.get_bank(cons);
 
     def image = loadimage(cons_bank, file);
-    Constructor.set_tool(cons, TOOL.ELFFILE, loadfile(cons_bank, file));
+    Constructor.set_tool(cons, TOOL.ELFFILE, readfile(cons_bank, file));
 
     def prog_cons = Constructor.create(bank, 
 				       weaken(image.space), image.pc, cons);
@@ -60,7 +60,7 @@ module coyotos.ElfProcessHandler {
 
     def handler = util.make_running_process(bank, elf_space, elf_pc);
     def tools = Constructor.fresh_tools(bank);
-    tools[TOOL.ELFFILE] = loadfile(bank, file);
+    tools[TOOL.ELFFILE] = readfile(bank, file);
 
     def image = loadimage(bank, file);
     def prog = util.make_running_process(bank, weaken(image.space), image.pc);
