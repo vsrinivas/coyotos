@@ -69,9 +69,8 @@ Model-independent
                  Slot     Use
 		 0	  Discrim capability
 		 1	  Sensory capability to ProtoSpace address space. 
-		 2	  Space bank verifier [provisional]
-		 3	  Constructor verifier
-		 4	  Audit log capability [if present]
+		 2	  Constructor verifier
+		 3	  Audit log capability [if present]
 
         C Runtime Environment Space Conventions
 

@@ -64,32 +64,47 @@ module coyotos.Constructor {
     BRAND = 0xffff  /* used to brand processes */
   };  
   
-  /* Our application registers.  The YIELD_* and VERIFIER registers are set
-   * up for pre-Sealed Constructors.
-   */
+  /* Our application registers. */
   export capreg APP {
-    YIELD_BRAND = rt.REG.APP0,
-    YIELD_TOOLS,
-    YIELD_PROTOSPACE,
-    YIELD_ADDRSPACE,
-    YIELD_HANDLER,
-    VERIFIER,
+    /* The YIELD_* registers are those used by the Constructor interfaces
+     * to create new yield or verify the existing of the constructor.  For
+     * pre-sealed Constructors, these are set up by setup_sealed(), below.
+     *
+     * The initialize() routine in Constructor.c notices that we're pre-sealed
+     * by the fact that the YIELD_BRAND register is non-Null.
+     */
+    YIELD_BRAND = rt.REG.APP0,  /* The Brand for our yield */
+    YIELD_TOOLS,		/* read-only cap to Tools CapPage */
+    YIELD_PROTOSPACE,		/* weak cap to ProtoSpace page */
+    YIELD_ADDRSPACE,		/* The address space (or constructor) */
+    YIELD_HANDLER,		/* The Handler (or constructor thereof) */
 
+    /* The BUILD_* registers are those used by the Builder interfaces to
+     * modify the Tools and ProtoSpace the process is started with.  When
+     * the Builder is seal()ed, these are overwritten with Null capabilities
+     * to prevent accidental modification.
+     */
     BUILD_TOOLS,	/* writable Tools capPage cap, NULL when sealed */
     BUILD_PROTOSPACE,   /* writable ProtoSpace Page cap, NULL when sealed */
 
+    /* A copy of the Discrim cap, pulled out of our Tools at initialization */
     DISCRIM,
-    SB_VERIFIER,
 
+    /* Temporary cap registers.
+     * 
+     * Used during Constructor.create(), initialization, etc.
+     */
     NEW_PROC,
     NEW_ENDPT,
     NEW_RENDPT,
     TMP
   };
   
-  /* The initial app registers as seen by ProtoSpace. */
+  /* The initial app registers as seen by ProtoSpace. These overlap those
+   * which may be smashed by runtime initialization.
+   */
   export capreg PROTOAPP {
-    ADDRSPACE = rt.REG.APP_UNSTABLE0,
+    ADDRSPACE = rt.REG.APP_SMASHED0,
     HANDLER,
     SCHEDULE
   };
@@ -106,26 +121,37 @@ module coyotos.Constructor {
   def protospace_image = loadimage(PrimeBank, "coyotos/ProtoSpace");
   def protospace = weaken(protospace_image.space);
   
+  /* The Constructor program image.
+   */
   def cons_image = loadimage(PrimeBank, "coyotos/Constructor");
-
   def cons_space = weaken(cons_image.space);
   def cons_pc = cons_image.pc;
 
-  /* There's a chicken-and-egg problem with the metaconstructor;  we allocate
-   * its process early, and set it up late, to get around the issue.
+  /* There's a chicken-and-egg problem with the metaconstructor; we need
+   * to know its brand before we can create any constructors, but the
+   * metaconstructor is itself a constructor. 
+   *
+   * So we allocate its process early, and set it up late, to get around
+   * the issue.
    */
-  def metacon_proc = util.make_running_process(PrimeBank, cons_space, cons_pc);
-  
+  def metacon_proc = util.make_running_process(PrimeBank,
+					       cons_space,
+					       cons_pc);
+ 
+  /* The constructor brand is a distinguished entry cap to
+   * the MetaConstructor. 
+   */
   def constructor_brand = enter(metacon_proc.capReg[rt.REG.INITEPT],
 				PP.BRAND);
-  
+ 
+  /* The Verifier key is just a Verifier entry cap to the MetaConstructor. */ 
   export def Verifier = enter(metacon_proc.capReg[rt.REG.INITEPT], 
 			      PP.Verifier);
-  
+ 
+  /* The default tools everyone starts with. */ 
   def primordial_tools = readonly(new CapPage(PrimeBank));
   primordial_tools[rt.TOOL.DISCRIM] = Discrim();
   primordial_tools[rt.TOOL.PROTOSPACE] = protospace;
-  primordial_tools[rt.TOOL.SPACEBANK_VERIFY] = sb.Verifier;
   primordial_tools[rt.TOOL.CONSTRUCTOR_VERIFY] = Verifier;
   primordial_tools[rt.TOOL.AUDIT_LOG] = NullCap();
 
@@ -144,7 +170,7 @@ module coyotos.Constructor {
 
     def proc = util.make_running_process(bank, weaken(my_protospace), 8);
 
-    proc.capReg[rt.REG.TOOLS] = readonly(dup(bank, primordial_tools));
+    proc.capReg[rt.REG.TOOLS] = readonly(fresh_tools(bank));
     
     proc.capReg[PROTOAPP.ADDRSPACE] = as_cons;
     proc.capReg[PROTOAPP.HANDLER] = handler_cons;
@@ -161,8 +187,8 @@ module coyotos.Constructor {
    *
    * set_tool() can be used to set up its tool page.
    */
-  def setup(bank, proc, as, pc, handler) {
-    def my_tools = dup(bank, primordial_tools);
+  def setup_sealed_constructor(bank, proc, as, pc, handler) {
+    def my_tools = fresh_tools(bank);
     def my_protospace = dup(bank, protospace);
     
     def initEpt = proc.capReg[rt.REG.INITEPT];
@@ -178,22 +204,13 @@ module coyotos.Constructor {
     proc.capReg[rt.REG.RUNTIME] = NullCap();
 
     /* Set up the YIELD app registers for the Constructor so that it
-     * can initialize as Sealed.
+     * will initialize as Sealed.
      */
     proc.capReg[APP.YIELD_TOOLS] = readonly(my_tools);
     proc.capReg[APP.YIELD_PROTOSPACE] = weaken(my_protospace);
     proc.capReg[APP.YIELD_ADDRSPACE] = as;
     proc.capReg[APP.YIELD_HANDLER] = handler;
     proc.capReg[APP.YIELD_BRAND] = enter(initEpt, PP.BRAND);
-
-    /* set up the verifier;  for ProtoSpace, it's just self. */    
-    if (proc.capReg[APP.YIELD_BRAND] == proc.brand) {
-      proc.capReg[APP.VERIFIER] = proc;
-    } else {
-      def verifier = new Process(bank);
-      verifier.brand = proc.capReg[APP.YIELD_BRAND];
-      proc.capReg[APP.VERIFIER] = verifier;
-    }
 
     /* Return the Constructor facet */
     return enter(initEpt, PP.Constructor);
@@ -210,7 +227,8 @@ module coyotos.Constructor {
     
     def image = loadimage(bank, file);
     
-    return setup(bank, proc, weaken(image.space), image.pc, handler);
+    return setup_sealed_constructor(bank, proc,
+				    weaken(image.space), image.pc, handler);
   }
   
   /* Creates a constructor using a new child of *src_bank*.  The constructor
@@ -227,7 +245,7 @@ module coyotos.Constructor {
     def bank = new Bank(src_bank);
     def proc = util.make_running_process(src_bank, cons_space, cons_pc);
     
-    return setup(bank, proc, as, pc, handler);
+    return setup_sealed_constructor(bank, proc, as, pc, handler);
   }
   
   /* Sets the tool at offset *offset* in the tools space for the yield of
@@ -246,8 +264,9 @@ module coyotos.Constructor {
    * yield runs the constructor program.
    *
    * Because of the way we set up constructor_brand, it looks like a child
-   * of itself.
+   * of itself.  So Verifier.verifyYield(MetaConstructor) will succeed.
    */
   export def MetaConstructor = 
-    setup(PrimeBank, metacon_proc, cons_space, cons_pc, NullCap());
+    setup_sealed_constructor(PrimeBank, metacon_proc, 
+			     cons_space, cons_pc, NullCap());
 }

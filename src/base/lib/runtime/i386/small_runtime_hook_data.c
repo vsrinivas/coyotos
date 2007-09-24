@@ -9,11 +9,11 @@
 #include "coyotos.TargetInfo.h"
 
 /* n must be < 4 */
-#define CR_UNSTABLE(n)	CR_APP(CRN_LASTAPP_STABLE - CRN_FIRSTAPP + 1 + (n))
+#define CR_SMASHED(n)	CR_APP(CRN_LASTAPP_STABLE - CRN_FIRSTAPP + 1 + (n))
 
-#define CR_NEWADDR	CR_UNSTABLE(0)
-#define CR_NEWPAGE	CR_UNSTABLE(1)
-#define CR_OLDADDR	CR_UNSTABLE(2)
+#define CR_NEWADDR	CR_SMASHED(0)
+#define CR_NEWPAGE	CR_SMASHED(1)
+#define CR_OLDADDR	CR_SMASHED(2)
 
 #define MY_IPW0(dw, sc) \
     (IPW0_CW|IPW0_SP|IPW0_RP|IPW0_RC|IPW0_SC| \

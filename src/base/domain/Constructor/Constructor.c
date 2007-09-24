@@ -51,7 +51,6 @@
 #define CR_NEW_PROC    		coyotos_Constructor_APP_NEW_PROC
 #define CR_NEW_ENDPT		coyotos_Constructor_APP_NEW_ENDPT
 #define CR_NEW_RENDPT		coyotos_Constructor_APP_NEW_RENDPT
-#define CR_VERIFIER		coyotos_Constructor_APP_VERIFIER
 #define CR_YIELD_TOOLS		coyotos_Constructor_APP_YIELD_TOOLS
 #define CR_YIELD_BRAND		coyotos_Constructor_APP_YIELD_BRAND
 #define CR_YIELD_ADDRSPACE	coyotos_Constructor_APP_YIELD_ADDRSPACE
@@ -60,7 +59,6 @@
 #define CR_BUILD_TOOLS		coyotos_Constructor_APP_BUILD_TOOLS
 #define CR_BUILD_PROTOSPACE 	coyotos_Constructor_APP_BUILD_PROTOSPACE
 #define CR_DISCRIM		coyotos_Constructor_APP_DISCRIM
-#define CR_SB_VERIFIER		coyotos_Constructor_APP_SB_VERIFIER
 #define CR_TMP			coyotos_Constructor_APP_TMP
 
 typedef union {
@@ -79,9 +77,10 @@ bool isSealed = false;
 bool isConfined = true;
 
 typedef struct IDL_SERVER_Environment {
-  bool isBuilder;
-  bool isConstructor;
-  bool haveReturn;	/**< @brief can we invoke CR_RETURN? */
+  uint32_t pp;
+  uint64_t epID;
+
+  bool returnConsumed;	/**< @brief was CR_RETURN consumed? */
 } ISE;
 
 ISE constructor_ISE = {
@@ -97,13 +96,6 @@ cap_is_confined(caploc_t cap)
 
   // is it inherently discreet?
   if (!coyotos_Discrim_isDiscreet(CR_DISCRIM, cap, &result))
-    return false;
-
-  if (result)
-    return true;
-
-  // is it the SpaceBank verifier?
-  if (!coyotos_Discrim_compare(CR_DISCRIM, cap, CR_SB_VERIFIER, &result))
     return false;
 
   if (result)
@@ -137,11 +129,57 @@ cap_is_confined(caploc_t cap)
   return (result);
 }
 
+/* @brief Check if our yield will be confined.  If we aren't sealed
+ * yet, we must not be confined.
+ */
+static bool
+constructor_is_confined(void)
+{
+  if (!isSealed)
+    return false;
+
+  /* check to see if we are confined */
+  if (!cap_is_confined(CR_YIELD_PROTOSPACE) ||
+      !cap_is_confined(CR_YIELD_ADDRSPACE) ||
+      !cap_is_confined(CR_YIELD_HANDLER))
+    return false;
+  
+  size_t idx = 0;
+  while (coyotos_AddressSpace_getSlot(CR_YIELD_TOOLS, idx, CR_TMP)) {
+    if (!cap_is_confined(CR_TMP))
+      return false;
+    idx++;
+  }
+
+  return true;
+}
+
+/* You should supply a function that selects an interface
+ * type based on the incoming endpoint ID and protected
+ * payload */
+static inline uint64_t 
+choose_if(uint64_t epID, uint32_t pp)
+{
+  switch (pp) {
+  case coyotos_Constructor_PP_Builder:
+    return IKT_coyotos_Builder;
+
+  case coyotos_Constructor_PP_Constructor:
+    return IKT_coyotos_Constructor;
+
+  case coyotos_Constructor_PP_Verifier:
+    return IKT_coyotos_Verifier;
+
+  default:
+    return IKT_coyotos_Cap;
+  }
+}
+
 IDL_SERVER_HANDLER_PREDECL uint64_t
 HANDLE_coyotos_Cap_destroy(ISE *ise)
 {
   /* Only builder caps can destroy the constructor. */
-  if (!ise->isBuilder)
+  if (ise->pp != coyotos_Constructor_PP_Builder)
     return (RC_coyotos_Cap_NoAccess);
 
   if (!coyotos_SpaceBank_destroyBankAndReturn(CR_SPACEBANK,
@@ -156,19 +194,14 @@ HANDLE_coyotos_Cap_destroy(ISE *ise)
 IDL_SERVER_HANDLER_PREDECL uint64_t
 HANDLE_coyotos_Cap_getType(uint64_t *out, ISE *_env)
 {
-  if (_env->isBuilder)
-    *out = IKT_coyotos_Builder;
-  else if (_env->isConstructor)
-    *out = IKT_coyotos_Constructor;
-  else
-    *out = IKT_coyotos_Verifier;
+  *out = choose_if(_env->epID, _env->pp);
   return RC_coyotos_Cap_OK;
 }
 
 IDL_SERVER_HANDLER_PREDECL uint64_t
 HANDLE_coyotos_Constructor_isYieldConfined(bool *out, ISE *_env)
 {
-  *out = isConfined;
+  *out = (isSealed && isConfined);
   return RC_coyotos_Cap_OK;
 }
 
@@ -179,7 +212,7 @@ HANDLE_coyotos_Constructor_create(caploc_t bank, caploc_t sched,
 {
   bool success = false;
 
-  if (!coyotos_SpaceBank_verifyBank(CR_SB_VERIFIER, bank, &success) ||
+  if (!coyotos_SpaceBank_verifyBank(CR_SPACEBANK, bank, &success) ||
       !success) {
     return (RC_coyotos_Cap_RequestError);
   }
@@ -225,11 +258,11 @@ HANDLE_coyotos_Constructor_create(caploc_t bank, caploc_t sched,
       !coyotos_Process_setCapReg(CR_NEW_PROC, 
 				 CR_SPACEBANK.fld.loc, bank) ||
       !coyotos_Process_setCapReg(CR_NEW_PROC, 
-			      CR_TOOLS.fld.loc, CR_YIELD_TOOLS) ||
+				 CR_TOOLS.fld.loc, CR_YIELD_TOOLS) ||
       !coyotos_Process_setCapReg(CR_NEW_PROC, 
-			      CR_INITEPT.fld.loc, CR_NEW_ENDPT) ||
+				 CR_INITEPT.fld.loc, CR_NEW_ENDPT) ||
       !coyotos_Process_setCapReg(CR_NEW_PROC, 
-			      CR_RUNTIME.fld.loc, runtime) ||
+				 CR_RUNTIME.fld.loc, runtime) ||
       /* set up the protospace arguments */
       !coyotos_Process_setCapReg(CR_NEW_PROC,
 	coyotos_Constructor_PROTOAPP_ADDRSPACE.fld.loc, 
@@ -241,9 +274,7 @@ HANDLE_coyotos_Constructor_create(caploc_t bank, caploc_t sched,
 	coyotos_Constructor_PROTOAPP_SCHEDULE.fld.loc, 
         sched) ||
       /* set it up to return to our caller */
-      !coyotos_Process_setCapReg(CR_NEW_PROC, 
-			      CR_RETURN.fld.loc, 
-			      _env->haveReturn ? CR_RETURN : CR_NULL) ||
+      !coyotos_Process_setCapReg(CR_NEW_PROC, CR_RETURN.fld.loc, CR_RETURN) ||
       /* set it running */
       !coyotos_Process_resume(CR_NEW_PROC, 0)) {
     errcode_t err = IDL_exceptCode;
@@ -253,7 +284,7 @@ HANDLE_coyotos_Constructor_create(caploc_t bank, caploc_t sched,
   }
 
   /* Do not return to our caller; we've handed CR_RETURN to our new child */
-  _env->haveReturn = 0;
+  _env->returnConsumed = 1;
 
   return RC_coyotos_Cap_OK;
 }
@@ -277,8 +308,12 @@ HANDLE_coyotos_Verifier_verifyYield(caploc_t cap, bool *result, ISE *_env)
   unsigned long long epID = 0;
   bool isMe = false;
 
-  if (!coyotos_Process_identifyEntry(CR_VERIFIER, cap, &pp, &epID,
-				     &isMe, &identifyResult)) {
+  /* Check if the cap is an Entry capability to a Process with our Yield's
+   * brand.
+   */
+  if (!coyotos_Process_identifyEntryWithBrand(CR_SELF, cap, CR_YIELD_BRAND,
+					      &pp, &epID, &isMe,
+					      &identifyResult)) {
     return IDL_exceptCode;
   }
   *result = identifyResult;
@@ -291,9 +326,6 @@ HANDLE_coyotos_Builder_setHandler(caploc_t handler, ISE *_env)
   if (isSealed)
     return (RC_coyotos_Builder_Sealed);
 
-  if (!cap_is_confined(handler))
-    isConfined = false;
-
   cap_copy(CR_YIELD_HANDLER, handler);
 
   return RC_coyotos_Cap_OK;
@@ -304,9 +336,6 @@ HANDLE_coyotos_Builder_setSpace(caploc_t space, ISE *_env)
 {
   if (isSealed)
     return (RC_coyotos_Builder_Sealed);
-
-  if (!cap_is_confined(space))
-    isConfined = false;
 
   cap_copy(CR_YIELD_ADDRSPACE, space);
 
@@ -344,9 +373,6 @@ HANDLE_coyotos_Builder_setTool(uint32_t slot, caploc_t tool, ISE *_env)
   if (isSealed)
     return (RC_coyotos_Builder_Sealed);
 
-  if (!cap_is_confined(tool))
-    isConfined = false;
-
   if (!coyotos_AddressSpace_setSlot(CR_BUILD_TOOLS, slot, tool))
     return IDL_exceptCode;
 
@@ -361,34 +387,16 @@ HANDLE_coyotos_Builder_seal(caploc_t _retVal, ISE *_env)
 				     _retVal))
     return RC_coyotos_Cap_RequestError;
 
-  /* null out the writable versions of Tools and ProtoSpace */
+  /* null out the writable versions of Tools and ProtoSpace.
+   * This prevents anyone from adding new holes to the Tools node.
+   */
   cap_copy(CR_BUILD_TOOLS, CR_NULL);
   cap_copy(CR_BUILD_PROTOSPACE, CR_NULL);
 
   isSealed = 1;
+  isConfined = constructor_is_confined();
 
   return RC_coyotos_Cap_OK;
-}
-
-/* You should supply a function that selects an interface
- * type based on the incoming endpoint ID and protected
- * payload */
-static inline uint64_t 
-choose_if(uint64_t epID, uint32_t pp)
-{
-  switch (pp) {
-  case coyotos_Constructor_PP_Builder:
-    return IKT_coyotos_Builder;
-
-  case coyotos_Constructor_PP_Constructor:
-    return IKT_coyotos_Constructor;
-
-  case coyotos_Constructor_PP_Verifier:
-    return IKT_coyotos_Verifier;
-
-  default:
-    return IKT_coyotos_Cap;
-  }
 }
 
 bool
@@ -398,32 +406,18 @@ initialize(void)
   if (!coyotos_AddressSpace_getSlot(CR_TOOLS, TOOL_DISCRIM, CR_DISCRIM))
     goto fail;
 
-  if (!coyotos_AddressSpace_getSlot(CR_TOOLS, 
-				    TOOL_SPACEBANK_VERIFY,
-				    CR_SB_VERIFIER))
-    goto fail;
-
-  coyotos_Discrim_capClass class;
+  coyotos_Discrim_capClass capClass;
 
   /* Check to see if we're already sealed; if the BRAND is set up, we are */
-  if (!coyotos_Discrim_classify(CR_DISCRIM, CR_YIELD_BRAND, &class))
+  if (!coyotos_Discrim_classify(CR_DISCRIM, CR_YIELD_BRAND, &capClass))
     goto fail;
 
-  if (class != coyotos_Discrim_capClass_clNull) {
+  if (capClass != coyotos_Discrim_capClass_clNull) {
+    /* we were setup by Constructor.setup_sealed_constructor() to be a
+     * pre-sealed bank.
+     */
     isSealed = 1;
-
-    /* check to see if we are confined */
-    if (!cap_is_confined(CR_YIELD_PROTOSPACE) ||
-	!cap_is_confined(CR_YIELD_ADDRSPACE) ||
-	!cap_is_confined(CR_YIELD_HANDLER))
-      isConfined = false;
-
-    size_t idx = 0;
-    while (coyotos_AddressSpace_getSlot(CR_YIELD_TOOLS, idx, CR_TMP)) {
-      if (!cap_is_confined(CR_TMP))
-	isConfined = false;
-      idx++;
-    }
+    isConfined = constructor_is_confined();
 
     return true;  /* all set up; no need to send an entry cap */
   }
@@ -450,7 +444,7 @@ initialize(void)
       !coyotos_Memory_reduce(CR_BUILD_PROTOSPACE, 
 			     coyotos_Memory_restrictions_readOnly,
 			     CR_YIELD_PROTOSPACE) ||
-      /* Make a writable copy of TOOLs in CR_BUILD_TOOLS, and a read-only
+      /* Make a writable copy of TOOLS in CR_BUILD_TOOLS, and a read-only
        * version in CR_YIELD_TOOLS
        */
       !coyotos_AddressSpace_copyFrom(CR_BUILD_TOOLS,
@@ -459,20 +453,17 @@ initialize(void)
       !coyotos_Memory_reduce(CR_BUILD_TOOLS, 
 			     coyotos_Memory_restrictions_readOnly,
 			     CR_YIELD_TOOLS) ||
-      /* Set up our brand, and allocate a Process cap as a Verifier for it */
+      /* Set up our brand */
       !coyotos_Endpoint_makeEntryCap(CR_INITEPT, 
 				     coyotos_Constructor_PP_BRAND, 
 				     CR_YIELD_BRAND) ||
-      !coyotos_SpaceBank_allocProcess(CR_SPACEBANK,
-				      CR_YIELD_BRAND,
-				      CR_VERIFIER) ||
       /* Set up our Builder entry point */
       !coyotos_Endpoint_makeEntryCap(CR_INITEPT, 
 				     coyotos_Constructor_PP_Builder, 
 				     CR_REPLY0)) 
     goto fail;
 
-
+  /* Send our Builder cap to our caller */
   reply_coyotos_Constructor_create(CR_RETURN, CR_REPLY0);
 
   return true;
@@ -502,7 +493,7 @@ ProcessRequests(struct IDL_SERVER_Environment *_env)
   /* no send phase for initial invocation */
   gsu.icw = 0;
 
-  _env->haveReturn = 0;
+  _env->returnConsumed = 0;
 
   /* set up unchanging recieve state */
   gsu.pb.rcvCap[0] = CR_RETURN;
@@ -516,12 +507,18 @@ ProcessRequests(struct IDL_SERVER_Environment *_env)
   gsu.pb.sndPtr = 0;
 
   for(;;) {
+    /* The create() call consumes CR_RETURN;  if that's happened, there's
+     * nothing to return, so clear the invocation word.
+     */
+    if (_env->returnConsumed)
+      gsu.icw = 0;
+
     gsu.icw &= (IPW0_LDW_MASK|IPW0_LSC_MASK
         |IPW0_SG|IPW0_SP|IPW0_RC|IPW0_SC|IPW0_EX);
     gsu.icw |= IPW0_MAKE_NR(sc_InvokeCap)|IPW0_RP|IPW0_AC
         |IPW0_MAKE_LRC(3)|IPW0_NB|IPW0_CO;
 
-    gsu.pb.u.invCap = (_env->haveReturn)? CR_RETURN : CR_NULL;
+    gsu.pb.u.invCap = CR_RETURN;
 
     invoke_capability(&gsu.pb);
 
@@ -532,12 +529,17 @@ ProcessRequests(struct IDL_SERVER_Environment *_env)
     gsu.pb.sndCap[2] = CR_REPLY2;
     gsu.pb.sndCap[3] = CR_REPLY3;
 
-    /* Check if they sent us a return cap */
-    _env->haveReturn = !!(gsu.icw & IPW0_SC);
+    /* Set up our server environment */
+    _env->returnConsumed = 0;
+    _env->epID = gsu.pb.epID;
+    _env->pp = gsu.pb.u.pp;
 
-    /* set up type based on pp */
-    _env->isBuilder = (gsu.pb.u.pp == coyotos_Constructor_PP_Builder);
-    _env->isConstructor = (gsu.pb.u.pp == coyotos_Constructor_PP_Constructor);
+    if ((gsu.icw & IPW0_SC) == 0) {
+      /* protocol violation -- reply slot unpopulated. */
+      gsu.icw = 0;
+      gsu.pb.sndLen = 0;
+      continue;
+    }
 
     /* and finally, dispatch the request. */
     switch(choose_if(gsu.pb.epID, gsu.pb.u.pp)) {

@@ -33,7 +33,7 @@ module coyotos.RunTime {
     RUNTIME = 6,
     ADDRHANDLER = 7,
     APP0 = 8,  /* 8..23 inclusive are application-use */
-    APP_UNSTABLE0 = 20, /* 20..23 are smashed during initialization */
+    APP_SMASHED0 = 20, /* 20..23 are smashed during initialization */
     REPLY0 = 24,
     REPLY1 = 25,
     REPLY2 = 26,
@@ -57,7 +57,6 @@ module coyotos.RunTime {
   export enum TOOL {
     DISCRIM = 0,
     PROTOSPACE,
-    SPACEBANK_VERIFY,
     CONSTRUCTOR_VERIFY,
     AUDIT_LOG,
     APP0

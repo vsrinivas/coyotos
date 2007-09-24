@@ -29,12 +29,12 @@
 #include <idl/coyotos/SpaceBank.h>
 
 /* n must be < 4 */
-#define CR_UNSTABLE(n)	CR_APP(CRN_LASTAPP_STABLE - CRN_FIRSTAPP + 1 + (n))
+#define CR_SMASHED(n)	CR_APP(CRN_LASTAPP_STABLE - CRN_FIRSTAPP + 1 + (n))
 
-#define CR_NEWADDR	CR_UNSTABLE(0) /* new address space */
-#define CR_NEWPAGE	CR_UNSTABLE(1) /* available for new page */
-#define CR_OLDADDR	CR_UNSTABLE(2) /* old address space */
-#define CR_OLDPAGE	CR_UNSTABLE(3) /* old page */
+#define CR_NEWADDR	CR_SMASHED(0) /* new address space */
+#define CR_NEWPAGE	CR_SMASHED(1) /* available for new page */
+#define CR_OLDADDR	CR_SMASHED(2) /* old address space */
+#define CR_OLDPAGE	CR_SMASHED(3) /* old page */
 
 /* HACK to make sure sbrk is included if the runtime hook is included. */
 extern char *sbrk(size_t);
