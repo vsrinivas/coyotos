@@ -803,8 +803,8 @@ pf_guard_cap(PrimFnValue& pfv,
 
 GCPtr<Value>
 pf_memcap_ops(PrimFnValue& pfv,
-	     InterpState& is,
-	     CVector<GCPtr<Value> >& args)
+	      InterpState& is,
+	      CVector<GCPtr<Value> >& args)
 {
   GCPtr<CapValue> v_cap = needAnyCapArg(is, pfv.nm, args, 0);
 
@@ -824,6 +824,39 @@ pf_memcap_ops(PrimFnValue& pfv,
 
   if (pfv.nm == "get_match")
     return new IntValue(match);
+
+  is.errStream << is.curAST->loc << " "
+	       << "Buggered mkimage binding of \""
+	       << pfv.nm << "\" in builtin.cxx.\n";
+  THROW(excpt::BadValue, "Bad interpreter result");
+}
+
+GCPtr<Value>
+pf_mk_raw_obcap(PrimFnValue& pfv,
+		InterpState& is,
+		CVector<GCPtr<Value> >& args)
+{
+  GCPtr<IntValue> v_oid = needIntArg(is, pfv.nm, args, 0);
+  oid_t oid = v_oid->bn.as_uint64();
+  const oid_t physOidStart = 0xff00000000000000ull;
+
+  if (pfv.nm == "PageCap")
+    return new CapValue(is.ci, is.ci->CiCap(ct_Page, oid));
+
+  if (pfv.nm == "PhysPageCap")
+    return new CapValue(is.ci, is.ci->CiCap(ct_Page, oid + physOidStart));
+
+  if (pfv.nm == "CapCap")
+    return new CapValue(is.ci, is.ci->CiCap(ct_CapPage, oid));
+
+  if (pfv.nm == "GptCap")
+    return new CapValue(is.ci, is.ci->CiCap(ct_GPT, oid));
+
+  if (pfv.nm == "ProcessCap")
+    return new CapValue(is.ci, is.ci->CiCap(ct_Process, oid));
+
+  if (pfv.nm == "EndpointCap")
+    return new CapValue(is.ci, is.ci->CiCap(ct_Endpoint, oid));
 
   is.errStream << is.curAST->loc << " "
 	       << "Buggered mkimage binding of \""
@@ -1527,6 +1560,13 @@ getBuiltinEnv(GCPtr<CoyImage> ci)
 
     // CONSTRUCTORS FOR CAPABILITIES:
 
+    // Object capability allocators:
+    builtins->addConstant("PageCap",
+			 new PrimFnValue("PageCap", 1, 1, pf_mk_raw_obcap));
+
+    builtins->addConstant("PhysPageCap",
+			 new PrimFnValue("PhysPageCap", 1, 1, pf_mk_raw_obcap));
+
     // Window capability fabrication:
     builtins->addConstant("Window", 
 			 new PrimFnValue("Window", 1, 1, pf_mk_window));
@@ -1659,7 +1699,7 @@ getBuiltinEnv(GCPtr<CoyImage> ci)
 					 pf_set_page_uint64));
 
     {
-      // Environment for storage object constructors capabilities:
+      // Environment for storage object constructor capabilities:
       GCPtr<Environment<Value> > ctors = new Environment<Value>;
 
       // Bank fabrication

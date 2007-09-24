@@ -93,7 +93,7 @@ CoyImage::CoyImage(uint32_t archNo)
 }
 
 capability
-CoyImage::CiCap(CapType ct, size_t oid)
+CoyImage::CiCap(CapType ct, oid_t oid)
 {
   capability cap;
 

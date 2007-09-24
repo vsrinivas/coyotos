@@ -179,7 +179,7 @@ public:
   ///
   /// This is machine dependent because the l2v value for page
   /// capabilities is architecture dependent.
-  capability CiCap(CapType ct, size_t oid = 0);
+  capability CiCap(CapType ct, oid_t oid = 0);
 
   bool isBankCap(capability cap);
 
