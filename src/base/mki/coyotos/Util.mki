@@ -119,4 +119,11 @@ module coyotos.Util {
 
     return make_running_process(bank, aSpace, image.pc);
   }
+
+  export def make_gpt(bank, l2v, l2g) {
+    def	gpt = guard(new GPT(bank), 0, l2g);
+    gpt.l2v = l2v;
+
+    return gpt;
+  }
 }

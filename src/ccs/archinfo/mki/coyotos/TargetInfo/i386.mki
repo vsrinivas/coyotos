@@ -2,7 +2,10 @@ module coyotos.TargetInfo.i386 {
   export enum {
     large_stack_pointer   = 0x07fff000,
     small_stack_pointer   = 0x2000,
-    small_stack_page_addr = 0x1000
+    small_stack_page_addr = 0x1000,
+
+    page_l2g = 12,
+    page_size = 0x1000
   };
 }
 
