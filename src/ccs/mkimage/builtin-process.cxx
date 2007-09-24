@@ -150,7 +150,7 @@ ProcessSet(PrimFieldValue& pfv,
     return;
   }
 
-  assert(false && "Missing or unknown field name");
+  THROW(excpt::BadValue, "Unknown field name");
 }
 
 // Get field values:
@@ -197,7 +197,7 @@ ProcessGet(PrimFieldValue& pfv)
     return new CapValue(ci, ob->v.capReg[pfv.ndx]);
   }
 
-  assert(false && "Missing or unknown field name");
+  THROW(excpt::BadValue, "Unknown field name");
 }
 
 GCPtr<Environment<Value> > 

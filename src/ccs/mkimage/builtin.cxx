@@ -1295,6 +1295,9 @@ pf_mk_misccap(PrimFnValue& pfv,
   if (pfv.nm == "ObStore")
     return new CapValue(is.ci, is.ci->CiCap(ct_ObStore));
 
+  if (pfv.nm == "IoPerm")
+    return new CapValue(is.ci, is.ci->CiCap(ct_IOPriv));
+
   if (pfv.nm == "PinCtl")
     return new CapValue(is.ci, is.ci->CiCap(ct_PinCtl));
 
