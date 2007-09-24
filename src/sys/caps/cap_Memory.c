@@ -25,6 +25,7 @@
 #include <coyotos/syscall.h>
 #include <hal/syscall.h>
 #include <idl/coyotos/Memory.h>
+#include <idl/coyotos/Range.h>
 
 extern void cap_Cap(InvParam_t* iParam);
 
@@ -51,11 +52,20 @@ cap_Memory(InvParam_t *iParam)
 
       sched_commit_point();
 
-      if (restr & ~CAP_RESTR_MASK) {
-	InvErrorMessage(iParam, RC_coyotos_Cap_RequestError);
-	return;
+      bool valid = ((restr & ~CAP_RESTR_MASK) == 0);
+      if ( valid && (restr & (CAP_RESTR_OP|CAP_RESTR_NC)) ) {
+	// This is a bit tricky. The NC and OP bits are meaningful
+	// only for GPTs. We re-use those bit positions for
+	// cacheability hints, but only for physical data pages:
+	valid = false;
+	if (iParam->iCap.cap->type == ct_GPT)
+	  valid = true;
+	else if ((iParam->iCap.cap->type == ct_Page) &&
+		 (iParam->iCap.cap->u2.oid >= coyotos_Range_physOidStart))
+	  valid = true;
       }
-      else if ((restr & CAP_RESTR_OP) && iParam->iCap.cap->type != ct_GPT) {
+
+      if (!valid) {
 	InvErrorMessage(iParam, RC_coyotos_Cap_RequestError);
 	return;
       }

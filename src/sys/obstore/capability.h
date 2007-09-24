@@ -59,6 +59,14 @@ typedef uint32_t CapType;
 #define CAP_RESTR_OP       0x08
 /** @brief capability restr field bit for no-call restriction */
 #define CAP_RESTR_NC       0x10
+
+/** @brief capability restr field bit for cache-disable restriction,
+ * applies only to physical page capabilities. */
+#define CAP_RESTR_CD       0x08
+/** @brief capability restr field bit for write-through restriction,
+ * applies only to physical page capabilities. */
+#define CAP_RESTR_WT       0x10
+
 /** @brief capability restr field bit for resume-only process cap */
 #define CAP_RESTR_RESTART  0x10
 
@@ -76,7 +84,7 @@ typedef struct capability {
   uint32_t swizzled  : 1;
 
   /** @brief Capability restrictions */
-  uint32_t restr :5;
+  uint32_t restr : 5;
 
   uint32_t allocCount : 20;	/**< @brief Holds "slot" in local window cap.
 				 * Not for window or misc cap */

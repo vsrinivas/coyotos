@@ -177,8 +177,8 @@ installPAE(pte_t *pte, kpa_t content, uint8_t restr, bool isCapPage)
       (isCapPage) ? 0 : 1,		/* Valid */
       (restr & CAP_RESTR_RO)? 0 : 1,	/* writable */
       1,				/* user-accessable */
-      0,				/* write-through */
-      0,				/* cache disable */
+      (restr & CAP_RESTR_WT) ? 1 : 0,   /* write-through */
+      (restr & CAP_RESTR_CD) ? 1 : 0,   /* cache disable */
       1,				/* accessed */
       1,				/* dirty */
       0,				/* large page */
@@ -317,8 +317,8 @@ installPTE(pte_t *pte, kpa_t content, uint8_t restr, bool isCapPage)
       (isCapPage) ? 0 : 1,		/* Valid */
       (restr & CAP_RESTR_RO)? 0 : 1,	/* writable */
       1,				/* user-accessable */
-      0,				/* write-through */
-      0,				/* cache disable */
+      (restr & CAP_RESTR_WT) ? 1 : 0,   /* write-through */
+      (restr & CAP_RESTR_CD) ? 1 : 0,   /* cache disable */
       1,				/* accessed */
       1,				/* dirty */
       0,				/* large page */
@@ -343,7 +343,7 @@ const PageTableLevel paePtbl[] = {
     mapPAE, readPAE, canaryPAE, installPAE_PDPE, unmapPAE },
   { 30, 1, 21, 0,
     mapPAE, readPAE, canaryPAE, installPAE, unmapPAE },
-  { 21, 0, 12, CAP_RESTR_RO|CAP_RESTR_NX,
+  { 21, 0, 12, CAP_RESTR_RO|CAP_RESTR_NX|CAP_RESTR_CD|CAP_RESTR_WT,
     mapPAE, readPAE, canaryPAE, installPAE, unmapPAE },
   { 0 }
 };
@@ -351,7 +351,7 @@ const PageTableLevel paePtbl[] = {
 const PageTableLevel normPtbl[] = {
   { 32, 1, 22, 0,
     mapPTE, readPTE, canaryPTE, installPTE, unmapPTE },
-  { 22, 0, 12, CAP_RESTR_RO,
+  { 22, 0, 12, CAP_RESTR_RO|CAP_RESTR_CD|CAP_RESTR_WT,
     mapPTE, readPTE, canaryPTE, installPTE, unmapPTE },
   { 0 }
 };
@@ -374,6 +374,8 @@ do_pageFault(Process *base, uintptr_t addr_arg,
 
   size_t restr_mask = 
     CAP_RESTR_RO | CAP_RESTR_WK | (NXSupported ? CAP_RESTR_NX : 0);
+  size_t leaf_restr_mask = 
+    CAP_RESTR_CD | CAP_RESTR_WT | restr_mask;
 
   result = memwalk(&base->state.addrSpace, addr, wantWrite, &mwr);
 
@@ -407,7 +409,7 @@ do_pageFault(Process *base, uintptr_t addr_arg,
    * us from needing Depend entries that target Processes.
    */
 
-  restr |= mwe->restr & restr_mask;
+  restr |= (mwe->restr & restr_mask);
   minl2 = min(minl2, mwe->l2g);
 
   const PageTableLevel *curPT = UsingPAE? paePtbl : normPtbl;
@@ -468,7 +470,7 @@ do_pageFault(Process *base, uintptr_t addr_arg,
       }
 
       mwe++;
-      restr |= mwe->restr & restr_mask;
+      restr |= (mwe->restr & restr_mask);
       minl2 = min(minl2, mwe->l2g);
       continue;
     }
@@ -482,6 +484,12 @@ do_pageFault(Process *base, uintptr_t addr_arg,
 	     mwe->entry->hdr.ty == ot_CapPage);
       rm_install_pte_page((Page *)mwe->entry, curmap, slot);
       
+      // This might be a frame named by a physical page, in which case
+      // we need to incorporate the CAP_RESTR_CD and CAP_RESTER_WT
+      // bits at this stage. Those bits *only* apply to leaf pages, so
+      // we can add them here.
+      restr |= (mwe->restr & leaf_restr_mask);
+
       // To install a writable mapping to a page, it must be marked dirty
       if (!(restr & (CAP_RESTR_RO|CAP_RESTR_WK)) && wantWrite) {
 	obhdr_dirty(&mwe->entry->hdr);

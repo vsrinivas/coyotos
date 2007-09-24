@@ -37,6 +37,10 @@ using namespace std;
 
 static GCPtr<Environment<Value> > builtins = 0;
 
+/** @bug This ought to be pulled from the constant defined in the
+ * Range IDL file. */
+static const oid_t physOidStart = 0xff00000000000000ull;
+
 static inline coyaddr_t 
 align_up(coyaddr_t x, coyaddr_t y)
 {
@@ -710,6 +714,27 @@ pf_downgrade(PrimFnValue& pfv,
     THROW(excpt::BadValue, "Bad interpreter result");
   }
 
+  if (pfv.nm == "opaque" || pfv.nm == "nocall") {
+    if (out->cap.type != ct_GPT) {
+      is.errStream << is.curAST->loc << " "
+		   << "Argument to "
+		   << pfv.nm
+		   << "() must be a GPT capability.\n";
+      THROW(excpt::BadValue, "Bad interpreter result");
+    }
+  }
+
+  if (pfv.nm == "nocache" || pfv.nm == "writethrough") {
+    if ((out->cap.type != ct_Page) ||
+	(out->cap.u2.oid < physOidStart)) {
+      is.errStream << is.curAST->loc << " "
+		   << "Argument to "
+		   << pfv.nm
+		   << "() must be a Physical page frame capability.\n";
+      THROW(excpt::BadValue, "Bad interpreter result");
+    }
+  }
+
   if (pfv.nm == "readonly") {
     out->cap.restr |= CAP_RESTR_RO;
     return out;
@@ -726,16 +751,26 @@ pf_downgrade(PrimFnValue& pfv,
   }
 
   if (pfv.nm == "opaque") {
-    if (out->cap.type != ct_GPT) {
-      is.errStream << is.curAST->loc << " "
-		   << "Argument to "
-		   << pfv.nm
-		   << "() must be a GPT capability.\n";
-      THROW(excpt::BadValue, "Bad interpreter result");
-    }
     out->cap.restr |= CAP_RESTR_OP;
     return out;
   }
+
+  if (pfv.nm == "nocall") {
+    out->cap.restr |= CAP_RESTR_NC;
+    return out;
+  }
+
+  if (pfv.nm == "nocache") {
+    out->cap.restr |= CAP_RESTR_CD;
+    return out;
+  }
+
+#if 0
+  if (pfv.nm == "writethrough") {
+    out->cap.restr |= CAP_RESTR_WT;
+    return out;
+  }
+#endif
 
   is.errStream << is.curAST->loc << " "
 	       << "Buggered mkimage binding of \""
@@ -838,7 +873,6 @@ pf_mk_raw_obcap(PrimFnValue& pfv,
 {
   GCPtr<IntValue> v_oid = needIntArg(is, pfv.nm, args, 0);
   oid_t oid = v_oid->bn.as_uint64();
-  const oid_t physOidStart = 0xff00000000000000ull;
 
   if (pfv.nm == "PageCap")
     return new CapValue(is.ci, is.ci->CiCap(ct_Page, oid));
@@ -1648,6 +1682,17 @@ getBuiltinEnv(GCPtr<CoyImage> ci)
 
     builtins->addConstant("opaque", 
 			 new PrimFnValue("opaque", 1, 1, pf_downgrade));
+
+    builtins->addConstant("nocall", 
+			 new PrimFnValue("nocall", 1, 1, pf_downgrade));
+
+    builtins->addConstant("nocache", 
+			 new PrimFnValue("nocache", 1, 1, pf_downgrade));
+
+#if 0
+    builtins->addConstant("writethrough", 
+			 new PrimFnValue("writethrough", 1, 1, pf_downgrade));
+#endif
 
     builtins->addConstant("guard", 
 			 new PrimFnValue("guard", 2, 3, pf_guard_cap));
