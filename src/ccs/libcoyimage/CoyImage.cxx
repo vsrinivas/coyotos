@@ -34,6 +34,7 @@
 using namespace std;
 using namespace sherpa;
 
+static const uint64_t PhysPageStartOID = 0xff00000000000000ull;
 const uint32_t CoyImage::FullStrengthBank = 0u;
 
 /// standard integer division:  round up @p a to a multiple of @p b
@@ -606,13 +607,15 @@ CoyImage::ValidateCap(const capability &cap,
 
   // verify that the OID is in the correct range.
   if (cap_isObjectCap(cap)) {
-    size_t maxoid = 0;
+    oid_t maxoid = 0;
     switch (cap.type) {
     case ct_Endpoint:
       maxoid = vec.endpt.size();
       break;
     case ct_Page:
       maxoid = vec.page.size();
+      if (cap.u2.oid >= PhysPageStartOID)
+	maxoid = ~0ull;
       break;
     case ct_CapPage:
       maxoid = vec.capPage.size();
@@ -632,7 +635,7 @@ CoyImage::ValidateCap(const capability &cap,
     if (cap.u2.oid >= maxoid) {
       THROW(excpt::IntegrityFail,
 	    format(
-	       "%s #%d: cap %d has out-of-bounds oid %lld (should be < %d)",
+	       "%s #%d: cap %d has out-of-bounds oid %lld (should be < %lld)",
 	       container, container_id, slot_id, cap.u2.oid, maxoid));
     }
   }
@@ -656,11 +659,13 @@ CoyImage::ValidateCap(const capability &cap,
     }
   } else {
     /* is a memory cap */
-    if ((cap.restr & CAP_RESTR_OP) && cap.type != ct_GPT) {
+    if ((cap.restr & (CAP_RESTR_OP|CAP_RESTR_NC)) && 
+	!((cap.type == ct_GPT) ||
+	  (cap.type == ct_Page) && (cap.u2.oid >= PhysPageStartOID))) {
       THROW(excpt::IntegrityFail,
 	    format(
-	      "%s #%d: cap %d has OP set in restr (0x%x), but isn't a GPT cap",
-	       container, container_id, slot_id, cap.restr));
+		   "%s #%d: cap %d has OP or NC set in restr (0x%x), but isn't a GPT cap",
+		   container, container_id, slot_id, cap.restr));
     }
     if ((cap.restr & CAP_RESTR_WK) && !(cap.restr & CAP_RESTR_RO)) {
       THROW(excpt::IntegrityFail,

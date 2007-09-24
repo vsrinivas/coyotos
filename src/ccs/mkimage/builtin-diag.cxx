@@ -245,21 +245,33 @@ pf_doprint_space_base(GCPtr<CoyImage> ci, const capability& cap,
 
     coyaddr_t maxoffset = offset + maxoff;
 
+    uint8_t cap_restr = cap.restr;
+    bool restr_cd = (cap.type == ct_Page && (cap_restr & CAP_RESTR_CD));
+    bool restr_wt = (cap.type == ct_Page && (cap_restr & CAP_RESTR_WT));
+    if (cap.type == ct_Page)
+      cap_restr &= ~(CAP_RESTR_CD|CAP_RESTR_WT);
+
     info.outStream << setw(info.depth) << ""
 		   << setfill('0')
 		   << "0x" << setw(16) << hex << offset << dec << "-"
 		   << "0x" << setw(16) << hex << maxoffset << dec << " "
 		   << setfill(' ')
-		   << ((cap.restr & CAP_RESTR_RO)? "RO " :
-		      (info.restr & CAP_RESTR_RO)? "ro " : "   ")
-		   << ((cap.restr & CAP_RESTR_NX)? "NX " :
-		      (info.restr & CAP_RESTR_NX)? "nx " : "   ")
-		   << ((cap.restr & CAP_RESTR_WK)? "WK " :
-		      (info.restr & CAP_RESTR_WK)? "wk " : "   ")
-		   << ((cap.restr & CAP_RESTR_OP)? "OP " :
-		      (info.restr & CAP_RESTR_OP)? "op " : "   ")
-		   << ' '
-		   << cap_typeName(cap) << " " << dec << cap.u2.oid;
+		   << ((cap_restr & CAP_RESTR_RO)? "RO " :
+		       (info.restr & CAP_RESTR_RO)? "ro " : "   ")
+		   << ((cap_restr & CAP_RESTR_NX)? "NX " :
+		       (info.restr & CAP_RESTR_NX)? "nx " : "   ")
+		   << ((cap_restr & CAP_RESTR_WK)? "WK " :
+		       (info.restr & CAP_RESTR_WK)? "wk " : "   ")
+		   << ((cap_restr & CAP_RESTR_OP)? "OP " :
+		       (info.restr & CAP_RESTR_OP)? "op " : "   ");
+    
+    if (restr_cd)
+      info.outStream << "CD ";
+    if (restr_wt)
+      info.outStream << "WT ";
+
+    info.outStream << ' '
+		   << cap_typeName(cap) << " 0x" << hex << cap.u2.oid << dec;
     
     if (cap.type != ct_GPT) {
       info.outStream << endl;

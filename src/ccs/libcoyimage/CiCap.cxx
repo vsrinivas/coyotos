@@ -93,13 +93,23 @@ operator<<(std::ostream& strm, const capability& cap)
   if (cap.swizzled)
     strm << " P";
   if (cap.restr & CAP_RESTR_RO)
-    strm << " ro";
+    strm << " RO";
   if (cap.restr & CAP_RESTR_NX)
-    strm << " nx";
+    strm << " NX";
   if (cap.restr & CAP_RESTR_WK)
-    strm << " wk";
-  if (cap.restr & CAP_RESTR_OP)
-    strm << " op";
+    strm << " WK";
+  if (cap.type == ct_Page) {
+    if (cap.restr & CAP_RESTR_CD)
+      strm << " CD";
+    if (cap.restr & CAP_RESTR_WT)
+      strm << " WT";
+  }
+  else {
+    if (cap.restr & CAP_RESTR_OP)
+      strm << " OP";
+    if (cap.restr & CAP_RESTR_NC)
+      strm << " NC";
+  }
   strm << " " << cap_typeName(cap) << "(ty=" << cap.type << ")";
 
   std::ios_base::fmtflags flgs = strm.flags(std::ios_base::fmtflags(0));
