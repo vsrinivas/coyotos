@@ -21,35 +21,62 @@
 /*
  * coyotos.Constructor exports the following interfaces:
  *
- *   MetaConstructor:
- *     A Constructor that creates Builders, which are used to create new
- *     Constructors.
  *
- *   Verifier:  The global Constructor verifier.
+ * MetaConstructor:
+ *   A Constructor that creates Builders, which are used to create new
+ *   Constructors.
  *
- *   create_small(bank, file, handler):
- *     Creates a new, pre-Sealed constructor which creates processes based
- *     on *file*, which must have been linked with the -small-space GCC 
- *     option.  *handler* should either be NullCap(), or a constructor for
- *     the desired error handler.
+ * Verifier:
+ *   The global Constructor verifier.
+ *
+ * make(bank, image, handler):
+ *
+ *   Make a constructor which creates programs obeying *image*, with
+ *   process handler *handler*.  *image* should be the result of a
+ *   coyotos.model.* "load_image()" call. *handler* should be NullCap() or
+ *   a constructor for the desired ProcessHandler.  *bank* should be
+ *   a fresh bank.
+ *
+ *   The result is an Entry capability to the newly created sealed Constructor.
+ *
+ *   set_tool() can be used to set up the Tools node the children of this
+ *   process will get.
+ *
+ * make_with_as(bank, as, pc, handler):
+ *
+ *   Like make(), only you explicitly provide an address space and PC.  
+ *   *as* should either be a weak GPT or a constructor of a SpaceHandler
+ *   interface.
+ *
+ * set_tool(cons, slot, tool):
+ *
+ *   Sets tool slot *slot* to *tool* for the Constructor *cons*, created
+ *   using make() or make_with_as().
  * 
- *     The constructor will be created in a new child bank of *src_bank*.
- *     
- *     The returned value is a Constructor capability to the new constructor.
  *
- *   create(src_bank, as, pc, handler):
- *     Creates a new, pre-Sealed constructor.  *as* should be a constructor
- *     for the address space needed, and *pc* is the initial PC for the 
- *     program.  *handler* is as in create_small().
- * 
- *     The constructor will be created in a new child bank of *src_bank*.
- *     
- *     The returned value is a Constructor capability to the new constructor.
+ * make_process(bank, image, handler):
  *
- *   set_tool(con, addr, value):
- *     Sets up a tool for the Yield of a *con*, a constructor created with
- *     create() or create_small().  The tool at address *addr* is set to 
- *     *value*.
+ *   *bank* should be a fresh bank.  *image* should be the result of a
+ *   coyotos.model.* "load_image()" call. *handler* should be NullCap() or
+ *   a constructor for the desired Process handler.
+ *
+ *   The process will be started up with the default Tools node;  if
+ *   other tools are needed, use:
+ *
+ *     import rt = coyotos.RunTime;
+ *     import cons = coyotos.Constructor;
+ *     ...
+ *     def proc = cons.make_process(...);
+ *     ...
+ *     proc.capReg[rt.REG.TOOLS][slot] = value;
+ *
+ *   to add them to the tools array.
+ *
+ * make_process_from_as(bank, as, pc, handler):
+ *
+ *   Like make_process(), only you explicitly provide an address space and
+ *   PC instead of an image.  *as* can be a constructor of a SpaceHandler
+ *   interface, and handler can be a constructor of a ProcessHandler.
  */
 module coyotos.Constructor {
   import sb = coyotos.SpaceBank;
@@ -157,64 +184,6 @@ module coyotos.Constructor {
     return dup(bank, primordial_tools);
   }
 
-  /* Make a running process from an AS and PC.
-   *
-   * *bank* should be a fresh bank.  *as_cons* should be the desired
-   * address space, or a constructor for a SpaceHandler object which can
-   * provide the desired address space. *handler* should be NullCap() or
-   * a constructor for the desired Process handler.
-   *
-   * The process will be started up with the default Tools node;  if
-   * other tools are needed, use:
-   *
-   *   import rt = coyotos.RunTime;
-   *   import cons = coyotos.Constructor;
-   *   ...
-   *   def proc = cons.make_process(...);
-   *   ...
-   *   proc.capReg[rt.REG.TOOLS][slot] = value;
-   *
-   * to add them to the tools array.
-   */
-  export def make_process_from_as(bank, as_cons, pc, handler_cons) {
-    def my_protospace = dup(bank, protospace);
-
-    set_page_uint64(my_protospace, 0, pc);
-
-    def proc = llutil.make_running_process_from_as(bank, 
-						   weaken(my_protospace), 8);
-
-    proc.capReg[rt.REG.TOOLS] = readonly(fresh_tools(bank));
-    
-    proc.capReg[PROTOAPP.ADDRSPACE] = as_cons;
-    proc.capReg[PROTOAPP.HANDLER] = handler_cons;
-    proc.capReg[PROTOAPP.SCHEDULE] = proc.schedule;
-
-    return proc;
-  }
-
-  /* Make a running process from an image.
-   *
-   * *bank* should be a fresh bank.  *image* should be the result of a
-   * coyotos.model.* "load_image()" call. *handler* should be NullCap() or
-   * a constructor for the desired Process handler.
-   *
-   * The process will be started up with the default Tools node;  if
-   * other tools are needed, use:
-   *
-   *   import rt = coyotos.RunTime;
-   *   import cons = coyotos.Constructor;
-   *   ...
-   *   def proc = cons.make_process(...);
-   *   ...
-   *   proc.capReg[rt.REG.TOOLS][slot] = value;
-   *
-   * to add them to the tools array.
-   */
-  export def make_process(bank, image, handler) {
-    return make_process_from_as(bank, image.space, image.pc, handler);
-  }
-
   /*
    * Internal function which sets up *proc* (a running process with the
    * constructor image) to be a sealed constructor of image *as*, with
@@ -289,11 +258,6 @@ module coyotos.Constructor {
     con.recipient.capReg[APP.YIELD_TOOLS][offset] = value;
   }
 
-  /* Gets the bank a constructor is using */
-  export def get_bank(con) {
-    return con.recipient.capReg[rt.REG.SPACEBANK];
-  }
-  
   /* Now we can set up the metaconstructor;  It's just a constructor whose
    * yield runs the constructor program.
    *
@@ -303,4 +267,64 @@ module coyotos.Constructor {
   export def MetaConstructor = 
     setup_sealed_constructor(PrimeBank, metacon_proc, 
 			     cons_image.space, cons_image.pc, NullCap());
+
+  /*** UTILITY FUNCTIONS -- Use ProtoSpace to make a running process */
+
+  /* Make a running process from an AS and PC.
+   *
+   * *bank* should be a fresh bank.  *as_cons* should be the desired
+   * address space, or a constructor for a SpaceHandler object which can
+   * provide the desired address space. *handler* should be NullCap() or
+   * a constructor for the desired Process handler.
+   *
+   * The process will be started up with the default Tools node;  if
+   * other tools are needed, use:
+   *
+   *   import rt = coyotos.RunTime;
+   *   import cons = coyotos.Constructor;
+   *   ...
+   *   def proc = cons.make_process(...);
+   *   ...
+   *   proc.capReg[rt.REG.TOOLS][slot] = value;
+   *
+   * to add them to the tools array.
+   */
+  export def make_process_from_as(bank, as_cons, pc, handler_cons) {
+    def my_protospace = dup(bank, protospace);
+
+    set_page_uint64(my_protospace, 0, pc);
+
+    def proc = llutil.make_running_process_from_as(bank, 
+						   weaken(my_protospace), 8);
+
+    proc.capReg[rt.REG.TOOLS] = readonly(fresh_tools(bank));
+    
+    proc.capReg[PROTOAPP.ADDRSPACE] = as_cons;
+    proc.capReg[PROTOAPP.HANDLER] = handler_cons;
+    proc.capReg[PROTOAPP.SCHEDULE] = proc.schedule;
+
+    return proc;
+  }
+
+  /* Make a running process from an image.
+   *
+   * *bank* should be a fresh bank.  *image* should be the result of a
+   * coyotos.model.* "load_image()" call. *handler* should be NullCap() or
+   * a constructor for the desired Process handler.
+   *
+   * The process will be started up with the default Tools node;  if
+   * other tools are needed, use:
+   *
+   *   import rt = coyotos.RunTime;
+   *   import cons = coyotos.Constructor;
+   *   ...
+   *   def proc = cons.make_process(...);
+   *   ...
+   *   proc.capReg[rt.REG.TOOLS][slot] = value;
+   *
+   * to add them to the tools array.
+   */
+  export def make_process(bank, image, handler) {
+    return make_process_from_as(bank, image.space, image.pc, handler);
+  }
 }
