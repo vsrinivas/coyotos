@@ -3198,14 +3198,24 @@ output_c_template(GCPtr<Symbol> globalScope, BackEndFn fn)
       << "\n";
 
   out << "/* The IDL_SERVER_Environment structure type is something\n"
-      << " * that you should define to hold any \"extra\" information\n"
+      << " * that you should extend to hold any \"extra\" information\n"
       << " * you need to carry around in your handlers. CapIDL code\n"
       << " * will pass this pointer along, but knows absolutely\n"
       << " * nothing about the contents of the structure.\n"
       << " *\n"
-      << " * If you do not need any extra information, you can pass\n"
-      << " * a NULL pointer to ProcessRequests()\n"
+      << " * The following structure definition is provided as a\n"
+      << " * starting point. It is generally a good idea to pass the\n"
+      << " * received protected payload and endpoint ID to handler\n"
+      << " * functions so that they know what object was invoked and\n"
+      << " * with what permissions.\n"
       << " */\n"
+      << "typedef struct IDL_SERVER_Environment {\n";
+  out.more();
+  out << "uint32_t pp;\n"
+      << "uint64_t epID;\n";
+  out.less();
+  out << "} IDL_SERVER_Environment;\n"
+      << "\n"
       << "void\n"
       << "ProcessRequests(struct IDL_SERVER_Environment *_env)\n"
       << "{\n";
@@ -3232,6 +3242,9 @@ output_c_template(GCPtr<Symbol> globalScope, BackEndFn fn)
       << "gsu.pb.rcvPtr = ((char *)(&gsu)) + sizeof(gsu.pb);\n"
       << "\n"
       << "invoke_capability(&gsu.pb);\n"
+      << "\n"
+      << "_env->pp = gsu.pb.u.pp\n"
+      << "_env->epID = gsu.pb.epID\n"
       << "\n"
       << "/* Re-establish defaults. Note we rely on the handler proc\n"
       << " * to decide how MANY of these caps will be sent by setting ICW.SC\n"
