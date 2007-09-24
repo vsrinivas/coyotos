@@ -21,7 +21,10 @@
 default: package
 COYOTOS_SRC=../..
 
-DIRS=Constructor ElfProcessHandler SpaceBank VirtualCopySpace
+DIRS=Constructor
+DIRS+=ElfProcessHandler
+DIRS+=SpaceBank
+DIRS+=VirtualCopySpace
 
 include $(COYOTOS_SRC)/build/make/makerules.mk
 

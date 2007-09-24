@@ -34,9 +34,9 @@ TARGETS=$(BUILDDIR)/Constructor $(BUILDDIR)/ProtoSpace
 
 include $(COYOTOS_SRC)/build/make/makerules.mk
 
-BASE_IDL_DIR=../../idl
+BASE_IDL_DIR=$(PKG_SRC)/idl
 BASE_IDL_FILES=$(wildcard $(BASE_IDL_DIR)/*.idl)
-SYS_IDL_DIR=../../../sys/idl
+SYS_IDL_DIR=$(COYOTOS_SRC)/sys/idl
 SYS_IDL_FILES=$(wildcard $(SYS_IDL_DIR)/*.idl)
 
 SERVER_INTERFACES=\
@@ -55,7 +55,7 @@ IDL_HEADERS=\
     $(SYS_IDL_FILES:$(SYS_IDL_DIR)/%.idl=$(BUILDDIR)/idl/coyotos/%.server.h)
 
 ENUM_MODULES=coyotos.Constructor
-BASE_MKI_DIR=../../mki
+BASE_MKI_DIR=$(PKG_SRC)/mki
 COMMON_MKI_DIR=$(COYOTOS_ROOT)/usr/include/mki
 ENUM_HDRS=$(ENUM_MODULES:%=$(BUILDDIR)/%.h)
 

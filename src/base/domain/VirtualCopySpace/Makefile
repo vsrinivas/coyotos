@@ -31,9 +31,9 @@ TARGETS=$(BUILDDIR)/VirtualCopySpace
 
 include $(COYOTOS_SRC)/build/make/makerules.mk
 
-BASE_IDL_DIR=../../idl
+BASE_IDL_DIR=$(PKG_SRC)/idl
 BASE_IDL_FILES=$(wildcard $(BASE_IDL_DIR)/*.idl)
-SYS_IDL_DIR=../../../sys/idl
+SYS_IDL_DIR=$(COYOTOS_SRC)/sys/idl
 SYS_IDL_FILES=$(wildcard $(SYS_IDL_DIR)/*.idl)
 
 SERVER_INTERFACES=\
@@ -42,9 +42,9 @@ SERVER_INTERFACES=\
     SpaceHandler
 
 SERVER_IDL_FILES=\
-    ../../idl/VirtualCopySpace.idl \
-    ../../../sys/idl/MemoryHandler.idl \
-    ../../idl/SpaceHandler.idl
+    $(BASE_IDL_DIR)/VirtualCopySpace.idl \
+    $(SYS_IDL_DIR)/MemoryHandler.idl \
+    $(BASE_IDL_DIR)/SpaceHandler.idl
 
 IDL_FILES=\
     $(BASE_IDL_FILES) \
@@ -55,7 +55,7 @@ IDL_HEADERS=\
     $(SYS_IDL_FILES:$(SYS_IDL_DIR)/%.idl=$(BUILDDIR)/idl/coyotos/%.server.h)
 
 ENUM_MODULES=coyotos.VirtualCopySpace
-BASE_MKI_DIR=../../mki
+BASE_MKI_DIR=$(PKG_SRC)/mki
 COMMON_MKI_DIR=$(COYOTOS_ROOT)/usr/include/mki
 ENUM_HDRS=$(ENUM_MODULES:%=$(BUILDDIR)/%.h)
 
