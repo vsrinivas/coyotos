@@ -80,14 +80,14 @@ typedef struct IDL_SERVER_Environment {
   bool isEPH;
 } ISE;
 
-static uint64_t
+IDL_SERVER_HANDLER_PREDECL uint64_t
 HANDLE_coyotos_Cap_destroy(ISE *ise)
 {
   /* we are always destroyed along with our process */
   return (RC_coyotos_Cap_NoAccess);
 }
 
-static uint64_t
+IDL_SERVER_HANDLER_PREDECL uint64_t
 HANDLE_coyotos_Cap_getType(uint64_t *out, ISE *_env)
 {
   if (_env->isEPH)
@@ -449,7 +449,7 @@ in_region(region *r, uint64_t addr)
   return (addr - r->vaddr >= r->memsz);
 }
 
-static uint64_t
+IDL_SERVER_HANDLER_PREDECL uint64_t
 HANDLE_coyotos_ElfProcessHandler_setBreak(uint64_t newBreak, ISE *_env)
 {
   // right now, we only allow growing the break
@@ -461,7 +461,7 @@ HANDLE_coyotos_ElfProcessHandler_setBreak(uint64_t newBreak, ISE *_env)
   return RC_coyotos_Cap_OK;
 }
 
-static uint64_t
+IDL_SERVER_HANDLER_PREDECL uint64_t
 HANDLE_coyotos_SpaceHandler_getSpace(caploc_t _retVal, ISE *_env)
 {
   cap_copy(_retVal, CR_OPAQUESPACE);
@@ -469,7 +469,7 @@ HANDLE_coyotos_SpaceHandler_getSpace(caploc_t _retVal, ISE *_env)
   return (RC_coyotos_Cap_OK);
 }
 
-static void
+IDL_SERVER_HANDLER_PREDECL void
 HANDLE_coyotos_MemoryHandler_handle(caploc_t proc,
 				    coyotos_Process_FC faultCode,
 				    uint64_t faultInfo,

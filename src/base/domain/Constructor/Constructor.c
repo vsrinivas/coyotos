@@ -137,7 +137,7 @@ cap_is_confined(caploc_t cap)
   return (result);
 }
 
-static uint64_t
+IDL_SERVER_HANDLER_PREDECL uint64_t
 HANDLE_coyotos_Cap_destroy(ISE *ise)
 {
   /* Only builder caps can destroy the constructor. */
@@ -153,7 +153,7 @@ HANDLE_coyotos_Cap_destroy(ISE *ise)
   return (RC_coyotos_Cap_RequestError);
 }
 
-static uint64_t
+IDL_SERVER_HANDLER_PREDECL uint64_t
 HANDLE_coyotos_Cap_getType(uint64_t *out, ISE *_env)
 {
   if (_env->isBuilder)
@@ -165,14 +165,14 @@ HANDLE_coyotos_Cap_getType(uint64_t *out, ISE *_env)
   return RC_coyotos_Cap_OK;
 }
 
-static uint64_t
+IDL_SERVER_HANDLER_PREDECL uint64_t
 HANDLE_coyotos_Constructor_isYieldConfined(bool *out, ISE *_env)
 {
   *out = isConfined;
   return RC_coyotos_Cap_OK;
 }
 
-static uint64_t
+IDL_SERVER_HANDLER_PREDECL uint64_t
 HANDLE_coyotos_Constructor_create(caploc_t bank, caploc_t sched, 
 				  caploc_t runtime, caploc_t retVal, 
 				  ISE *_env)
@@ -258,7 +258,7 @@ HANDLE_coyotos_Constructor_create(caploc_t bank, caploc_t sched,
   return RC_coyotos_Cap_OK;
 }
 
-static uint64_t
+IDL_SERVER_HANDLER_PREDECL uint64_t
 HANDLE_coyotos_Constructor_getVerifier(caploc_t retVal, ISE *_env)
 {
   if (!coyotos_Endpoint_makeEntryCap(CR_INITEPT, 
@@ -269,7 +269,7 @@ HANDLE_coyotos_Constructor_getVerifier(caploc_t retVal, ISE *_env)
   return RC_coyotos_Cap_OK;
 }
 
-static uint64_t
+IDL_SERVER_HANDLER_PREDECL uint64_t
 HANDLE_coyotos_Verifier_verifyYield(caploc_t cap, bool *result, ISE *_env)
 {
   bool identifyResult = false;
@@ -285,7 +285,7 @@ HANDLE_coyotos_Verifier_verifyYield(caploc_t cap, bool *result, ISE *_env)
   return RC_coyotos_Cap_OK;
 }
 
-static uint64_t 
+IDL_SERVER_HANDLER_PREDECL uint64_t
 HANDLE_coyotos_Builder_setHandler(caploc_t handler, ISE *_env)
 {
   if (isSealed)
@@ -299,7 +299,7 @@ HANDLE_coyotos_Builder_setHandler(caploc_t handler, ISE *_env)
   return RC_coyotos_Cap_OK;
 }
 
-static uint64_t 
+IDL_SERVER_HANDLER_PREDECL uint64_t
 HANDLE_coyotos_Builder_setSpace(caploc_t space, ISE *_env)
 {
   if (isSealed)
@@ -313,7 +313,7 @@ HANDLE_coyotos_Builder_setSpace(caploc_t space, ISE *_env)
   return RC_coyotos_Cap_OK;
 }
 
-static uint64_t 
+IDL_SERVER_HANDLER_PREDECL uint64_t
 HANDLE_coyotos_Builder_setPC(coyotos_Cap_coyaddr_t pc, ISE *_env)
 {
   enum {
@@ -338,7 +338,7 @@ HANDLE_coyotos_Builder_setPC(coyotos_Cap_coyaddr_t pc, ISE *_env)
   return (RC_coyotos_Cap_UnknownRequest);
 }
 
-static uint64_t 
+IDL_SERVER_HANDLER_PREDECL uint64_t
 HANDLE_coyotos_Builder_setTool(uint32_t slot, caploc_t tool, ISE *_env)
 {
   if (isSealed)
@@ -353,7 +353,7 @@ HANDLE_coyotos_Builder_setTool(uint32_t slot, caploc_t tool, ISE *_env)
   return RC_coyotos_Cap_OK;
 }
 
-static uint64_t 
+IDL_SERVER_HANDLER_PREDECL uint64_t
 HANDLE_coyotos_Builder_seal(caploc_t _retVal, ISE *_env)
 {
   if (!coyotos_Endpoint_makeEntryCap(CR_INITEPT, 
@@ -369,7 +369,6 @@ HANDLE_coyotos_Builder_seal(caploc_t _retVal, ISE *_env)
 
   return RC_coyotos_Cap_OK;
 }
-
 
 /* You should supply a function that selects an interface
  * type based on the incoming endpoint ID and protected
