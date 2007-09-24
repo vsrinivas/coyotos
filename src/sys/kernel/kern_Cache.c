@@ -242,7 +242,7 @@ page_physaddr_cmp(const void *lhs, const void *rhs)
 }
 
 Page *
-obhdr_findPage(kpa_t pa)
+obhdr_findPageFrame(kpa_t pa)
 {
   if (Cache.page_byPhysAddr_count == 0)
     return 0;
@@ -842,7 +842,7 @@ cache_get_physPage(kpa_t pa)
   /** @bug when we have physical ranges coming and going, this will
    * need to do some locking
    */
-  Page *page = obhdr_findPage(pa);
+  Page *page = obhdr_findPageFrame(pa);
   if (page == 0)
     return 0;
 
@@ -898,6 +898,7 @@ cache_get_physPage(kpa_t pa)
   page->mhdr.hdr.current = 1;
   page->mhdr.hdr.snapshot = 0;
   page->mhdr.hdr.dirty = 1;
+  page->mhdr.hdr.pinned = 1;
 
   obhash_insert_obj(page);
 

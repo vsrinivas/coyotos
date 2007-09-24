@@ -26,12 +26,26 @@
 #include <kerninc/ObjectHash.h>
 #include <kerninc/Cache.h>
 #include <kerninc/assert.h>
+#include <kerninc/printf.h>
+#include <idl/coyotos/Range.h>
 
 ObjectHeader*
 obstore_require_object(ObType ty, oid_t oid, bool waitForRange, HoldInfo *hi)
 {
   HoldInfo hashMutex = obhash_grabMutex(ty, oid);
   ObjectHeader *obHdr = obhash_lookup(ty, oid, false, hi);
+
+  if (obHdr == 0 && oid >= coyotos_Range_physOidStart) {
+    kpa_t pa = (oid - coyotos_Range_physOidStart) * COYOTOS_PAGE_SIZE;
+
+    Page *retVal = cache_get_physPage(pa);
+    if (retVal == 0) {
+      fatal("Attempt to use physical page cap for unbound"
+	    " physical region.\n");
+      assert(!waitForRange);
+      return 0;
+    }
+  }
 
   if (!obHdr) {
     /* check that the OID is within the allowed range */

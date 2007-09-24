@@ -232,12 +232,20 @@ void cap_Range(InvParam_t *iParam)
 	  InvErrorMessage(iParam, RC_coyotos_Cap_RequestError);
 	  return;
 	}
+
+#if 0
+	/* This is incorrect -- we should not be attempting to bounce
+	 * the frame here.  That should not happen until we go to
+	 * prepare this capability. Fabrication of the capability
+	 * should succeed whether or not the physical frame exists.
+	 */
 	Page *retVal = cache_get_physPage(kpa);
 	if (retVal == 0) {
 	  sched_commit_point();
 	  InvErrorMessage(iParam, RC_coyotos_Range_RangeErr);
 	  return;
 	}
+#endif
 
 	INIT_TO_ZERO(&iParam->srcCap[0].theCap);
 
@@ -246,18 +254,22 @@ void cap_Range(InvParam_t *iParam)
 	iParam->srcCap[0].theCap.swizzled = 0;
 	iParam->srcCap[0].theCap.restr = 0;
 	
-	iParam->srcCap[0].theCap.allocCount = retVal->mhdr.hdr.allocCount;
+	/* Physical page capabilities are not durable. They can always
+	 * be given an allocation count of zero. */
+	iParam->srcCap[0].theCap.allocCount = 0;
 	
 	/* Memory caps have a min GPT requirement. */
 	iParam->srcCap[0].theCap.u1.mem.l2g = COYOTOS_PAGE_ADDR_BITS;
 
-	iParam->srcCap[0].theCap.u2.oid = retVal->mhdr.hdr.oid;
+	iParam->srcCap[0].theCap.u2.oid = oid;
 
 	cap_prepare(&iParam->srcCap[0].theCap);
 	
 	sched_commit_point();
 
+#if 0
 	retVal->mhdr.hdr.pinned = 1;
+#endif
 
 	iParam->opw[0] = InvResult(iParam, 1);
 	return;
