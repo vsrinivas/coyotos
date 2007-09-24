@@ -20,8 +20,13 @@
 
 /* Simulated sbrk */
 
+#include <errno.h>
 #include <stdint.h>
 #include <sys/types.h>
+
+#include <coyotos/runtime.h>
+#include <idl/coyotos/Cap.h>
+#include <idl/coyotos/ElfSpace.h>
 
 extern unsigned _end;		/* lie */
 static caddr_t heap_ptr = (caddr_t) &_end;
@@ -29,7 +34,24 @@ static caddr_t heap_ptr = (caddr_t) &_end;
 caddr_t
 sbrk(intptr_t nbytes)
 {
+  static int type = 0;
+  if (type == 0) {
+    coyotos_Cap_AllegedType ty = 0;
+    if (coyotos_Cap_getType(CR_ADDRHANDLER, &ty) && ty == IKT_coyotos_ElfSpace)
+      type = 2;
+    else
+      type = 1;
+  }
   caddr_t base = heap_ptr;
-  heap_ptr += nbytes;
+  caddr_t new_heap = heap_ptr + nbytes;
+
+  if (type == 2) {
+    if (!coyotos_ElfSpace_setBreak(CR_ADDRHANDLER, (uintptr_t)new_heap)) {
+      errno = ENOMEM;
+      return (caddr_t)-1;
+    }
+  }
+
+  heap_ptr = new_heap;
   return base;
 }

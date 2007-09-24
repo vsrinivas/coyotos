@@ -446,7 +446,7 @@ find_phdrs(const char *base)
 static bool
 in_region(region *r, uint64_t addr)
 {
-  return (addr - r->vaddr >= r->memsz);
+  return ((addr - r->vaddr) < r->memsz);
 }
 
 IDL_SERVER_HANDLER_PREDECL uint64_t
