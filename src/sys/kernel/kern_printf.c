@@ -30,13 +30,13 @@
 #include <stddef.h>
 #include <stdarg.h>
 #include <kerninc/string.h>
-#include <kerninc/ascii.h>
 #include <kerninc/printf.h>
 #include <kerninc/assert.h>
 #include <kerninc/event.h>
 #include <kerninc/string.h>
 #include <kerninc/ctype.h>
 #include <kerninc/mutex.h>
+#include <coyotos/ascii.h>
 #include <hal/console.h>
 #include <hal/irq.h>
 

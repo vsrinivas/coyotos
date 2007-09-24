@@ -31,9 +31,9 @@
 #include <stdbool.h>
 #include <hal/kerntypes.h>
 #include <kerninc/assert.h>
-#include <kerninc/ascii.h>
 #include <kerninc/ctype.h>
 #include <kerninc/printf.h>
+#include <coyotos/ascii.h>
 #include <coyotos/i386/io.h>
 #include "kva.h"
 

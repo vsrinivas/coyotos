@@ -33,6 +33,7 @@ DIRS+=coldfire
 HEADERS=\
 	capidl.h \
 	coytypes.h \
+	ascii.h \
 	endian.h \
 	syscall.h
 
