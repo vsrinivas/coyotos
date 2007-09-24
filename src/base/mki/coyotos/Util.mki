@@ -19,11 +19,10 @@
  */
 
 /*
- * mkimage()-compatible runtime constants, as well as utility functions.
+ * Utility functions
  */
 module coyotos.Util {
-  import rt = coyotos.RunTime;
-  import TargetInfo = coyotos.TargetInfo;
+  import cons = coyotos.Constructor;
 
   export def min(a, b) {
     if (a <= b) {
@@ -39,91 +38,32 @@ module coyotos.Util {
     return b;
   }
 
-  /* Allocate a bare-bones process, and set up its capRegs. 
-   *
-   * bank should be a freshly created bank.
-   *
-   * A bare process consists of:
-   *   1. A process
-   *   2. One reply endpoint, w/ epID 0 and PM set to 1
-   *   3. One initial endpoint, w/ epID 1 and PM cleared.
-   *
-   * The REPLYEPT, SELF, and INITEPT capability registers are set up to link
-   * all of these together.  The SPACEBANK capability register is set to
-   * the passed in bank.
-   *
-   * To make a running process out of the result, you must:
-   *   1. Place an address space in proc.addrSpace
-   *   2. Set proc.faultCode to PROCESS_FC_STARTUP
-   *   3. Set proc.faultInfo to the initial PC
-   *
-   * And optionally set up the other capRegs as desired (REG.TOOLS and 
-   * REG.RUNTIME are obvious candidates), or process fields (handler, etc.)
-   */
-  export def make_bare_process(bank) {
-    def proc = new Process(bank);
-
-    def replyept = new Endpoint(bank);
-    replyept.pm = 1;
-    replyept.recipient = proc;
-    replyept.endpointID = 0;
-
-    def initept = new Endpoint(bank);
-    initept.recipient = proc;
-    initept.endpointID = 1;
-
-    proc.capReg[rt.REG.REPLYEPT] = replyept;
-    proc.capReg[rt.REG.SELF] = proc;
-    proc.capReg[rt.REG.SPACEBANK] = bank;
-    proc.capReg[rt.REG.INITEPT] = initept;
-
-    return proc;
-  }
-
-  /*
-   * Make a process which will be running, using *bank* (which should be a
-   * freshly created bank) for underlying storage.  Set it up to run the
-   * address space *as*, starting at the entry point *pc*.
-   */
-  export def make_running_process(bank, as, pc) {
-    def proc = make_bare_process(bank);
-
-    proc.addrSpace = as;
-    proc.faultCode = rt.PROCESS_FC_STARTUP;
-    proc.faultInfo = pc;
-
-    return proc;
-  }
-
-  /*
-   * Make a small process;  it is assumed the normal initialization will
-   * be done.
-   */
-  export def make_small_process(bank, file) {
-    def image = loadimage(bank, file);
-
-    return make_running_process(bank, weaken(image.space), image.pc);
-  }
-
-  /*
-   * Make an iron-man process;  one with a pre-allocated stack, and where
-   * no runtime initialization will be made.
-   */
-  export def make_ironman_process(bank, file) {
-    def image = loadimage(bank, file);
-
-    def aSpace = insert_subspace(bank,
-				 image.space,
-				 noexec(new Page(bank)),
-				 TargetInfo.small_stack_page_addr);
-
-    return make_running_process(bank, aSpace, image.pc);
-  }
-
   export def make_gpt(bank, l2v, l2g) {
     def	gpt = guard(new GPT(bank), 0, l2g);
     gpt.l2v = l2v;
 
     return gpt;
+  }
+
+  /* Make a running process from an image.
+   *
+   * *bank* should be a fresh bank.  *image* should be the result of a
+   * coyotos.model.* "load_image()" call. *handler* should be NullCap() or
+   * a constructor for the desired Process handler.
+   *
+   * The process will have a copy of the default Tools node;  if other 
+   * tools are needed, use:
+   *
+   *   import rt = coyotos.RunTime;
+   *   import util = coyotos.Util;
+   *   ...
+   *   def proc = util.make_process(...);
+   *   ...
+   *   proc.capReg[rt.REG.TOOLS][slot] = value;
+   *
+   * to add them to the tools array.
+   */
+  export def make_process(bank, image, handler) {
+    return cons.make_process(bank, image, handler);
   }
 }

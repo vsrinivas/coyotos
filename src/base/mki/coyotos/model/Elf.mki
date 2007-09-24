@@ -18,28 +18,13 @@
  * Foundation, 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  */
 
-module testConstructor {
-   import cons = coyotos.Constructor;
-   import rt = coyotos.RunTime;
-   import util = coyotos.Util;
-   import small = coyotos.model.Small;
+/*
+ * Elf Process model program utility functions
+ */
+module coyotos.model.Elf {
+  import elfspace = coyotos.ElfSpace;
 
-   def bank = new Bank(PrimeBank);
-   def image = small.load_image(bank, "testConstructor");
-   def proc = util.make_process(bank, image, NullCap());
-
-   export capreg REG {
-      METACON = rt.REG.APP0,
-      BANK,
-      SCHED,
-      RUNTIME,
-      KERNLOG,
-      TMP
-   };
-
-   proc.capReg[REG.METACON] = cons.MetaConstructor;
-   proc.capReg[REG.BANK] = new Bank(bank);
-   proc.capReg[REG.SCHED] = proc.schedule;
-   proc.capReg[REG.KERNLOG] = KernLog();
+  export def load_image(bank, file) {
+    return elfspace.load_image(bank, file);
+  }
 }
-

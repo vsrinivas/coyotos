@@ -27,7 +27,7 @@ CFLAGS+=-g -O
 INC=-I. -I$(COYOTOS_SRC)/../usr/include -I$(BUILDDIR) -I../../../sys
 SOURCES=$(wildcard *.c)
 OBJECTS=$(patsubst %.c,$(BUILDDIR)/%.o,$(wildcard *.c))
-TARGETS=$(BUILDDIR)/ElfProcessHandler
+TARGETS=$(BUILDDIR)/ElfSpace
 
 include $(COYOTOS_SRC)/build/make/makerules.mk
 
@@ -37,11 +37,11 @@ SYS_IDL_DIR=$(COYOTOS_SRC)/sys/idl
 SYS_IDL_FILES=$(wildcard $(SYS_IDL_DIR)/*.idl)
 
 SERVER_INTERFACES=\
-    ElfProcessHandler \
+    ElfSpace \
     MemoryHandler
 
 SERVER_IDL_FILES=\
-    $(BASE_IDL_DIR)/ElfProcessHandler.idl \
+    $(BASE_IDL_DIR)/ElfSpace.idl \
     $(SYS_IDL_DIR)/MemoryHandler.idl
 
 IDL_FILES=\
@@ -52,13 +52,13 @@ IDL_HEADERS=\
     $(BASE_IDL_FILES:$(BASE_IDL_DIR)/%.idl=$(BUILDDIR)/idl/coyotos/%.server.h) \
     $(SYS_IDL_FILES:$(SYS_IDL_DIR)/%.idl=$(BUILDDIR)/idl/coyotos/%.server.h)
 
-ENUM_MODULES=coyotos.ElfProcessHandler coyotos.TargetInfo
+ENUM_MODULES=coyotos.ElfSpace coyotos.TargetInfo
 BASE_MKI_DIR=$(PKG_SRC)/mki
 COMMON_MKI_DIR=$(COYOTOS_ROOT)/usr/include/mki
 ENUM_HDRS=$(ENUM_MODULES:%=$(BUILDDIR)/%.h)
 
-$(BUILDDIR)/coyotos.ElfProcessHandler.h: $(BASE_MKI_DIR)/coyotos/ElfProcessHandler.mki $(MKIMAGE)
-	$(MKIMAGE) -t $(COYOTOS_TARGET) -H $(BUILDDIR) -I $(BASE_MKI_DIR) -I $(COMMON_MKI_DIR) coyotos.ElfProcessHandler
+$(BUILDDIR)/coyotos.ElfSpace.h: $(BASE_MKI_DIR)/coyotos/ElfSpace.mki $(MKIMAGE)
+	$(MKIMAGE) -t $(COYOTOS_TARGET) -H $(BUILDDIR) -I $(BASE_MKI_DIR) -I $(COMMON_MKI_DIR) coyotos.ElfSpace
 
 $(BUILDDIR)/coyotos.TargetInfo.h: $(wildcard $(COMMON_MKI_DIR)/coyotos/*/*.mki) $(MKIMAGE)
 	$(MKIMAGE) -t $(COYOTOS_TARGET) -H $(BUILDDIR) -I $(BASE_MKI_DIR) -I $(COMMON_MKI_DIR) coyotos.TargetInfo
@@ -84,12 +84,12 @@ $(BUILDDIR)/%.o: $(COYOTOS_TARGET)/%.S $(MAKE_BUILDDIR)
 	$(ASM_DEP)
 	$(ASM_BUILD)
 
-$(BUILDDIR)/ElfProcessHandler: $(OBJECTS)
+$(BUILDDIR)/ElfSpace: $(OBJECTS)
 	$(GCC) -small-space $(GPLUSFLAGS) $(OBJECTS) $(LIBS) $(STDLIBDIRS) -o $@
 
 # for test images
-$(BUILDDIR)/mkimage.out: install $(TARGETS) $(BASE_MKI_DIR)/coyotos/ElfProcessHandler.mki
-	$(MKIMAGE) -o $@ -t $(COYOTOS_TARGET) -I $(BASE_MKI_DIR) coyotos.ElfProcessHandler
+$(BUILDDIR)/mkimage.out: install $(TARGETS) $(BASE_MKI_DIR)/coyotos/ElfSpace.mki
+	$(MKIMAGE) -o $@ -t $(COYOTOS_TARGET) -I $(BASE_MKI_DIR) coyotos.ElfSpace
 
 -include $(BUILDDIR)/.*.m
 

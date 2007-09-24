@@ -1,9 +1,9 @@
 package coyotos;
 
 /**
- * @brief ElfProcessHandler
+ * @brief ElfSpace
  */
-interface ElfProcessHandler extends SpaceHandler {
+interface ElfSpace extends SpaceHandler {
 
   /** @brief No Virtual Address Space is available */
   exception NoSpace;

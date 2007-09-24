@@ -39,12 +39,12 @@
 module coyotos.SpaceBank {
    import TargetInfo = coyotos.TargetInfo;
    import rt = coyotos.RunTime;
-   import util = coyotos.Util;
+   import llutil = coyotos.LowLevelUtil;
 
    /* The Spacebank verifier is a PrimeBank endpoint with all restrictions */
    export def Verifier = enter(PrimeBankEndpoint, 0xffffffff);
 
-   def spacebank = util.make_ironman_process(PrimeBank, "coyotos/SpaceBank");
+   def spacebank = llutil.make_ironman_process(PrimeBank, "coyotos/SpaceBank");
 
    /* Register assignments for SpaceBank; only exported so that they can
     * be used by spacebank.c.

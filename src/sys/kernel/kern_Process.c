@@ -419,7 +419,7 @@ proc_dispatch_current()
 
       // ??? Set Priority ???
 
-      atomic_clear_bits(&p->issues, ~pi_Schedule);
+      atomic_clear_bits(&p->issues, pi_Schedule);
       issues &= ~pi_Schedule;
     }
 

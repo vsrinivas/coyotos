@@ -18,28 +18,12 @@
  * Foundation, 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  */
 
-module testConstructor {
-   import cons = coyotos.Constructor;
-   import rt = coyotos.RunTime;
+module testVirtualCopyModel {
+   import vc = coyotos.model.VirtualCopy;
    import util = coyotos.Util;
-   import small = coyotos.model.Small;
 
-   def bank = new Bank(PrimeBank);
-   def image = small.load_image(bank, "testConstructor");
-   def proc = util.make_process(bank, image, NullCap());
+   def my_bank = new Bank(PrimeBank);
+   def vc_image = vc.load_image(my_bank, "testLargeModel");
 
-   export capreg REG {
-      METACON = rt.REG.APP0,
-      BANK,
-      SCHED,
-      RUNTIME,
-      KERNLOG,
-      TMP
-   };
-
-   proc.capReg[REG.METACON] = cons.MetaConstructor;
-   proc.capReg[REG.BANK] = new Bank(bank);
-   proc.capReg[REG.SCHED] = proc.schedule;
-   proc.capReg[REG.KERNLOG] = KernLog();
+   def test = util.make_process(my_bank, vc_image, NullCap());
 }
-

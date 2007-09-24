@@ -18,28 +18,19 @@
  * Foundation, 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  */
 
-module testConstructor {
-   import cons = coyotos.Constructor;
-   import rt = coyotos.RunTime;
-   import util = coyotos.Util;
-   import small = coyotos.model.Small;
+#include <string.h>
+#include <stdlib.h>
 
-   def bank = new Bank(PrimeBank);
-   def image = small.load_image(bank, "testConstructor");
-   def proc = util.make_process(bank, image, NullCap());
+char *sbrk(size_t);
 
-   export capreg REG {
-      METACON = rt.REG.APP0,
-      BANK,
-      SCHED,
-      RUNTIME,
-      KERNLOG,
-      TMP
-   };
-
-   proc.capReg[REG.METACON] = cons.MetaConstructor;
-   proc.capReg[REG.BANK] = new Bank(bank);
-   proc.capReg[REG.SCHED] = proc.schedule;
-   proc.capReg[REG.KERNLOG] = KernLog();
+int
+main(int argc, char *argv[])
+{
+	size_t bytes = 0;
+	while (bytes < 4096 * 1024 && malloc(4096) != 0) {
+		bytes += 4096;
+	}
+        sbrk(0);
+	return 0;
 }
 

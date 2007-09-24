@@ -18,10 +18,12 @@
  * Foundation, 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  */
 
-module coyotos.ElfProcessHandler {
+module coyotos.ElfSpace {
   import rt = coyotos.RunTime;
   import util = coyotos.Util;
   import Constructor = coyotos.Constructor;
+
+  import small = coyotos.model.Small;
 
   export enum PP {
     EPH = 0,
@@ -46,40 +48,17 @@ module coyotos.ElfProcessHandler {
     BACKGROUND  /* pre-set-up image of ELF file */
   };
 
-  def elf_image = loadimage(PrimeBank, "coyotos/ElfProcessHandler");
-  def elf_space = weaken(elf_image.space);
-  def elf_pc = elf_image.pc;
+  def elf_image = small.load_image(PrimeBank, "coyotos/ElfSpace");
 
-  /* Make a process constructor for a given ELF file */
-  export def make_constructor(bank, file) {
-    def cons = Constructor.create(bank, elf_space, elf_pc, NullCap());
-    def cons_bank = Constructor.get_bank(cons);
-
-    def image = loadimage(cons_bank, file);
+  export def load_image(bank, file) {
+    def cons = Constructor.make(bank, elf_image, NullCap());
+    def image = loadimage(bank, file);
     Constructor.set_tool(cons, TOOL.ELFFILE, 
-                         weaken(readfile(cons_bank, file)));
+                         weaken(readfile(bank, file)));
     Constructor.set_tool(cons, TOOL.BACKGROUND, 
                          weaken(image.space));
 
-    def prog_cons = Constructor.create(bank, cons, image.pc, NullCap());
-
-    return prog_cons;
-  }
-  
-  /* Makes a process with an address space generated from file */
-  export def make_process(src_bank, file) {
-    def bank = new Bank(src_bank);
-
-    def cons = Constructor.create(bank, elf_space, elf_pc, NullCap());
-    def cons_bank = Constructor.get_bank(cons);
-    def image = loadimage(cons_bank, file);
-
-    Constructor.set_tool(cons, TOOL.ELFFILE, 
-                         weaken(readfile(cons_bank, file)));
-    Constructor.set_tool(cons, TOOL.BACKGROUND, 
-                         weaken(image.space));
-
-    def prog = Constructor.make_process(bank, cons, image.pc, NullCap());
-    return prog;
+    image.space = cons;
+    return image;
   }
 }

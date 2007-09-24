@@ -24,7 +24,7 @@
 
 /* Based on template for processing the following interfaces:
     coyotos.MemoryHandler
-    coyotos.ElfProcessHandler
+    coyotos.ElfSpace
  */
 
 #include <coyotos/capidl.h>
@@ -44,20 +44,20 @@
 #include <idl/coyotos/Process.h>
 #include <idl/coyotos/SpaceBank.h>
 
-#include "coyotos.ElfProcessHandler.h"
+#include "coyotos.ElfSpace.h"
 #include "coyotos.TargetInfo.h"
 
 /* all of our handler procedures are static */
 #define IDL_SERVER_HANDLER_PREDECL static
 
-#include <idl/coyotos/ElfProcessHandler.server.h>
+#include <idl/coyotos/ElfSpace.server.h>
 #include <idl/coyotos/MemoryHandler.server.h>
 
 #include "elf.h"
 
 typedef union {
-  _IDL_IFUNION_coyotos_ElfProcessHandler
-      coyotos_ElfProcessHandler;
+  _IDL_IFUNION_coyotos_ElfSpace
+      coyotos_ElfSpace;
   _IDL_IFUNION_coyotos_MemoryHandler
       coyotos_MemoryHandler;
   InvParameterBlock_t pb;
@@ -65,16 +65,16 @@ typedef union {
   uintptr_t icw;
 } _IDL_GRAND_SERVER_UNION;
 
-#define CR_ELFFILE	 coyotos_ElfProcessHandler_APP_ELFFILE
-#define CR_ADDRSPACE	 coyotos_ElfProcessHandler_APP_ADDRSPACE
-#define CR_OPAQUESPACE	 coyotos_ElfProcessHandler_APP_OPAQUESPACE
-#define CR_SPACEGPT	 coyotos_ElfProcessHandler_APP_SPACEGPT
-#define CR_BGGPT	 coyotos_ElfProcessHandler_APP_BGGPT
-#define CR_HANDLER_ENTRY coyotos_ElfProcessHandler_APP_HANDLER_ENTRY
+#define CR_ELFFILE	 coyotos_ElfSpace_APP_ELFFILE
+#define CR_ADDRSPACE	 coyotos_ElfSpace_APP_ADDRSPACE
+#define CR_OPAQUESPACE	 coyotos_ElfSpace_APP_OPAQUESPACE
+#define CR_SPACEGPT	 coyotos_ElfSpace_APP_SPACEGPT
+#define CR_BGGPT	 coyotos_ElfSpace_APP_BGGPT
+#define CR_HANDLER_ENTRY coyotos_ElfSpace_APP_HANDLER_ENTRY
 
-#define CR_TMP1		 coyotos_ElfProcessHandler_APP_TMP1
-#define CR_TMP2		 coyotos_ElfProcessHandler_APP_TMP2
-#define CR_TMP3		 coyotos_ElfProcessHandler_APP_TMP3
+#define CR_TMP1		 coyotos_ElfSpace_APP_TMP1
+#define CR_TMP2		 coyotos_ElfSpace_APP_TMP2
+#define CR_TMP3		 coyotos_ElfSpace_APP_TMP3
 
 typedef struct IDL_SERVER_Environment {
   bool isEPH;
@@ -91,7 +91,7 @@ IDL_SERVER_HANDLER_PREDECL uint64_t
 HANDLE_coyotos_Cap_getType(uint64_t *out, ISE *_env)
 {
   if (_env->isEPH)
-    *out = IKT_coyotos_ElfProcessHandler;
+    *out = IKT_coyotos_ElfSpace;
   else
     *out = IKT_coyotos_MemoryHandler;
   return RC_coyotos_Cap_OK;
@@ -446,11 +446,11 @@ find_phdrs(const char *base)
 static bool
 in_region(region *r, uint64_t addr)
 {
-  return (addr - r->vaddr >= r->memsz);
+  return ((addr - r->vaddr) < r->memsz);
 }
 
 IDL_SERVER_HANDLER_PREDECL uint64_t
-HANDLE_coyotos_ElfProcessHandler_setBreak(uint64_t newBreak, ISE *_env)
+HANDLE_coyotos_ElfSpace_setBreak(uint64_t newBreak, ISE *_env)
 {
   // right now, we only allow growing the break
   if (newBreak < (dataRegion.vaddr + dataRegion.filesz) ||
@@ -509,10 +509,10 @@ static inline uint64_t
 choose_if(uint64_t epID, uint32_t pp)
 {
   switch (pp) {
-  case coyotos_ElfProcessHandler_PP_EPH:
-    return IKT_coyotos_ElfProcessHandler;
+  case coyotos_ElfSpace_PP_EPH:
+    return IKT_coyotos_ElfSpace;
 
-  case coyotos_ElfProcessHandler_PP_Handler:
+  case coyotos_ElfSpace_PP_Handler:
     return IKT_coyotos_MemoryHandler;
 
   default:
@@ -528,7 +528,7 @@ initialize(void)
   coyotos_Memory_l2value_t unusedl2v = 0;
 
   if (!coyotos_AddressSpace_getSlot(CR_TOOLS, 
-				    coyotos_ElfProcessHandler_TOOL_ELFFILE,
+				    coyotos_ElfSpace_TOOL_ELFFILE,
 				    CR_ELFFILE))
     goto fail;
 
@@ -573,7 +573,7 @@ initialize(void)
 
   // now, set up our capabilities and return our entry cap.
   if (!coyotos_AddressSpace_getSlot(CR_TOOLS, 
-				    coyotos_ElfProcessHandler_TOOL_BACKGROUND,
+				    coyotos_ElfSpace_TOOL_BACKGROUND,
 				    CR_BGGPT))
     goto fail;
 
@@ -592,7 +592,7 @@ initialize(void)
 			       CR_NULL,
 			       CR_NULL) ||
       !coyotos_Endpoint_makeEntryCap(CR_INITEPT, 
-				     coyotos_ElfProcessHandler_PP_Handler, 
+				     coyotos_ElfSpace_PP_Handler, 
 				     CR_HANDLER_ENTRY) ||
       !coyotos_Memory_setGuard(CR_SPACEGPT,
 			       make_guard(0, COYOTOS_SOFTADDR_BITS),
@@ -611,7 +611,7 @@ initialize(void)
 			     coyotos_Memory_restrictions_opaque,
 			     CR_OPAQUESPACE) ||
       !coyotos_Endpoint_makeEntryCap(CR_INITEPT, 
-				     coyotos_ElfProcessHandler_PP_EPH, 
+				     coyotos_ElfSpace_PP_EPH, 
 				     CR_REPLY0))
     goto fail;
     
@@ -682,11 +682,11 @@ ProcessRequests(struct IDL_SERVER_Environment *_env)
       gsu.pb.sndLen = 0;
       continue;
     }
-    _env->isEPH = (gsu.pb.u.pp == coyotos_ElfProcessHandler_PP_EPH);
+    _env->isEPH = (gsu.pb.u.pp == coyotos_ElfSpace_PP_EPH);
 
     switch(choose_if(gsu.pb.epID, gsu.pb.u.pp)) {
-    case IKT_coyotos_ElfProcessHandler:
-      _IDL_IFDISPATCH_coyotos_ElfProcessHandler(&gsu.coyotos_ElfProcessHandler, _env);
+    case IKT_coyotos_ElfSpace:
+      _IDL_IFDISPATCH_coyotos_ElfSpace(&gsu.coyotos_ElfSpace, _env);
       break;
     case IKT_coyotos_MemoryHandler:
       _IDL_IFDISPATCH_coyotos_MemoryHandler(&gsu.coyotos_MemoryHandler, _env);
