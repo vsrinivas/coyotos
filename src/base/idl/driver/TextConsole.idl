@@ -1,0 +1,36 @@
+package coyotos.driver;
+
+/**
+ * @brief ASCII console display interface.
+ *
+ * This is the interface specification for a text-oriented display
+ * providing minimal color capabilities. Conceptually, it implements
+ * the display component of an ASCII terminal, including the
+ * display-oriented ANSI terminal escape codes. Note that it does @em
+ * not implement the ANSI identify or writeback sequences, mainly
+ * because this is an output-only component.
+ *
+ * When we have a bidirection stream interface defined, this interface
+ * should derive from that and should be cut over to use compatible
+ * read/write methods.
+ *
+ * The current interface makes no provision for signalling display
+ * size changes. It is not immediately clear whether that should be
+ * handled here or in a separate process.
+ *
+ * This is a very basic text display driver, originally thrown
+ * together for the PC display running in MDA mode (mode 25.)
+ */
+interface TextConsole extends coyotos.Cap {
+
+  /** @brief Clear the display */
+  void clear();
+
+  /** @brief Write ASSCII character to display. */
+  void putChar(char c);
+
+  typedef sequence<char, 4095> chString;
+
+  /** @brief Write ASSCII character string to display. */
+  void putCharArray(chString s);
+};
