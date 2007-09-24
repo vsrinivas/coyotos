@@ -137,7 +137,7 @@ void cap_ProcessCommon(InvParam_t *iParam)
 	}
       }
 
-      obhdr_dirty(&p->hdr);
+      require(obhdr_dirty(&p->hdr));
 
       sched_commit_point();
 

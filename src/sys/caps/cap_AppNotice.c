@@ -69,7 +69,7 @@ void cap_AppNotice(InvParam_t *iParam)
 
       Process *p = (Process *)pCap->u2.prepObj.target;
 
-      obhdr_dirty(&p->hdr);
+      require(obhdr_dirty(&p->hdr));
       sched_commit_point();
 
       p->state.notices |= notices;

@@ -27,15 +27,15 @@
 
 #include <kerninc/ccs.h>
 
+/* Implemented in kern_kprintf.c: */
+extern uint32_t __assert(unsigned line, const char *filename, 
+			 const char *s) NORETURN;
+
 #ifdef NDEBUG
 
 #define assert(e)  ((void) 0)
 
 #else /* !NDEBG */
-
-/* Implemented in kern_kprintf.c: */
-extern uint32_t __assert(unsigned line, const char *filename, 
-			 const char *s) NORETURN;
 
 #define assert(e)				\
   ((e)						\
@@ -43,5 +43,10 @@ extern uint32_t __assert(unsigned line, const char *filename,
    : (__assert(__LINE__, __FILE__, #e), ((void) 0)))
 
 #endif
+
+#define require(e)				\
+  ((e)						\
+   ? ((void) 0)					\
+   : (__assert(__LINE__, __FILE__, #e), ((void) 0)))
 
 #endif /* __KERNINC_ASSERT_H__ */

@@ -36,6 +36,7 @@
 #include <kerninc/ReadyQueue.h>
 #include <kerninc/string.h>
 #include <kerninc/util.h>
+#include <kerninc/assert.h>
 #include <hal/transmap.h>
 #include <hal/irq.h>
 #include <hal/syscall.h>
@@ -98,7 +99,7 @@ proc_do_upcall(InvParam_t *iParam)
 			     &iParam->destCap[i], true);
   }
 
-  obhdr_dirty(&iParam->invokee->hdr);
+  require(obhdr_dirty(&iParam->invokee->hdr));
 
   /* Note this drops the RP and SP bits, leaving only the CO phase
    * for the receiver to complete. */

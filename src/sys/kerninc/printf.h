@@ -30,6 +30,10 @@
 
 #if HAVE_HUI
 extern void console_putc(const char);
+extern void console_detach();
+#ifdef BRING_UP
+extern void console_shrink();
+#endif
 extern void printf(const char *, ...);
 /** @brief Issue diagnostic and halt. 
  *

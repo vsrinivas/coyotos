@@ -95,14 +95,30 @@ enum ConsState {
 #define RED   0x400u
 
 #define CODE_BS  0x08
-#define CODE_TAB 0x09
-#define CODE_CR  0x0D
+#define CODE_TAB '\t'
+#define CODE_CR  '\r'
+#define CODE_LF  '\n'
 #define CODE_ESC 0x1B
 
-#define ROWS 25
+#define ROWS 20
 #define COLS 80 
 
 #define SCREEN_SIZE (ROWS * COLS)
+
+const char *message =
+  "\n"
+  "\n"
+  "  ACHTUNG!\n"
+  "\n"
+  "  Das machine is nicht fur der fingerpoken und mittengrabben.\n"
+  "  Is easy schnappen der springenwerk, blowenfusen und popencorken\n"
+  "  mit spitzen sparken. Das machine is diggen by experten only.\n"
+  "  Is nicht fur gerwerken by das dummkopfen. Das rubbernecken\n"
+  "  sightseeren keepen das cottenpiken hands in das pockets.\n"
+  "\n"
+  "  Relaxen und watchen das blinkenlights.\n"
+  "\n";
+
 
 #if 0
 static int putCharAtPos(unsigned int pos, unsigned char ch);
@@ -114,7 +130,7 @@ static void scroll(uint32_t spos, uint32_t epos, int amt);
 static int putColCharAtPos(unsigned int pos, uint8_t ch, uint8_t color);
 #endif
 
-static uint16_t *screen = (uint16_t *) 0xb8000;
+static volatile uint16_t *screen = (uint16_t *) 0xb8000;
 static uint32_t startAddrReg = 0;
 static uint8_t state = WaitChar;
 static uint8_t param[10];
@@ -175,11 +191,9 @@ putCursAt(int psn)
 static void
 clearScreen(void)
 {
-
   int i;
-  for (i = 0; i < SCREEN_SIZE; i++) {
-    screen[i] = 0x700u;		/* must preserve mode attributes! */
-  }
+  for (i = 0; i < SCREEN_SIZE; i++)
+    screen[i] = 0x700u;		/* must reset mode attributes! */
 
   pos = 0;
   putCursAt(pos);
@@ -189,13 +203,12 @@ clearScreen(void)
 static int
 putCharAtPos(unsigned int pos, uint8_t ch) 
 {
-
   if ((pos < 0) || (pos >= SCREEN_SIZE)) {
     /* Invalid range specified.  Return 1 */
     return 1;
   }
 
-  screen[pos] = ch | 0x200u;
+  screen[pos] = ((uint16_t) ch) | WHITE;
 
   return 0;
 }
@@ -204,10 +217,11 @@ void
 scroll(uint32_t spos, uint32_t epos, int amt)
 {
 
-  uint16_t oldscreen[2000];
+#if 0
+  uint16_t oldscreen[SCREEN_SIZE];
   uint32_t gap, p;
 
-  for (p = 0; p < 2000; p++) {
+  for (p = 0; p < SCREEN_SIZE; p++) {
     oldscreen[p] = screen[p];
   }
   
@@ -232,7 +246,7 @@ scroll(uint32_t spos, uint32_t epos, int amt)
       screen[p] = (0x7 << 8);
     }
   }
-
+#endif
   
   return;
 }
@@ -240,11 +254,9 @@ scroll(uint32_t spos, uint32_t epos, int amt)
 static void
 processEsc(uint8_t ch)
 {
-
   uint32_t p;
   uint32_t posRow = pos / COLS;
   uint32_t posCol = pos % COLS;
-
 
   if (ch != 'J' && ch != 'K') {
     for (p = 0; p < 10; p++) {
@@ -253,7 +265,6 @@ processEsc(uint8_t ch)
       }
     }
   }
-
 
   switch (ch) {
   case '@':
@@ -372,9 +383,8 @@ processEsc(uint8_t ch)
 	pos = oldpos;
 	putCursAt(pos);
       }
-      else if (param[0] == 2) {
+      else if (param[0] == 2)
 	clearScreen();
-      }
 
       break;
     }
@@ -507,7 +517,6 @@ processEsc(uint8_t ch)
       putCursAt(pos);
       break;
     }
-
   }
 
   state = WaitChar;
@@ -554,6 +563,7 @@ processChar(uint8_t ch)
       }
 
     case CODE_CR:
+    case CODE_LF:
       {
 	int newpos;
 	newpos = ((pos / COLS) *COLS) + COLS;
@@ -573,7 +583,6 @@ processChar(uint8_t ch)
   }
   putCursAt(pos);
 
-  
   return;
 }
 
@@ -780,6 +789,14 @@ initialize()
   pos = 0;
 
   clearScreen();
+
+  putCharAtPos(240, 'A');
+  putCharAtPos(241, 'B');
+  putCharAtPos(242, 'C');
+  putCharAtPos(243, 'D');
+
+  while (*message)
+    processInput(*message++);
 
   return true;
 }

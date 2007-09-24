@@ -73,7 +73,7 @@ void cap_Endpoint(InvParam_t *iParam)
       cap_prepare(iParam->srcCap[1].cap);
       cap_prepare(&ep->state.recipient);
 
-      obhdr_dirty(&ep->hdr);
+      require(obhdr_dirty(&ep->hdr));
 
       sched_commit_point();
 

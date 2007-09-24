@@ -742,6 +742,9 @@ cache_alloc_page_header(void)
 void
 cache_clear_object(ObjectHeader *ob)
 {
+  if (ob->immutable)
+    return;
+
   assert(ob->dirty || !(ob->current || ob->snapshot));
 
   switch(ob->ty) {
@@ -847,9 +850,8 @@ cache_get_physPage(kpa_t pa)
     return 0;
 
   HoldInfo hi = mutex_grab(&page->mhdr.hdr.lock);
-  if (page->mhdr.hdr.oid == oid) {
+  if (page->mhdr.hdr.oid == oid)
     return page;
-  }
 
   if (page->mhdr.hdr.pinned) {
     // cannot allocate pinned object
@@ -882,6 +884,7 @@ cache_get_physPage(kpa_t pa)
     npage->mhdr.hdr.snapshot = page->mhdr.hdr.snapshot;
     npage->mhdr.hdr.dirty = page->mhdr.hdr.dirty;
     npage->mhdr.hdr.pinned = 0;
+    npage->mhdr.hdr.immutable = page->mhdr.hdr.immutable;
     npage->mhdr.hdr.cksum = page->mhdr.hdr.cksum;
 
     obhash_insert_obj(npage);
@@ -891,14 +894,17 @@ cache_get_physPage(kpa_t pa)
 
   memset_p(page->pa, 0, COYOTOS_PAGE_SIZE);
 
+  assert (page->pa == pa);
   page->mhdr.hdr.ty = ot_Page;
   page->mhdr.hdr.oid = oid;
   page->mhdr.hdr.allocCount = 0;
   page->mhdr.hdr.hasDiskCaps = 0;
   page->mhdr.hdr.current = 1;
   page->mhdr.hdr.snapshot = 0;
-  page->mhdr.hdr.dirty = 1;
+  page->mhdr.hdr.dirty = 0;
   page->mhdr.hdr.pinned = 1;
+  page->mhdr.hdr.immutable = 0;
+  page->mhdr.hdr.cksum = 0;	/* page just zero filled */
 
   obhash_insert_obj(page);
 

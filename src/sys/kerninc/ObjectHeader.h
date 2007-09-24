@@ -116,6 +116,9 @@ typedef struct ObjectHeader {
   /** @brief Object has been modified and requires write-back. */
   bool dirty;
 
+  /** @brief Object cannot be mutated (e.g. ROM page). */
+  bool immutable;
+
   /** @brief Object is pinned and cannot be aged out */
   bool pinned;
 
@@ -164,8 +167,10 @@ extern void page_gc(Page *page);
  * Postconditions:
  *     The object is marked dirty and is safe to be written to after 
  *     the commit point.
+ *
+ * Returns false IFF the target object is immutable.
  */
-extern void obhdr_dirty(ObjectHeader *);
+extern bool obhdr_dirty(ObjectHeader *);
 
 /** @brief Remove all content of an object header, invalidating all
  * cached state including outstanding capabilities.

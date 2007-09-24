@@ -492,7 +492,12 @@ do_pageFault(Process *base, uintptr_t addr_arg,
 
       // To install a writable mapping to a page, it must be marked dirty
       if (!(restr & (CAP_RESTR_RO|CAP_RESTR_WK)) && wantWrite) {
-	obhdr_dirty(&mwe->entry->hdr);
+	/* Target page may be immutable. Is this the right result
+	   code? */
+	if (!obhdr_dirty(&mwe->entry->hdr)) {
+	  result = coyotos_Process_FC_AccessViolation;
+	  goto deliver_fault;
+	}
       } else {
 	/* if the page isn't already dirty, make the PTE read-only. */
 	if (!mwe->entry->hdr.dirty)

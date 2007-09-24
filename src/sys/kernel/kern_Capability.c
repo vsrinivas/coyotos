@@ -324,7 +324,7 @@ cap_handlerBeingOverwritten(capability *cap)
   sq_WakeAll(&p->rcvWaitQ, false);
 }
 
-void
+bool
 obhdr_dirty(ObjectHeader *hdr)
 {
   assert(mutex_isheld(&hdr->lock));
@@ -332,7 +332,11 @@ obhdr_dirty(ObjectHeader *hdr)
   assert(!hdr->snapshot);
   assert(hdr->current);
 
+  if (hdr->immutable)
+    return false;
+
   hdr->dirty = 1;
+  return true;
 }
 
 static void

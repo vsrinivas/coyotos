@@ -46,8 +46,13 @@
 #endif
 #define REAL_SCREEN_ROWS 25
 
-static uint16_t *const screen = (uint16_t *) PTOKV(0xb8000, uint16_t *);
+#ifdef BRING_UP
+static volatile uint16_t *screen = (uint16_t *) PTOKV(0xb8000, uint16_t *);
+static uint32_t screen_rows = SCREEN_ROWS;
+#else
+static volatile uint16_t *const screen = (uint16_t *) PTOKV(0xb8000, uint16_t *);
 static const uint32_t screen_rows = SCREEN_ROWS;
+#endif
 static const uint32_t screen_cols = 80;
 static bool console_live = true;
 static uint32_t StartAddressRegister;
@@ -193,10 +198,23 @@ extern void console_putc(char c)
  * first user mode instruction, and that further attempts to put
  * output on the console should be ignored.
  */
-extern void console_detach()
+extern void 
+console_detach()
 {
   console_live = false;
 }
+
+#ifdef BRING_UP
+extern void
+console_shrink()
+{
+  uint16_t *newScreen = (uint16_t *) PTOKV(0xb8000, uint16_t *);
+  newScreen += (20 * screen_cols);
+  screen = newScreen;
+  offset -= (20 * screen_cols);
+  screen_rows = 3;
+}
+#endif
 
 void console_init()
 {

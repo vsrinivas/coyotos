@@ -59,7 +59,12 @@ cap_Page(InvParam_t *iParam)
       }
 
       Page *toHdr = (Page *) iParam->iCap.cap->u2.prepObj.target;
-      obhdr_dirty(&toHdr->mhdr.hdr);
+      if (!obhdr_dirty(&toHdr->mhdr.hdr)) {
+	sched_commit_point();
+
+	InvErrorMessage(iParam, RC_coyotos_Cap_NoAccess);
+	return;
+      }
       
       char *va = TRANSMAP_MAP(toHdr->pa, char *);
 

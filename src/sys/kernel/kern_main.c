@@ -62,6 +62,12 @@ kernel_main(void)
 
   printf("Dispatching first process...\n");
 
+#ifdef BRING_UP
+  console_shrink();
+#else
+  console_detach();
+#endif
+
   sched_dispatch_something();
 
   fatal("Unexpected return from sched_dispatch_something\n");

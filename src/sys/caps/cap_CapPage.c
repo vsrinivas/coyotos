@@ -61,7 +61,7 @@ void cap_CapPage(InvParam_t *iParam)
       }
 
       Page *toHdr = (Page *) iParam->iCap.cap->u2.prepObj.target;
-      obhdr_dirty(&toHdr->mhdr.hdr);
+      require(obhdr_dirty(&toHdr->mhdr.hdr));
       
       capability *va = TRANSMAP_MAP(toHdr->pa, capability *);
 

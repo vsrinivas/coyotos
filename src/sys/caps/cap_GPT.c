@@ -62,7 +62,7 @@ void cap_GPT(InvParam_t *iParam)
 
       GPT *gpt = (GPT *)iParam->iCap.cap->u2.prepObj.target;
 
-      obhdr_dirty(&gpt->mhdr.hdr);
+      require(obhdr_dirty(&gpt->mhdr.hdr));
 
       /* We must invalidate all cached state. */
       memhdr_invalidate_cached_state(&gpt->mhdr);

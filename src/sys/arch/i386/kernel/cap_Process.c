@@ -85,7 +85,7 @@ void cap_Process(InvParam_t *iParam)
 	  nBytes = curVA - outVA;
 	  break;
 	}
-	obhdr_dirty(&fp.pgHdr->mhdr.hdr);
+        require(obhdr_dirty(&fp.pgHdr->mhdr.hdr));
 
 	size_t curBytes = align_up(curVA, COYOTOS_PAGE_SIZE) - curVA;
 	if (curBytes == 0)

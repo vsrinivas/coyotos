@@ -145,7 +145,10 @@ void cap_Range(InvParam_t *iParam)
       ObjectHeader *obHdr = iParam->srcCap[1].cap->u2.prepObj.target;
       bool bumpAllocCount = obHdr->hasDiskCaps ? true : false;
 
-      obhdr_dirty(obHdr);
+      /** obhdr_dirty() fails exactly if the object is immutable, in
+       * which case we don't want to dirty it in any case, so ignore
+       * the result. */
+      (void) obhdr_dirty(obHdr);
       obhdr_invalidate(obHdr);
 
       /** @bug I bet this is completely boogered. */
@@ -222,6 +225,7 @@ void cap_Range(InvParam_t *iParam)
       uint32_t capType = 0;
       capability *brand = NULL;
 
+#if 0
       /* handle physical ranges as a special case */
       if (oid >= coyotos_Range_physOidStart) {
 	kpa_t kpa = (oid - coyotos_Range_physOidStart) * COYOTOS_PAGE_SIZE;
@@ -274,6 +278,7 @@ void cap_Range(InvParam_t *iParam)
 	iParam->opw[0] = InvResult(iParam, 1);
 	return;
       }
+#endif
 
       /** We need to hunt down the target object so that we can
        * determine the allocation count.  If the object is not already
