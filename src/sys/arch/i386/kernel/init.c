@@ -643,9 +643,16 @@ process_modules(void)
 void 
 arch_init(void)
 {
-  // Initialize the console output first, so that we can get
-  // diagnostics while the rest is running.
+  /* Initialize the console output first, so that we can get
+   * diagnostics while the rest is running.
+   */
   console_init();
+
+  /* Initialize the CPU structures, since we need to call things that
+   * want to grab mutexes.
+   */
+  for (size_t i = 0; i < MAX_NCPU; i++)
+    cpu_construct(i);
 
   /* Initialize the transient map, so that later code can access
      arbitrary parts of memory. */
@@ -670,8 +677,9 @@ arch_init(void)
   /* Need to get the physical memory map before we do anything else. */
   config_physical_memory();
 
-  // Make sure that we don't overwrite the loaded modules during cache
-  // initialization.
+  /* Make sure that we don't overwrite the loaded modules during cache
+   * initialization.
+   */
   protect_multiboot_regions();
 
   /* Initialize the hardware exception vector table. */

@@ -1,7 +1,7 @@
 #ifndef __KERNINC_PHYSMEM_H__
 #define __KERNINC_PHYSMEM_H__
 /*
- * Copyright (C) 2005, The EROS Group, LLC.
+ * Copyright (C) 2007, The EROS Group, LLC.
  *
  * This file is part of the Coyotos Operating System.
  *

@@ -46,14 +46,6 @@ mutex_do_trylock(mutex_t *mtx, uint32_t curval, uint32_t *outval)
   uint32_t cas_against = 0;
 
   switch (LOCK_TYPE(curval)) {
-  case LTY_CPU:
-    if (LOCK_CPU(curval) == MY_CPU(curCPU)->id) {
-      // valid lock held by our CPU;  allow the recursive lock
-      *outval = curval;
-      return true;
-    }
-    break;
-
   case LTY_TRAN: {
     size_t cpuidx = LOCK_CPU(curval);
     assert(cpuidx < cpu_ncpu);
@@ -90,8 +82,7 @@ bool
 mutex_isheld(mutex_t *mtx)
 {
   uint32_t curval = atomic_read(&mtx->_opaque);
-  return ((curval == MY_CPU(curCPU)->procMutexValue)
-	  || (curval == MY_CPU(curCPU)->cpuMutexValue));
+  return (curval == MY_CPU(curCPU)->procMutexValue);
 }
 
 HoldInfo
@@ -106,34 +97,6 @@ mutex_grab(mutex_t *mtx)
 
     if (MY_CPU(curCPU)->shouldDefer)
       sched_abandon_transaction();
-
-    if (LOCK_TYPE(oldval) == LTY_TRAN) {
-      size_t cpuidx = LOCK_CPU(oldval);
-      assert(cpuidx < cpu_ncpu);
-      CPU *cpu = &cpu_vec[cpuidx];
-
-      if (cpu->priority < MY_CPU(curCPU)->priority ||
-	  (cpu->priority == MY_CPU(curCPU)->priority &&
-	   cpu->id > MY_CPU(curCPU)->id)) {
-	/// @bug need to be more fair in same-priority case
-	if (!cpu->shouldDefer)
-	  cpu->shouldDefer = 1;
-      }
-    }
-  }
-}
-
-HoldInfo
-mutex_cpulock(mutex_t *mtx)
-{
-  uint32_t oldval = atomic_read(&mtx->_opaque);
-  for (;;) {
-    if (mutex_do_trylock(mtx, oldval, &oldval)) {
-      HoldInfo hi = {mtx, oldval};
-
-      atomic_write(&mtx->_opaque, MY_CPU(curCPU)->cpuMutexValue);
-      return hi;
-    }
   }
 }
 
@@ -158,19 +121,16 @@ mutex_release(HoldInfo hi)
   uint32_t curVal = atomic_read(&hi.lockPtr->_opaque);
 
 #ifndef NDEBUG
-  if (curVal != MY_CPU(curCPU)->procMutexValue && curVal != MY_CPU(curCPU)->cpuMutexValue) {
+  if (curVal != MY_CPU(curCPU)->procMutexValue) {
     fatal("mutex_release: cpu %d, %08lx: is gen=%d:ty=%d:cpu=%d,\n"
-	  "expected gen=%d:ty=%d:cpu=%d or gen=%d:ty=%d:cpu=%d\n",
+	  "expected gen=%d:ty=%d:cpu=%d\n",
 	  MY_CPU(curCPU)->id, hi.lockPtr, 
 	  LOCK_GENERATION(curVal),
 	  LOCK_TYPE(curVal),
 	  LOCK_CPU(curVal),
 	  LOCK_GENERATION(MY_CPU(curCPU)->procMutexValue),
 	  LOCK_TYPE(MY_CPU(curCPU)->procMutexValue),
-	  LOCK_CPU(MY_CPU(curCPU)->procMutexValue),
-	  LOCK_GENERATION(MY_CPU(curCPU)->cpuMutexValue),
-	  LOCK_TYPE(MY_CPU(curCPU)->cpuMutexValue),
-	  LOCK_CPU(MY_CPU(curCPU)->cpuMutexValue));
+	  LOCK_CPU(MY_CPU(curCPU)->procMutexValue));
   }
 #endif
   atomic_write(&hi.lockPtr->_opaque, hi.oldValue);

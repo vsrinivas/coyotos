@@ -35,9 +35,8 @@
  *
  * A cross-trap is needed to acquire it.
  */
-#define LTY_CPU  0x1u
 /** @brief lock type for per-transaction lock */
-#define LTY_TRAN 0x2u
+#define LTY_TRAN 0x1u
 
 #define LOCKVALUE(gen,ty,cpu) \
   (((gen) * 4 * MAX_NCPU) | ((ty) * MAX_NCPU) | (cpu))
@@ -76,15 +75,6 @@ typedef struct HoldInfo {
  * back off by a higher priority process.
  */
 HoldInfo mutex_grab(mutex_t *mtx);
-
-/**
- * @brief Grab @p mtx unconditionally on behalf of the current CPU,
- * returning a HoldInfo structure for its release.
- *
- * This is used in the scheduler when locking the newly selected
- * current process to the current CPU.
- */
-HoldInfo mutex_cpulock(mutex_t *mtx);
 
 /**
  * @brief Attempt to grab @p mtx.  On failure, returns false.  On success,
