@@ -30,7 +30,9 @@
 #include <kerninc/mutex.h>
 #include <kerninc/string.h>
 
-CPU cpu_vec[MAX_NCPU];
+CPU cpu_vec[MAX_NCPU] = {
+};
+
 /** @brief Number of identified CPUs. This may increase early in
  * arch-dependent initialization. */
 size_t cpu_ncpu = 1;
@@ -42,6 +44,5 @@ cpu_construct(cpuid_t ndx)
 
   INIT_TO_ZERO(cpu);
   cpu->id = ndx;
-  cpu->cpuMutexValue = LOCKVALUE(0, LTY_CPU, cpu->id);
   cpu->procMutexValue = LOCKVALUE(0, LTY_TRAN, cpu->id);
 }

@@ -55,6 +55,7 @@
 #include <kerninc/assert.h>
 #include <kerninc/printf.h>
 #include <kerninc/PhysMem.h>
+#include <kerninc/mutex.h>
 #include <kerninc/shellsort.h>
 #include <kerninc/string.h>
 #include <kerninc/util.h>
@@ -75,6 +76,7 @@ static PmemInfo pmem_table[PHYSMEM_NREGION];
 static unsigned nPmemInfo = 0;
 // static unsigned pmem_table_sz = 0;
 
+static spinlock_t pmem_lock = SPINLOCK_INIT;
 
 static void pmem_cleanup();
 PmemInfo *pmem_FindRegion(kpa_t addr);
@@ -118,6 +120,8 @@ pmem_init(kpa_t base, kpa_t bound)
 PmemInfo *
 pmem_FindRegion(kpa_t addr)
 {
+  SpinHoldInfo shi = spinlock_grab(&pmem_lock);
+
   for (unsigned i = 0; i < PHYSMEM_NREGION; i++) {
     if (pmem_table[i].cls == pmc_UNUSED)
       continue;
@@ -125,6 +129,8 @@ pmem_FindRegion(kpa_t addr)
     if (pmem_table[i].base <= addr && addr < pmem_table[i].bound)
       return &pmem_table[i];
   }
+
+  spinlock_release(shi);
 
   return NULL;
 }
@@ -138,6 +144,8 @@ PmemInfo *
 pmem_NewRegion(kpa_t base, kpa_t bound, PmemClass cls, PmemUse use,
 	       const char *descrip)
 {
+  SpinHoldInfo shi = spinlock_grab(&pmem_lock);
+
   if (nPmemInfo >= PHYSMEM_NREGION) {
     pmem_showall();
     fatal("Physical region list exhausted.\n");
@@ -183,6 +191,8 @@ pmem_NewRegion(kpa_t base, kpa_t bound, PmemClass cls, PmemUse use,
   pmi->cls = cls;
   pmi->use = use;
   pmi->descrip = descrip;
+
+  spinlock_release(shi);
 
   return pmem_FindRegion(base);
 }
@@ -254,9 +264,14 @@ pmem_AllocRegion(kpa_t base, kpa_t bound, PmemClass cls, PmemUse use,
     return 0;
 
   assert(base < bound);
+
+  SpinHoldInfo shi = spinlock_grab(&pmem_lock);
+
   PmemInfo *pmi = pmem_FindRegion(base);
-  if (!pmi)
+  if (!pmi) {
+    spinlock_release(shi);
     return PMEM_ALLOC_FAIL;
+  }
 
   if (pmi->base > base ||
 		 pmi->bound < bound ||
@@ -304,6 +319,8 @@ pmem_AllocRegion(kpa_t base, kpa_t bound, PmemClass cls, PmemUse use,
 
   pmem_cleanup();
 
+  spinlock_release(shi);
+
   return base;
 }
 
@@ -312,6 +329,8 @@ pmem_AllocRegion(kpa_t base, kpa_t bound, PmemClass cls, PmemUse use,
 void
 pmem_showall()
 {
+  SpinHoldInfo shi = spinlock_grab(&pmem_lock);
+
   for (unsigned i = 0; i < PHYSMEM_NREGION; i++) {
     if (pmem_table[i].cls == pmc_UNUSED)
       continue;
@@ -323,6 +342,8 @@ pmem_showall()
 	   pmu_descrip(pmem_table[i].use),
 	   pmem_table[i].descrip ? pmem_table[i].descrip : "");
   }
+
+  spinlock_release(shi);
 }
 
 /** @brief Given two regions, decide which one to allocate from
@@ -401,9 +422,13 @@ kpa_t
 pmem_AllocBytes(const PmemConstraint *mc, size_t nBytes,
 		PmemUse use, const char *descrip)
 {
+  SpinHoldInfo shi = spinlock_grab(&pmem_lock);
+
   PmemInfo *pmi = pmem_ChooseRegion(nBytes, mc);
-  if (!pmi)
+  if (!pmi) {
+    spinlock_release(shi);
     return PMEM_ALLOC_FAIL;
+  }
 
   /* Apply the constraint. */
   kpa_t bound = min(pmi->bound, mc->bound);
@@ -424,7 +449,11 @@ pmem_AllocBytes(const PmemConstraint *mc, size_t nBytes,
     assert(where + nBytes <= pmi->bound);
   }
 
-  return pmem_AllocRegion(where, where + nBytes, pmc_RAM, use, descrip);
+  where = pmem_AllocRegion(where, where + nBytes, pmc_RAM, use, descrip);
+
+  spinlock_release(shi);
+
+  return where;
 }
 
 /** @brief Return the number of available units, each of size
@@ -443,6 +472,8 @@ pmem_AllocBytes(const PmemConstraint *mc, size_t nBytes,
 kpsize_t
 pmem_Available(const PmemConstraint *mc, kpsize_t unitSize, bool contiguous)
 {
+  SpinHoldInfo shi = spinlock_grab(&pmem_lock);
+
   kpsize_t nUnits = 0;
   kpsize_t nContigUnits = 0;
 
@@ -469,6 +500,8 @@ pmem_Available(const PmemConstraint *mc, kpsize_t unitSize, bool contiguous)
 
     nUnits += unitsHere;
   }
+
+  spinlock_release(shi);
 
   return contiguous ? nContigUnits : nUnits;
 }
@@ -626,6 +659,8 @@ pmem_FreeRegion(PmemInfo *pmi)
   }
 #endif
 
+  SpinHoldInfo shi = spinlock_grab(&pmem_lock);
+
   // See if we can coalesce this region into its successor:
   size_t ndx = pmi - pmem_table;
   if ((ndx < (PHYSMEM_NREGION - 1))
@@ -649,6 +684,8 @@ pmem_FreeRegion(PmemInfo *pmi)
   // We have changed the region table to have some new
   // entries. Re-sort it.
   pmem_cleanup();
+
+  spinlock_release(shi);
 }
 
 #endif

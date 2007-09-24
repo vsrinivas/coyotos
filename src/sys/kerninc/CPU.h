@@ -49,9 +49,6 @@ typedef uint32_t cpuid_t;
 #define CPUFL_NEED_WAKEUP  0x2
 
 typedef struct CPU {
-  /** @brief Mutex value for locks held by this CPU. */
-  uint32_t cpuMutexValue;
-
   /** @brief Mutex value for locks held by current process on this
    * CPU.
    *
