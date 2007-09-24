@@ -37,8 +37,8 @@ $(BUILDDIR)/testLargeModel: $(OBJECTS)
 	$(GCC) $(GPLUSFLAGS) $(OBJECTS) $(LIBS) $(STDLIBDIRS) -o $@
 
 # for test images
-$(BUILDDIR)/mkimage.out: $(TARGETS) testLargeModel.mki
-	$(MKIMAGE) -o $@ -t $(COYOTOS_TARGET) -I. -L$(BUILDDIR) testLargeModel
+$(BUILDDIR)/mkimage.out: $(TARGETS) testElfModel.mki
+	$(MKIMAGE) -o $@ -t $(COYOTOS_TARGET) -I. -L$(BUILDDIR) testElfModel
 
 -include $(BUILDDIR)/.*.m
 

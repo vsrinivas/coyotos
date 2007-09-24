@@ -23,6 +23,8 @@ module coyotos.VirtualCopySpace {
   import Constructor = coyotos.Constructor;
   import Util = coyotos.Util;
 
+  import Small = coyotos.model.Small;
+
   /* Our protected payload values */
   export enum PP {
     VCS = 0,
@@ -44,29 +46,23 @@ module coyotos.VirtualCopySpace {
     BACKGROUND = rt.TOOL.APP0
   };
 
-  def vcs_image = loadimage(PrimeBank, "coyotos/VirtualCopySpace");
-  def vcs_space = weaken(vcs_image.space);
-  def vcs_pc = vcs_image.pc;
+  def vcs_image = Small.load_image(PrimeBank, "coyotos/VirtualCopySpace");
 
-  /* returns a constructor for the space loaded from "file" */
-  export def make_file(bank, file) {
-    def cons = Constructor.create(bank, vcs_space, vcs_pc, NullCap());
-    def cons_bank = Constructor.get_bank(cons);
-
-    def image = loadimage(cons_bank, file);
-
-    Constructor.set_tool(cons, TOOLS.BACKGROUND, weaken(image.space));
-
-    return cons;
-  }
-  
   /* returns a constructor for an arbitrary space */
   export def make(bank, space) {
-    def cons = Constructor.create(bank, vcs_space, vcs_pc, NullCap());
+    def cons = Constructor.make(bank, vcs_image, NullCap());
 
     Constructor.set_tool(cons, TOOLS.BACKGROUND, weaken(space));
 
     return cons;
+  }
+
+  export def load_image(bank, file) {
+    def image = loadimage(bank, file);
+
+    image.space = make(bank, image.space);
+
+    return image;
   }
 
   def make_filled_gpt(l2g, l2v, value) {
@@ -99,23 +95,6 @@ module coyotos.VirtualCopySpace {
     def l2g = Util.min(l2v+4, 63);
     zeroSpc = make_filled_gpt(l2g, l2v, zeroSpc);
   } while (get_l2g(zeroSpc) < 63);
-
-  //   def zeroPg = weaken(new Page(PrimeBank));
-  //   /// @bug we need to built this based on get_l2g(zeroPg)
-  //  def zeroSpc =
-  //      make_filled_gpt(63, 60,
-  //      make_filled_gpt(60, 56,
-  //      make_filled_gpt(56, 52,
-  //      make_filled_gpt(52, 48,
-  //      make_filled_gpt(48, 44,
-  //      make_filled_gpt(44, 40,
-  //      make_filled_gpt(40, 36,
-  //      make_filled_gpt(36, 32,
-  //      make_filled_gpt(32, 28,
-  //      make_filled_gpt(28, 24,
-  //      make_filled_gpt(24, 20,
-  //      make_filled_gpt(20, 16,
-  //      make_filled_gpt(16, 12, zeroPg)))))))))))));
 
   export def zeroVCS = make(PrimeBank, zeroSpc);
 }

@@ -26,6 +26,7 @@ DIRS=\
     testConstructor \
     testHandler \
     testLargeModel \
+    testVirtualCopyModel \
     testMalloc \
     testPhysRange
 

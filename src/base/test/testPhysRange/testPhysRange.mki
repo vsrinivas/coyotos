@@ -21,9 +21,11 @@
 module testPhysRange {
    import util = coyotos.Util;
    import rt = coyotos.RunTime;
-   import sb = coyotos.SpaceBank;
+   import small = coyotos.model.Small;
 
-   def testPhysRange = util.make_small_process(PrimeBank, "testPhysRange");
+   def bank = new Bank(PrimeBank);
+   def image = small.load_image(bank, "testPhysRange");
+   def testPhysRange = util.make_process(bank, image, NullCap());
 
    testPhysRange.capReg[rt.REG.APP0] = Range();
 }

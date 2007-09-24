@@ -20,9 +20,9 @@
 
 module testHandler {
    import rt = coyotos.RunTime;
-   import util = coyotos.Util;
+   import llutil = coyotos.LowLevelUtil;
 
-   def handler = util.make_ironman_process(PrimeBank, "testHandler");
+   def handler = llutil.make_ironman_process(PrimeBank, "testHandler");
 
    export capreg APP {
       KERNLOG = rt.REG.APP0 + 4
@@ -35,11 +35,11 @@ module testHandler {
 
    handler.capReg[APP.KERNLOG] = KernLog();
 
-   def child1 = util.make_ironman_process(PrimeBank, "testProg");
+   def child1 = llutil.make_ironman_process(PrimeBank, "testProg");
    child1.handler = enter(handler.capReg[rt.REG.INITEPT],
 	PP_ProcessHandler);
 
-   def child2 = util.make_ironman_process(PrimeBank, "testProg");
+   def child2 = llutil.make_ironman_process(PrimeBank, "testProg");
    child2.addrSpace.cap[15] = enter(handler.capReg[rt.REG.INITEPT], 
 	PP_MemoryHandler);
    child2.addrSpace.ha = 1;
