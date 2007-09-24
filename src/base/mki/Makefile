@@ -26,7 +26,7 @@ MKISRC+=$(wildcard */*/[A-Za-z]*.mki)
 
 include $(COYOTOS_SRC)/build/make/makerules.mk
 
-install: $(MKISRC)
+interfaces: $(MKISRC)
 	for mki in $(MKISRC); do\
 		$(INSTALL) -d $(COYOTOS_ROOT)/usr/include/mki/`dirname $$mki`; \
 		$(INSTALL) -m 0644 $$mki $(COYOTOS_ROOT)/usr/include/mki/`dirname $$mki`; \
