@@ -45,6 +45,7 @@
 #include "lapic.h"
 
 // #define USE_LAPIC
+#define DEBUG_HARDCLOCK if (0)
 
 
 #define CMOS_HARD_TICK_RATE     1193182L
@@ -206,8 +207,9 @@ cmos_pit_wakeup(Process *inProc, fixregs_t *saveArea)
     atomic_set_bits(&MY_CPU(curCPU)->flags, CPUFL_WAS_PREEMPTED);
 
     LOG_EVENT(ety_KernPreempt, MY_CPU(current), 0, 0);
-    printf("Current process preempted by timer (from %s).\n",
-	   inProc ? "user" : "kernel");
+    DEBUG_HARDCLOCK
+      printf("Current process preempted by timer (from %s).\n",
+	     inProc ? "user" : "kernel");
   }
 
   return;
@@ -269,9 +271,10 @@ lapic_calibrate()
 
   uint32_t ratio = (lapic_hi - lapic_lo) / (cmos_hi - cmos_lo);
 
-  printf("%d CMOS ticks => %d lapic_ticks (%d)\n", 
-	 (cmos_hi - cmos_lo), (lapic_hi - lapic_lo), 
-	 ratio);
+  DEBUG_HARDCLOCK
+    printf("%d CMOS ticks => %d lapic_ticks (%d)\n", 
+	   (cmos_hi - cmos_lo), (lapic_hi - lapic_lo), 
+	   ratio);
   return ratio;
 }
 
@@ -299,8 +302,9 @@ lapic_interval_init()
   uint32_t val = lapic_read_register(LAPIC_LVT_Timer);
   val &= ~LAPIC_LVT_TIMER_MODE;
   lapic_write_register(LAPIC_LVT_Timer, val | LAPIC_LVT_TIMER_PERIODIC|LAPIC_LVT_MASKED);
-
-  printf("LVT TIMER: 0x%08x\n", lapic_read_register(LAPIC_LVT_Timer));
+  
+  DEBUG_HARDCLOCK
+    printf("LVT TIMER: 0x%08x\n", lapic_read_register(LAPIC_LVT_Timer));
 
   irq_Bind(irq_LAPIC_Timer, VEC_MODE_FROMBUS, VEC_LEVEL_FROMBUS, lapic_pit_wakeup);
 

@@ -303,6 +303,22 @@ vh_UserFault(Process *inProc, fixregs_t *saveArea)
     }
   case vec_GeneralProtection: 
     {
+      /* If this is GP(0), and the domain holds the DevicePrivs key in a
+       * register, but it's privilege level is not appropriate for I/O
+       * access, escalate it's privilege level. */
+
+      if (inProc) {
+	uint32_t iopl = saveArea->EFLAGS & EFLAGS_IOPL;
+	if (saveArea->Error == 0 
+	    && iopl < EFLAGS_IOPL3
+	    && inProc->state.ioSpace.type == ct_IOPriv) {
+	  // No need to mask out old value, since we are writing all
+	  // 1's to the field:
+	  inProc->state.fixregs.EFLAGS |= EFLAGS_IOPL3;
+	  return;
+	}
+      }
+
       printf("Took a %s general protection fault. Saved state is:\n",
 	     inProc ? "process" : "kernel");
       dump_savearea(saveArea);
