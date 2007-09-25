@@ -50,7 +50,6 @@ module coyotos.driver.TextConsole {
 
   def bank = new Bank(PrimeBank);
   def image = small.load_image(bank, "coyotos/driver/TextConsole");
-  image.space = weaken(image.space);
 
   // For testing, hand fabricate this as a running process:
   def tc_proc = util.make_process(PrimeBank, image, NullCap());
