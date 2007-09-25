@@ -66,11 +66,14 @@ include $(COYOTOS_SRC)/build/make/makerules.mk
 
 install all: $(TARGETS)
 
+.PHONY: interfaces
+interfaces: $(BUILDDIR) $(HEADERS)
+	$(INSTALL) -d $(COYOTOS_ROOT)/usr/include/coyotos
+	$(INSTALL) -m 0644 $(HEADERS) $(COYOTOS_ROOT)/usr/include/coyotos
+
 install: all
 	$(INSTALL) -d $(COYOTOS_ROOT)/usr/lib
 	$(INSTALL) -m 0644 $(TARGETS) $(COYOTOS_ROOT)/usr/lib
-	$(INSTALL) -d $(COYOTOS_ROOT)/usr/include/coyotos
-	$(INSTALL) -m 0644 $(HEADERS) $(COYOTOS_ROOT)/usr/include/coyotos
 
 $(RUNTIME_H): $(BUILDDIR)/coyotos.RunTime.h $(GENRUNTIME)
 	mkdir -p $(BUILDDIR)/coyotos

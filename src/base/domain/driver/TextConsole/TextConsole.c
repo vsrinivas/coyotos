@@ -40,6 +40,7 @@
 #include <coyotos/capidl.h>
 #include <coyotos/syscall.h>
 #include <coyotos/runtime.h>
+#include <coyotos/kprintf.h>
 #include <coyotos/reply_Constructor.h>
 #include <coyotos/i386/io.h>
 
@@ -52,8 +53,6 @@
 
 #include <coyotos.driver.TextConsole.h>
 #include <idl/coyotos/driver/TextConsole.server.h>
-
-extern void kprintf(caploc_t cap, const char* fmt, ...);
 
 #define CR_MYSPACE    		coyotos_driver_TextConsole_APP_MYSPACE
 #define CR_PHYSRANGE   		coyotos_driver_TextConsole_APP_PHYSRANGE

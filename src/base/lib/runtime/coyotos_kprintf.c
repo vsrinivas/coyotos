@@ -22,6 +22,7 @@
 #include <stdio.h>
 #include <ctype.h>
 #include <string.h>
+#include <coyotos/kprintf.h>
 #include <coyotos/ascii.h>
 #include <idl/coyotos/KernLog.h>
 
