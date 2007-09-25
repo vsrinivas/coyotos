@@ -89,7 +89,7 @@ module coyotos.VirtualCopySpace {
     return weaken(gpt);
   }
 
-  def zeroSpc = weaken(new Page(PrimeBank));
+  export def zeroSpc = weaken(new Page(PrimeBank));
   do {
     def l2v = get_l2g(zeroSpc);
     def l2g = Util.min(l2v+4, 63);
