@@ -31,7 +31,7 @@
 #include <coyotos/capidl.h>
 #include <coyotos/syscall.h>
 #include <coyotos/runtime.h>
-#include <coyotos/reply_Constructor.h>
+#include <coyotos/reply_create.h>
 
 #include <idl/coyotos/AddressSpace.h>
 #include <idl/coyotos/Discrim.h>
@@ -464,7 +464,7 @@ initialize(void)
     goto fail;
 
   /* Send our Builder cap to our caller */
-  reply_coyotos_Constructor_create(CR_RETURN, CR_REPLY0);
+  REPLY_create(CR_RETURN, CR_REPLY0);
 
   return true;
 

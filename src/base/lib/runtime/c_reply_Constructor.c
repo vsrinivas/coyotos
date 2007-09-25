@@ -25,10 +25,10 @@
 #include <coyotos/syscall.h>
 #include <idl/coyotos/Constructor.h>
 
-#include "coyotos/reply_Constructor.h"
+#include "coyotos/reply_create.h"
 
 void
-reply_coyotos_Constructor_create(caploc_t ret, caploc_t replyEntry)
+REPLY_create(caploc_t ret, caploc_t replyEntry)
 {
   _INV_coyotos_Constructor_create p;
   p.server_out._icw = IPW0_MAKE_NR(sc_InvokeCap)

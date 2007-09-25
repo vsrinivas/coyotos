@@ -1,5 +1,5 @@
-#ifndef __COYOTOS_REPLY_CONSTRUCTOR_H__
-#define __COYOTOS_REPLY_CONSTRUCTOR_H__
+#ifndef __COYOTOS_REPLY_CREATE_H__
+#define __COYOTOS_REPLY_CREATE_H__
 
 /*
  * Copyright (C) 2007, The EROS Group, LLC
@@ -29,6 +29,6 @@
  * For a normally constructed process, @p ret should be CR_RETURN, and
  * @p replyEntry should be an appropriate Entry capability to the process.
  */
-void reply_coyotos_Constructor_create(caploc_t ret, caploc_t replyEntry);
+void REPLY_create(caploc_t ret, caploc_t replyEntry);
 
-#endif /* __COYOTOS_REPLY_CONSTRUCTOR_H__ */
+#endif /* __COYOTOS_REPLY_CREATE_H__ */

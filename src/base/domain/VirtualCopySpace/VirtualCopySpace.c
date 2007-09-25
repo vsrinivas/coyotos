@@ -30,7 +30,7 @@
 #include <coyotos/capidl.h>
 #include <coyotos/syscall.h>
 #include <coyotos/runtime.h>
-#include <coyotos/reply_Constructor.h>
+#include <coyotos/reply_create.h>
 
 #include <string.h>
 
@@ -500,7 +500,7 @@ initialize(void)
 				     CR_REPLY0))
     goto fail;
     
-  reply_coyotos_Constructor_create(CR_RETURN, CR_REPLY0);
+  REPLY_create(CR_RETURN, CR_REPLY0);
 
   return true;
 
