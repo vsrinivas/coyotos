@@ -21,7 +21,12 @@
 /* No runtime hook is required for large spaces at the moment. */
 
 #include <stdint.h>
+#include <stddef.h>
 
 /** Default runtime hook for large spaces. Declare this to be weak so
     that it can be overridden by truly intrepid programmers. */
 uintptr_t __rt_runtime_hook __attribute__((weak, section(".data"))) = 0; 
+
+/** @bug hack to make sure sbrk() is included */
+extern char *sbrk(size_t);
+char *(*__rt_sbrk_ptr)(size_t) = sbrk;
