@@ -41,7 +41,7 @@
 #include <coyotos/syscall.h>
 #include <coyotos/runtime.h>
 #include <coyotos/kprintf.h>
-#include <coyotos/reply_Constructor.h>
+#include <coyotos/reply_create.h>
 #include <coyotos/i386/io.h>
 
 #include <idl/coyotos/SpaceBank.h>
