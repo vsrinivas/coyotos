@@ -24,6 +24,8 @@
 int
 main(int argc, char *argv[])
 {
-  kprintf(CR_APP(0), "Hello World!\n");
+  kprintf(CR_APP(0), "hello, world\n");
+  for (;;)
+     ;
   return 0;
 }
