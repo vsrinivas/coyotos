@@ -52,17 +52,17 @@ module coyotos.driver.TextConsole {
   def image = small.load_image(bank, "coyotos/driver/TextConsole");
 
   // For testing, hand fabricate this as a running process:
-  def tc_proc = util.make_process(PrimeBank, image, NullCap());
+  def tc_proc = util.make_process(bank, image, NullCap());
 
   /* Hand-construct an initial space for the MDA console (temporary).
    *
    * We wish to map this at 0xB0000, for which we need a containing
    * GPT.
    */
-  def newSpc = util.make_gpt(PrimeBank, page_l2g+4, page_l2g+8);
+  def newSpc = util.make_gpt(bank, page_l2g+4, page_l2g+8);
   print newSpc;
-  newSpc.cap[0xa] = util.make_gpt(PrimeBank, page_l2g, page_l2g+4);
-  newSpc.cap[0xb] = util.make_gpt(PrimeBank, page_l2g, page_l2g+4);
+  newSpc.cap[0xa] = util.make_gpt(bank, page_l2g, page_l2g+4);
+  newSpc.cap[0xb] = util.make_gpt(bank, page_l2g, page_l2g+4);
 
   {
     def i = 0;
@@ -79,8 +79,6 @@ module coyotos.driver.TextConsole {
 
   tc_proc.capReg[APP.MYSPACE] = newSpc;
   tc_proc.capReg[APP.PHYSRANGE] = Range();
-  tc_proc.capReg[rt.REG.SPACEBANK] = PrimeBank;
-  tc_proc.capReg[rt.REG.SELF] = tc_proc;
   tc_proc.capReg[APP.LOG] = KernLog();
   tc_proc.ioSpace = IoPerm();
 }
