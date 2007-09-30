@@ -33,7 +33,6 @@ include $(COYOTOS_SRC)/build/make/makerules.mk
 
 IDL_DIR=$(COYOTOS_ROOT)/usr/include/idl
 MKI_DIR=$(COYOTOS_ROOT)/usr/include/mki
-#IDL_DIR+=$(PKG_SRC)/idl
 
 INTERFACES=coyotos.driver.TextConsole
 IF_IDL=$(patsubst %,$(IDL_DIR)/%.idl,$(subst .,/,$(INTERFACES)))
@@ -76,9 +75,4 @@ $(BUILDDIR)/TextConsole: $(OBJECTS)
 $(BUILDDIR)/mkimage.out: $(TARGETS) $(ENUM_MKI_SRC)
 	$(MKIMAGE) -o $@ -t $(COYOTOS_TARGET) -I$(MKI_DIR) -L$(BUILDDIR) coyotos.driver.TextConsole
 
-## for test images
-#$(BUILDDIR)/mkimage.out: install $(TARGETS) $(BASE_MKI_DIR)/coyotos/SpaceBank.mki
-#	$(MKIMAGE) -o $@ -t $(COYOTOS_TARGET) -I $(BASE_MKI_DIR) coyotos.SpaceBank
-#
-#-include $(BUILDDIR)/.*.m
-#
+-include $(BUILDDIR)/.*.m
