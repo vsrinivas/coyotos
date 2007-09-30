@@ -857,6 +857,179 @@
       </sect1>
     </chapter>
     <chapter>
+      <title>Architecture-Specific Initialization</title>
+      <p>
+	By the time it is completed, the architecture-specific
+	initialization routines will do several things:
+      </p>
+      <ul>
+	<li>
+	  <p>
+	    It will initialize the console, if any, for output.
+	  </p>
+	</li>
+	<li>
+	  <p>
+	    It will determine what physical memory is present, and
+	    where it is found.
+	  </p>
+	</li>
+	<li>
+	  <p>
+	    It will determine how many processors are attached to the
+	    machine, and initialize them.
+	  </p>
+	</li>
+	<li>
+	  <p>
+	    It will construct a proper virtual memory map for the
+	    kernel to uose.
+	  </p>
+	</li>
+	<li>
+	  <p>
+	    It will set up the necessary data structures so that
+	    interrupts, system calls, and exceptions can be
+	    processed.
+	  </p>
+	</li>
+	<li>
+	  <p>
+	    It will reserve space for use as application page tables
+	    and page directories.
+	  </p>
+	</li>
+	<li>
+	  <p>
+	    When all this is done it will enable interrupts for the
+	    first time.
+	  </p>
+	</li>
+      </ul>
+      <p>
+	While most of this activity is <em>extremely</em> architecture
+	dependent, the same basic requirements must be satisfied for
+	each architecture, and there are a surprising number of common
+	elements in the management structures for these activities.
+      </p>
+      <p>
+	All of these actions are driven by procedure calls made from
+	the <progident>arch_init()</progident> procedure in
+	<link
+	    href="http://dev.eros-os.com/hg/coyotos/file/tip/src/sys/arch/i386/kernel/init.c"><filename>arch/i386/kernel/init.c</filename></link>.
+      </p>
+      <sect1>
+	<title>Console Initialization</title>
+	<p>
+	  The <em>very</em> first action taken by the
+	  architecture-specific initialization code is to intialize
+	  the console logic. This subsystem is responsible for the
+	  actual display of characters that are passed to the kernel
+	  <progident>printf()</progident> and
+	  <progident>fatal()</progident> functions. The implementation
+	  of <progident>printf_putc()</progident> in <link
+	  href="http://dev.eros-os.com/hg/coyotos/file/tip/src/sys/kernel/kern_printf.c"><filename>kernel/kern_printf.c</filename></link>
+	  calls two functions: one puts each output character into a
+	  ring buffer containing all diagnostic output. The other
+	  emits the same character to the display if one is available.
+	  On machines that have an attached
+	  display, we would like to be able to see what is going on as
+	  early as possible. On machines that do <em>not</em>, we
+	  would at least like to be able to store those messages into
+	  a holding buffer so that they can be retrieved by a hardware
+	  debugging probe. Both of these are good reasons to enable
+	  the console logic as early as possible.
+	</p>
+	<note>
+	  <title>Implementation Deficiency</title>
+	  <p>
+	    The architecture-dependent configuration parameters
+	    include a C preprocessor macro
+	    <progident>HAVE_HUI</progident> that is intended to
+	    indicate whether any sort of human interface exists on the
+	    platform. If none exists, the entire implementation of
+	    printf() is compiled out.
+	  </p>
+	  <p>
+	    This is excessively draconian, since the circular ring
+	    buffer can usefully be read using an in-circuit emulator
+	    or debug monitor probe even if no display is present. The
+	    current implementation arguably ought to implement the
+	    ring buffer even when <progident>HAVE_HUI</progident> is
+	    not defined.
+	  </p>
+	</note>
+	<p>
+	  On IA-32, the console implementation relies on the fact that
+	  the legacy MDA graphics adaptor (the text-mode display) is
+	  memory mapped from 0xb8000 to 0xb8fff. Note that this
+	  address range falls within the 2 megabyte initial memory
+	  region that has been mapped for us by the bootstrap
+	  code. Because of this, the IA32 console implementation is
+	  actually very simple. All it needs to do is write new
+	  characters to the memory region with an appropriate
+	  background and foreground color and deal with scrolling when
+	  needed. The bootstrap code in <filename>boot.S</filename>
+	  has mapped the display region as non-cacheable, so we do not
+	  need to worry about update delays that might result from use
+	  of the hardware's write-back cache.
+	</p>
+	<p>
+	  A tricky point arises here that might not be obvious at
+	  first. A goal of the Coyotos design is for drivers to
+	  execute as application code. This means that we will later
+	  have some application that believes it owns the
+	  display. This application may write to display memory, or it
+	  may even change the display mode in such a way that kernel
+	  writes in the 0xb8000-0xb8fff region are meaningless (or
+	  even harmful). The kernel must be careful to avoid getting
+	  in the way of the console management application. We ensure
+	  this by means of the <progident>console_detach()</progident>
+	  function. This is called just before the process scheduler
+	  is called from <progident>kern_main()</progident> to
+	  dispatch the first piece of application cod.e Once
+	  <progident>console_detach()</progident> is called,
+	  <progident>console_putc()</progident> will simply do nothing
+	  when it is called. In consequence, the kernel will no longer
+	  update the display and the application-level console manager
+	  will be able to manipulate it without worry of interference.
+	</p>
+	<p>
+	  As a very transient measure, there is a bring-up expedient
+	  <progident>console_shrink()</progident>. This is an early
+	  debugging tool in which the kernel and the console
+	  management application divide the screen by hard-coded
+	  agreement. It is the kind of mechanism that is very helpful
+	  during early system bring-up, but tends to do more harm than
+	  good in the long term. These sorts of ``hidden contracts''
+	  between the kernel and external code are very easy to forget
+	  later.
+	</p>
+      </sect1>
+      <sect1>
+	<title>CPU Construction</title>
+	<p>
+	  The next action taken by <progident>arch_init()</progident>
+	  is to construct the per-CPU data structures. At this point
+	  we don't actually know how many CPUs there are, and we
+	  haven't started any other CPUs, so strictly speaking we only
+	  need to initialize the data structures for CPU0 (the
+	  bootstrap CPU). In fact, we cannot even fully initialize
+	  CPU0, because we haven't yet fully determined the feature
+	  set of this CPU.
+	</p>
+	<p>
+	  Unfortunately, we need one field of the CPU structure
+	  initialized early: the lock word field. This is needed
+	  because we will soon start calling the physical memory
+	  manager, and the physical memory manager uses the locking
+	  subsystem. Constructing the per-CPU structures is done here
+	  so that the per-CPU lockword field will have a non-zero
+	  value.
+	</p>
+      </sect1>
+    </chapter>
+    <chapter>
       <title>The Kernel Memory Map</title>
       <p>
 	The first action taken by <progident>arch_init()</progident>
