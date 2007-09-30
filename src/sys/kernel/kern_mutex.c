@@ -97,6 +97,20 @@ mutex_grab(mutex_t *mtx)
 
     if (MY_CPU(curCPU)->shouldDefer)
       sched_abandon_transaction();
+
+    if (LOCK_TYPE(oldval) == LTY_TRAN) {
+      size_t cpuidx = LOCK_CPU(oldval);
+      assert(cpuidx < cpu_ncpu);
+      CPU *cpu = &cpu_vec[cpuidx];
+
+      if (cpu->priority < MY_CPU(curCPU)->priority ||
+	  (cpu->priority == MY_CPU(curCPU)->priority &&
+	   cpu->id > MY_CPU(curCPU)->id)) {
+	/// @bug need to be more fair in same-priority case
+	if (!cpu->shouldDefer)
+	  cpu->shouldDefer = 1;
+      }
+    }
   }
 }
 
