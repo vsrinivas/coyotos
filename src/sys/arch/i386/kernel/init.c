@@ -682,9 +682,6 @@ arch_init(void)
    */
   protect_multiboot_regions();
 
-  /* Initialize the hardware exception vector table. */
-  vector_init();
-
   /* Find all of our CPUs. Also checks the ACPI tables, which we
      should probably do separately. Probing the ACPI tables may have
      the side effect of updating the execption vector table as we
@@ -714,6 +711,9 @@ arch_init(void)
   }
 
 #if 0
+  /** @bug This is a placeholder until we allocate the per-CPU
+      stacks. */
+
   /* Every CPU beyond the first one is going to need a per-cpu page
      directory and a per-cpu page table for CPU-local storage: */
   totPage -= (2 * cpu_ncpu);
@@ -743,6 +743,9 @@ arch_init(void)
   //  pmem_showall();
 
   cpu_scan_features();
+
+  /* Initialize the hardware exception vector table. */
+  vector_init();
 
   printf("CPU0: GDT/LDT, ");
   gdt_ldt_init();		/* for CPU 0 */
