@@ -747,9 +747,13 @@
 	  mechanism, this will map the lowest 2 megabytes of
 	  memory. We will construct two aliases for this region: one
 	  at 0x00000000 (which is where we are presently running) and
-	  the other at 0xC000000 (which is where we are linked). We
-	  will load this map onto the processor and enable the virtual
-	  address translation hardware.
+	  the other at 0xC000000 (which is where we are linked). In
+	  the process, we take care to ensure that the text-mode
+	  console frame buffer is mapped non-cacheable, so that writes
+	  to that area will appear on the physical display
+	  immediately. Once the map is build, we load it onto the
+	  processor and enable the virtual address translation
+	  hardware.
 	</p>
 	<p>
 	  This is a very sloppy mapping. We have no idea whether the
@@ -1028,12 +1032,21 @@
 	  value.
 	</p>
       </sect1>
+      <sect1>
+	<title>Memory Management</title>
+	<p>
+	  We now turn to matters having to do with managing the
+	  physical and virtual memory map, but these requires enough
+	  background information that it is best provided by a
+	  separate chapter.
+	</p>
+      </sect1>
     </chapter>
     <chapter>
-      <title>The Kernel Memory Map</title>
+      <title>Memory Map Management</title>
       <p>
-	The first action taken by <progident>arch_init()</progident>
-	is to initialize the <em>transmap</em>. We have a previously
+	The next step of <progident>arch_init()</progident> is to
+	initialize the <em>transmap</em>. We have a previously
 	reserved (at link time) page table. We zero it and install it
 	at a known address
 	(<progident>TRANSMAP_WINDOW_VA</progident>). The question is:
@@ -1042,7 +1055,7 @@
 	physical memory maps and our strategies for managing them.
       </p>
       <sect1>
-	<title>Managing Physical Memory</title>
+	<title>The IA-32 Physical Memory Map</title>
 	<p>
 	  The IA-32 has been through a fair amount of evolution. Early
 	  PCs were limited to 640 kilobytes of RAM, so the BIOS ROM
@@ -1064,14 +1077,14 @@
 	  card memory.
 	</p>
 	<p>
-	  Or maybe not. A few of the very latest motherboards have
-	  memory controllers and BIOS logic that will relocate that
-	  memory to appear above 4 gigabytes. Note that you cannot
-	  address that memory unless you are using PAE mode
-	  mappings. The problem here is that there is a lot being done
-	  behind the scenes by the BIOS as it brings up your machine,
-	  and we really don't want to have to fool around with the
-	  low-level memory controller chipset if we can avoid
+	  Or maybe not. As of late 2007, a few of the very latest
+	  motherboards have memory controllers and BIOS logic that
+	  will relocate that memory to appear above 4 gigabytes. Note
+	  that you cannot address that memory unless you are using PAE
+	  mode mappings. The problem here is that there is a lot being
+	  done behind the scenes by the BIOS as it brings up your
+	  machine, and we really don't want to have to fool around
+	  with the low-level memory controller chipset if we can avoid
 	  it. Fortunately the BIOSes that can do these tricks provide
 	  interfaces we can query to find out what happened. We also
 	  want to support earlier BIOSes. There are a surprising
@@ -1098,35 +1111,124 @@
 	  heap management code. It would not be good to overwrite the
 	  kernel!
 	</p>
-	<sect2>
-	  <title>The PhysMem Allocator</title>
+	<p>
+	  To keep track of all this complexity, Coyotos implements a
+	  physical memory management subsystem.
+	</p>
+      </sect1>
+      <sect1>
+	<title>The PhysMem Allocator</title>
+	<p>
+	  The Coyotos physical memory manager is implemented by <link
+	  href="http://dev.eros-os.com/hg/coyotos/file/tip/src/sys/kernel/kern_PhysMem.c"><filename>kernel/kern_PhysMem.c</filename></link>
+	  and <link
+	  href="http://dev.eros-os.com/hg/coyotos/file/tip/src/sys/kerninc/PhysMem.h"><filename>kerninc/PhysMem.h</filename></link>.
+	  The physical memory allocator has three functions:
+	</p>
+	<ol>
+	  <li>
+	    <p>
+	      It tracks which portions of the physical address space
+	      are <em>addressable</em>, given our choice of hardware
+	      mapping options. If we are using the legacy virtual
+	      memory mapping structure, we cannot address anything
+	      above address 0xffffffff (4 gigabytes) in the physical
+	      memory address space. If we are using the newer PAE
+	      mapping mechanism, we can address up to 0xfffffffff (64
+	      gigabytes).
+	    </p>
+	  </li>
+	  <li>
+	    <p>
+	      It tracks which portions of the physical address space
+	      are <em>populated</em>. That is: where each RAM, ROM,
+	      and NVRAM or equivalent device memory region can be
+	      found and what type of memory resides at that location.
+	    </p>
+	  </li>
+	  <li>
+	    <p>
+	      It tracks the kernel's <em>use</em> of these memory
+	      regions. For example, some RAM will be used for mapping
+	      tables, some will be used to store the kernel heap, and
+	      some will be used as frames for page objects. Each of
+	      these is a distinct type of use that is tracked by the
+	      physical memory allocator.
+	    </p>
+	  </li>
+	</ol>
+	<p>
+	  The physical memory allocator is a special-purpose
+	  allocator. It assumes that we are subdividing an initially
+	  contiguous region (the addressable physical range) into
+	  contiguous, non-overlapping subregions (RAM, ROM, NVRAM, and
+	  ``holes''). A defined region may be further subdivided as
+	  uses for it are determined, but &mdash; with the notable
+	  exception of device memory &mdash; the physical memory
+	  allocator assumes that these regions will be allocated once
+	  and will never be released. The goal is to support an
+	  initial partitioning of physical memory, rather than to
+	  support a general-purpose allocation scheme. For the same
+	  reason, the allocator assumes &mdash; again with the
+	  exception of device memory &mdash; that two adjacent memory
+	  regions having the same class and use can be coalesced in
+	  the allocation book-keeping structures.
+	</p>
+	<note>
+	  <title>A Limitation</title>
 	  <p>
-	    To handle all of this Coyotos implements a physical memory
-	    allocation subsystem in <link
-	    href="http://dev.eros-os.com/hg/coyotos/file/tip/src/sys/kernel/kern_PhysMem.c"><filename>kernel/kern_PhysMem.c</filename></link>
-	    and <link
-	    href="http://dev.eros-os.com/hg/coyotos/file/tip/src/sys/kerninc/PhysMem.h"><filename>kerninc/PhysMem.h</filename></link>. This
-	    is a simple, fixed-size table of region allocation
-	    records. For each region, the allocator keeps track of the
-	    memory region <em>class</em> and the memory region
-	    <em>use</em>. The <em>class</em> tells us what type of
-	    memory exists at a location (ROM, RAM, NVRAM, valid but
-	    undefined). The <em>use</em> tells us how this memory is
-	    currently being used (if at all). For example,
-	    <progident>pmu_KMAP</progident> tells us that the memory
-	    region consists of pages that define the kernel virtual
-	    map. Both of these are documented in the header file. The
-	    <progident>pmc_UNUSED</progident> allocation class is
-	    reserved to mean that the table entry is not presently
-	    being used for anything. Entries in the pmem_table are
-	    maintained sorted by start address, with all entries of
-	    class <progident>pmc_UNUSED</progident> kept at the end of
-	    the table. Adjacent entries having the same class and use
-	    are consolidated into a single entry whenever
-	    possible. The PhysMem allocator tracks both the
-	    <em>existence</em> and the <em>allocation</em> of physical
-	    memory. Here is how it works.
+	    While there is a paper design, the current implementation
+	    does not adequately address the use of hot-plug memory
+	    boards. Hot-plug memory is different from other device
+	    memory because the use of the memory is
+	    general-purpose.
 	  </p>
+	</note>
+	<p>
+	  Taken together, these assumptions allow us to implement the
+	  allocator very simply. It is stored in a statically
+	  allocated array. Regions do not overlap. The vector is kept
+	  sorted in order of start address, with unallocated entries
+	  at the end of the array.  For each region, the allocator
+	  keeps track of the memory region <em>class</em> and the
+	  memory region <em>use</em>. The <em>class</em> tells us what
+	  type of memory exists at a location (ROM, RAM, NVRAM, valid
+	  but undefined). The <em>use</em> tells us how this memory is
+	  currently being used (if at all). For example,
+	  <progident>pmu_KMAP</progident> tells us that the memory
+	  region consists of pages that define the kernel virtual
+	  map. Both of these are documented in the header file. The
+	  <progident>pmc_UNUSED</progident> allocation class is
+	  reserved to mean that the table entry is not presently being
+	  used for anything. Entries in the pmem_table are maintained
+	  sorted by start address, with all entries of class
+	  <progident>pmc_UNUSED</progident> kept at the end of the
+	  table. Adjacent entries having the same class and use are
+	  coalesced into a single entry whenever possible. The
+	  PhysMem allocator tracks both the <em>existence</em> and the
+	  <em>allocation</em> of physical memory.
+	</p>
+	<p>
+	  Device memory (<progident>pmc_DEV</progident>) is an
+	  exception to the coalescing rule. Among the initial
+	  applications will be drivers. These will inform us about
+	  memory regions that were not visible to the BIOS, such as
+	  memory on PCI cards or AGP graphics controllers. Some of
+	  these devices &mdash; notably CardBus adaptors &mdash; can
+	  be inserted and removed from the system, with the
+	  consequence that their memory regions can appear and
+	  disappear. If we allowed these regions to be coalesced, we
+	  might find that <em>removing</em> a memory region from the
+	  physical memory allocator's list would require
+	  <em>allocating</em> one or more tracking structures in order
+	  to split an existing region up so that part of it could be
+	  converted to a hole. This operation could fail if we run out
+	  of entries in the physical memory range table. To ensure
+	  that this failure cannot occur in practice, we do not allow
+	  device regions to be coalesced.
+	</p>
+	<sect2>
+	  <title>Initial Setup</title>
 	  <p>
 	    Initially, the allocator has no knowledge of physical
 	    memory structure. Very early in the
@@ -1151,7 +1253,7 @@
 	    to <progident>pmem_AllocRegion()</progident>, specifying
 	    the appropriate memory class and use for each call (see
 	    <progident>config_physical_memory()</progident> in <link
-	    href="http://dev.eros-os.com/hg/coyotos/file/tip/src/sys/arch/i386/kernel/init.c"><filename>arch/i386/kernel/init.c</filename></link>). In
+	      href="http://dev.eros-os.com/hg/coyotos/file/tip/src/sys/arch/i386/kernel/init.c"><filename>arch/i386/kernel/init.c</filename></link>). In
 	    addition to adding regions for each memory device
 	    identified by the BIOS, this code adds regions for the
 	    BIOS data area and the extended BIOS data area. Some
@@ -1181,13 +1283,14 @@
 	    order to be allocatable, a memory region must have class
 	    <progident>pmc_RAM</progident> and use
 	    <progident>pmu_AVAIL</progident>.The
-	    <progident>pmem_Available()</progident> determines how
-	    many units of physical memory having a particular size and
-	    alignment and falling between a specified base and bound
-	    address are available to be allocated. The caller may
-	    optionally specify that <em>contiguous</em> units are
-	    required. The <progident>pmem_AllocBytes()</progident>
-	    procedure can be used to allocate storage that
+	    <progident>pmem_Available()</progident> function
+	    determines how many units of physical memory having a
+	    particular size and alignment and falling between a
+	    specified base and bound address are available to be
+	    allocated. The caller may optionally specify that
+	    <em>contiguous</em> units are required. The
+	    <progident>pmem_AllocBytes()</progident> procedure can be
+	    used to allocate storage that
 	    <progident>pmem_Available()</progident> has indicated is
 	    available. Regions returned by
 	    <progident>pmem_AllocBytes()</progident> are always
@@ -1603,147 +1706,205 @@
 	    directory as needed.
 	  </p>
 	</sect2>
+      </sect1>
+      <sect1>
+	<title>The TransMap</title>
+	<p>
+	  Finally we arrive at the <em>transmap</em>. The purpose of
+	  the transmap is to allow the kernel to build mappings
+	  dynamically so that it can access data which is not
+	  ordinarily mapped into the kernel. Typically this happens
+	  when the kernel manipulates pages or capability pages, but
+	  it also can happen when the kernel manipulates mapping
+	  tables.
+	</p>
 	<sect2>
-	  <title>The TransMap</title>
+	  <title>Purpose of the Transmap</title>
 	  <p>
-	    Finally we arrive at the <em>transmap</em>. The purpose of
-	    the transmap is to allow the kernel to build mappings
-	    dynamically so that it can access data which is not
-	    ordinarily mapped into the kernel. Typically this happens
-	    when the kernel manipulates pages or capability pages, but
-	    it also can happen when the kernel manipulates mapping
-	    tables.
+	    The <em>transmap</em> is a page of memory that is mapped
+	    simultaneously as a page table and as a data page. Viewed
+	    as a page table, it specifies 512 (PAE) or 1024 (non-PAE)
+	    mapping entries for the virtual address region beginning
+	    at 0xFF800000. Viewed as a data page, it can be found at
+	    the address associated with the symbol
+	    <progident>TransientMap</progident>. The
+	    <progident>TransientMap</progident> symbol has no
+	    intrinsic type. Depending on the mapping mode that is
+	    currently in use by the hardware, we will cast it to one
+	    of the types <progident>IA32_PTE&nbsp;*</progident> or
+	    <progident>IA32_PAE&nbsp;*</progident>, which are the
+	    types for the respective types of page table entries for
+	    the two mapping modes. We will then use this pointer to
+	    update the mapping table, which allows us to construct
+	    temporary mappings.
 	  </p>
-	  <sect3>
-	    <title>Purpose of the Transmap</title>
-	    <p>
-	      The <em>transmap</em> is a page of memory that is mapped
-	      simultaneously as a page table and as a data page. Viewed
-	      as a page table, it specifies 512 (PAE) or 1024 (non-PAE)
-	      mapping entries for the virtual address region beginning
-	      at 0xFF800000. Viewed as a data page, it can be found at
-	      the address associated with the symbol
-	      <progident>TransientMap</progident>. The
-	      <progident>TransientMap</progident> symbol has no
-	      intrinsic type. Depending on the mapping mode that is
-	      currently in use by the hardware, we will cast it to one
-	      of the types <progident>IA32_PTE&nbsp;*</progident> or
-	      <progident>IA32_PAE&nbsp;*</progident>, which are the
-	      types for the respective types of page table entries for
-	      the two mapping modes. We will then use this pointer to
-	      update the mapping table, which allows us to construct
-	      temporary mappings.
-	    </p>
-	    <p>
-	      Whenever the kernel needs to manipulate the content of a
-	      data page, capability page, or mapping table, the protocol
-	      is to call <progident>TRANSMAP_MAP(<em>pa</em>,<em>ptr
-		  type</em>)</progident>. The supplied physical address must
-	      be page aligned, and the return value is the assigned
-	      virtual address. When the mapping is no longer needed,
-	      <progident>TRANSMAP_UNMAP(<em>va</em>)</progident> is
-	      called, passing the previously returned virtual
-	      address. The unmap operation marks the virtual address as
-	      ``available for re-mapping, but not yet cleared from the
-	      TLB.''
-	    </p>
-	    <p>
-	      The <em>transmap</em> page is shared across CPUs. Each
-	      CPU has a dedicated region of the <em>transmap</em>
-	      providing 32 slots where pages can be mapped on a
-	      transient basis. This allows the current implementation to
-	      support up to 16 processors. Obviously, the size of the
-	      <em>transmap</em> could be extended at need. Our view as
-	      designers is that above 16 CPUs the memory hierarchy of
-	      the machine tends to switch to a more pronounced NUMA
-	      architecture, and the entire model of a shared kernel map
-	      needs to be re-examined.
-	    </p>
-	  </sect3>
-	  <sect3>
-	    <title>Lazy TLB Consistency</title>
-	    <p>
-	      The general rule is to flush the TLB when a mapping is
-	      removed. For application mappings this is absolutely
-	      required. For kernel mappings, the true constraint is
-	      more subtle: we must not re-use any transient mapping if
-	      it might still reside in the hardware TLB. For kernel
-	      mappings, we can impose an invariant requiring that no
-	      transient mapping be used after it is unmapped. This
-	      creates an opportunity for an optimization that may
-	      initially seem like a bug.
-	    </p>
-	    <p>
-	      The transmap implementation can be found in <link
-		href="http://dev.eros-os.com/hg/coyotos/file/tip/src/sys/arch/i386/kernel/transmap.c"><filename>arch/i386/kernel/transmap.c</filename></link>.
-		When an
-		unmap is performed, the corresponding TLB entry is not
-		flushed immediately. If you examine the implementation
-		of the <progident>transmap_map()</progident>, you will
-		see that it initially attempts to allocate entries
-		from <progident>TransMetaMap</progident>.
-		<progident>TransMetaMap</progident> indicates which
-		entries are available (corresponding bit set to 1) for
-		allocation. In order to be available, an entry must be
-		free and we must know that it cannot be resident in
-		the local TLB.  Initially all entries are available.
-	    </p>
-	    <p>
-	      If the allocator cannot find an entry in
-	      <progident>TransMetaMap</progident>, it locates an entry
-	      in <progident>TransReleased</progident> and uses
-	      that. The <progident>TransReleased</progident> map
-	      indicates which entries have been unmapped
-	      (corresponding bit set to 1) but not yet flushed from
-	      the TLB. The allocator flushes the entry selectively and
-	      re-uses it.
-	    </p>
-	    <p>
-	      The reason for this approach is that we are making a
-	      bet. We are betting that an address space switch will be
-	      performed soon in any case. When that occurs, any
-	      entries in <progident>TransReleased</progident> can be
-	      migrated to <progident>TransMetaMap</progident>
-	      immediately. Note that some system calls do not flush
-	      the TLB at all.
-	    </p>
-	    <p>
-	      Finally, note that entries in the transmap are
-	      <em>never</em> shared across CPUs. Invalidating TLB
-	      entries is expensive, but invalidating them across all
-	      CPUs in a multiprocessor is glacial. This is why the
-	      transmap is divided into separate regions for the
-	      entries of each CPU.
-	    </p>
-	  </sect3>
-	  <sect3>
-	    <title>Data Cache Locality</title>
-	    <p>
-	      On some processor implementations, including recent AMD
-	      64-bit processors, TLB loads proceed through the data
-	      cache. The data cache is subject to an inter-processor
-	      coherency protocol. For this reason, it is desirable to
-	      choose the number of per-CPU transmap entries in such a
-	      way that they will occupy an integral multiple of cache
-	      lines. This will ensure that the respective entries will
-	      be allocated exclusively to the proper CPU by the
-	      hardware cache coherency protocol, and later will avoid
-	      contention because no other CPU will reference the
-	      entry.
-	    </p>
-	  </sect3>
-	  <sect3>
-	    <title>Other Implementations</title>
-	    <p>
-	      The implementation of the <em>transmap</em> is part of the
-	      hardware abstraction layer. On machines where the entire
-	      physical memory space can be mapped into the kernel
-	      virtual region, the transmap can be implemented using a
-	      constant offset mechanism, and no manipulation of the
-	      hardware map is required.
-	    </p>
-	  </sect3>
+	  <p>
+	    Whenever the kernel needs to manipulate the content of a
+	    data page, capability page, or mapping table, the protocol
+	    is to call <progident>TRANSMAP_MAP(<em>pa</em>,<em>ptr
+		type</em>)</progident>. The supplied physical address must
+	    be page aligned, and the return value is the assigned
+	    virtual address. When the mapping is no longer needed,
+	    <progident>TRANSMAP_UNMAP(<em>va</em>)</progident> is
+	    called, passing the previously returned virtual
+	    address. The unmap operation marks the virtual address as
+	    ``available for re-mapping, but not yet cleared from the
+	    TLB.''
+	  </p>
+	  <p>
+	    The <em>transmap</em> page is shared across CPUs. Each
+	    CPU has a dedicated region of the <em>transmap</em>
+	    providing 32 slots where pages can be mapped on a
+	    transient basis. This allows the current implementation to
+	    support up to 16 processors. Obviously, the size of the
+	    <em>transmap</em> could be extended at need. Our view as
+	    designers is that above 16 CPUs the memory hierarchy of
+	    the machine tends to switch to a more pronounced NUMA
+	    architecture, and the entire model of a shared kernel map
+	    needs to be re-examined.
+	  </p>
 	</sect2>
+	<sect2>
+	  <title>Lazy TLB Consistency</title>
+	  <p>
+	    The general rule is to flush the TLB when a mapping is
+	    removed. For application mappings this is absolutely
+	    required. For kernel mappings, the true constraint is
+	    more subtle: we must not re-use any transient mapping if
+	    it might still reside in the hardware TLB. For kernel
+	    mappings, we can impose an invariant requiring that no
+	    transient mapping be used after it is unmapped. This
+	    creates an opportunity for an optimization that may
+	    initially seem like a bug.
+	  </p>
+	  <p>
+	    The transmap implementation can be found in <link
+	      href="http://dev.eros-os.com/hg/coyotos/file/tip/src/sys/arch/i386/kernel/transmap.c"><filename>arch/i386/kernel/transmap.c</filename></link>.
+	    When an
+	    unmap is performed, the corresponding TLB entry is not
+	    flushed immediately. If you examine the implementation
+	    of the <progident>transmap_map()</progident>, you will
+	    see that it initially attempts to allocate entries
+	    from <progident>TransMetaMap</progident>.
+	    <progident>TransMetaMap</progident> indicates which
+	    entries are available (corresponding bit set to 1) for
+	    allocation. In order to be available, an entry must be
+	    free and we must know that it cannot be resident in
+	    the local TLB.  Initially all entries are available.
+	  </p>
+	  <p>
+	    If the allocator cannot find an entry in
+	    <progident>TransMetaMap</progident>, it locates an entry
+	    in <progident>TransReleased</progident> and uses
+	    that. The <progident>TransReleased</progident> map
+	    indicates which entries have been unmapped
+	    (corresponding bit set to 1) but not yet flushed from
+	    the TLB. The allocator flushes the entry selectively and
+	    re-uses it.
+	  </p>
+	  <p>
+	    The reason for this approach is that we are making a
+	    bet. We are betting that an address space switch will be
+	    performed soon in any case. When that occurs, any
+	    entries in <progident>TransReleased</progident> can be
+	    migrated to <progident>TransMetaMap</progident>
+	    immediately. Note that some system calls do not flush
+	    the TLB at all.
+	  </p>
+	  <p>
+	    Finally, note that entries in the transmap are
+	    <em>never</em> shared across CPUs. Invalidating TLB
+	    entries is expensive, but invalidating them across all
+	    CPUs in a multiprocessor is glacial. This is why the
+	    transmap is divided into separate regions for the
+	    entries of each CPU.
+	  </p>
+	</sect2>
+	<sect2>
+	  <title>Data Cache Locality</title>
+	  <p>
+	    On some processor implementations, including recent AMD
+	    64-bit processors, TLB loads proceed through the data
+	    cache. The data cache is subject to an inter-processor
+	    coherency protocol. For this reason, it is desirable to
+	    choose the number of per-CPU transmap entries in such a
+	    way that they will occupy an integral multiple of cache
+	    lines. This will ensure that the respective entries will
+	    be allocated exclusively to the proper CPU by the
+	    hardware cache coherency protocol, and later will avoid
+	    contention because no other CPU will reference the
+	    entry.
+	  </p>
+	</sect2>
+	<sect2>
+	  <title>Other Implementations</title>
+	  <p>
+	    The implementation of the <em>transmap</em> is part of the
+	    hardware abstraction layer. On machines where the entire
+	    physical memory space can be mapped into the kernel
+	    virtual region, the transmap can be implemented using a
+	    constant offset mechanism, and no manipulation of the
+	    hardware map is required.
+	  </p>
+	</sect2>
+      </sect1>
+      <sect1>
+	<title>Implementation: Configuring Memory</title>
+	<p>
+	  With the mechanisms now explained, we return to the
+	  discussion of <progident>arch_init()</progident>, picking up
+	  after the initialization of the <em>transmap</em>. The callb
+	  to <progident>pmem_init()</progident> initializes the
+	  physical memory manager by advising it how large the
+	  physically addressable region is.  The call to
+	  <progident>config_physical_memory()</progident> uses the
+	  information provided by <em>grub</em> to add all of the
+	  defined regions of the physical map to the allocator (or at
+	  least all of the ones we know about at this point). It also
+	  adds (by hand) a small number of well-known regions that
+	  contain BIOS information. Applications may want those
+	  regions later, and by reserving them now we ensure that the
+	  kernel does not use them for object storage.
+	</p>
+	<p>
+	  Ignoring the memory used by any local APICs and/or IOAPICs,
+	  which will not come out of RAM regions, we now have
+	  configured all of the RAM memory that we are ever going to
+	  know about. Momentarily, we will do temporary allocations of
+	  some of the multiboot regions that <em>grub</em> has built
+	  in order to protect them while we allocate the heap, but
+	  before we do that we want to get an estimate of the total
+	  number of physical pages that are going to be available when
+	  we are done. This is returned by the call to
+	  <progident>pmem_Available()</progident>.
+
+	  Finally, the
+	  call to <progident>protect_multiboot_regions()</progident>
+	  allocates the regions containing the <em>grub</em>-provided
+	  information that we still need, primarily the command line
+	  and the loaded module that defines the initial system
+	  image. This prevents these regions from being overwritten as
+	  we define the heap.
+	</p>
+	<p>
+	  All of this gets us most of the way to where we need to be,
+	  but we still have not reserved the physical memory addresses
+	  for any local APICs and/or IOAPICs that happen to be present. The
+	  local APIC and IOAPIC logic is discussed in the next
+	  chapter. For the present, suffice it to say that we want to
+	  mark their locations in the physical map allocated. In order
+	  to do that, we need to probe the system to determine how
+	  many CPUs there are and where their hardware elements are
+	  mapped. The call to <progident>cpu_probe_cpus()</progident>
+	  in turn calls <progident>acpi_probe_cpus()</progident>,
+	  which reserves the required locations and determines (as a
+	  side effect) how many CPUs are actually present.
+	</p>
+	<p>
+	  At this point, we have reserved all of the physical memory
+	  locations that it is possible to know about at this point in
+	  the execution, 
+	</p>
       </sect1>
     </chapter>
   </part>
