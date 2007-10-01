@@ -45,9 +45,8 @@ extern void heap_adjust_limit(kva_t limit);
 
 // kpa_t heap_AcquirePages(size_t nPage);
 
-/** @brief Allocate @p nbytes of memory, aligned at a pointer
-    boundary. */
-void *malloc(size_t nBytes);
+/** @brief Allocate @p nElem elements, each of size @p nBytes, aligned
+    at a pointer boundary. */
 void *calloc(size_t nBytes, size_t nElem);
 
 #define CALLOC(ty,n)  ((ty *) calloc(sizeof(ty), (n)))

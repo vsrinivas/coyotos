@@ -146,7 +146,14 @@ grow_heap(kva_t target)
       for (kpa_t base = pa; base < pa + (nPage * COYOTOS_PAGE_SIZE); 
 	   base += COYOTOS_PAGE_SIZE, heap_backed += COYOTOS_PAGE_SIZE) {
 	kmap_map(heap_backed, base, KMAP_R|KMAP_W);
-	memset((void *) heap_backed, 0, COYOTOS_PAGE_SIZE);
+
+	/** This used to zero the backing pages, but doing so is not
+	 * actually necessary, because all allocations are done
+	 * through calloc(), and calloc() will zero them at allocation
+	 * time. The @em disadvantage to zeroing here is that memset()
+	 * uses the transmap, and invalidating mappings is very
+	 * expensive under emulators. */
+	/* memset((void *) heap_backed, 0, COYOTOS_PAGE_SIZE); */
       }
     }
     else
