@@ -36,6 +36,7 @@
 #include "hwmap.h"
 
 extern kva_t TransientMap[];
+extern uint32_t kstack_lo[];
 
 ArchCPU archcpu_vec[MAX_NCPU];
 
@@ -92,11 +93,12 @@ make_cpu_local_page(kva_t tbl_va, void *src_va)
 size_t
 cpu_probe_cpus(void)
 {
-  // FIX: On pre-ACPI, non-MP systems, we want to determine here
-  // whether the primary CPU supports a local APIC, which means that
-  // we want to call cpu_scan_features on CPU0 from here. We cannot
-  // call cpu_scan_features on other CPUs until interrupts are
-  // enabled.
+  /** @bug: On pre-ACPI, non-MP systems, we want to determine here
+   * whether the primary CPU supports a local APIC, which means that
+   * we want to call cpu_scan_features on CPU0 from here. We cannot
+   * call cpu_scan_features on other CPUs until interrupts are
+   * enabled.
+   */
 
   size_t ncpu = acpi_probe_cpus();
   if (ncpu)
@@ -109,9 +111,32 @@ cpu_probe_cpus(void)
   if (ncpu == 0)
     ncpu = 1;			/* we ARE running on SOMETHING */
 
+  /* Boot CPU is certainly present and started */
+  cpu_vec[0].present = true;
+  cpu_vec[0].active = true;
+  cpu_vec[0].stack = (kva_t) kstack_lo;
+
   cpu_ncpu = ncpu;
 
   assert(cpu_ncpu <= MAX_NCPU);
+
+  /* Allocate the per-CPU stack pages. */
+  for (size_t i = 1; i < ncpu; i++) {
+    kva_t stack_va = SMP_STACK_VA + i*(KSTACK_NPAGES * COYOTOS_PAGE_SIZE);
+    cpu_vec[0].stack = stack_va;
+
+    for (size_t pg = 0; pg < KSTACK_NPAGES; pg++) {
+      kva_t pg_va = stack_va + pg*COYOTOS_PAGE_SIZE;
+
+      kmap_EnsureCanMap(pg_va, "SMP CPU stack");
+
+      kpa_t pa = 
+	pmem_AllocBytes(&pmem_need_pages, COYOTOS_PAGE_SIZE, 
+			pmu_KERNEL, "SMP CPU stack");
+
+      kmap_map(pg_va, pa, KMAP_W);
+    }
+  }
 
   return cpu_ncpu;
 }

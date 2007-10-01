@@ -690,6 +690,8 @@ arch_init(void)
    */
   protect_multiboot_regions();
 
+  process_command_line();
+
   /* Find all of our CPUs. Also checks the ACPI tables, which we
      should probably do separately. Probing the ACPI tables may have
      the side effect of updating the execption vector table as we
@@ -726,8 +728,6 @@ arch_init(void)
    * fairly arbitrary. */
   totPage -= (totPage/10);
 #endif
-
-  process_command_line();
 
   {
     size_t nPage = totPage - RESERVED_PAGE_TABLES(totPage);

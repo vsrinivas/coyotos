@@ -95,8 +95,14 @@
  * create a whole separate header file for them. Further, I have
  * already mis-adjusted HEAP_LIMIT_VA once because these were not
  * documented here, and I would like not to do that again.
+ *
+ * Note the use of MAX_NCPU here to establish a gap between top of
+ * heap and the CPU stacks. Since the stack for CPU0 is preallocated,
+ * the region reserved here for CPU0 will never be mapped.
  */
-#define I386_LOCAL_APIC_VA       (HEAP_LIMIT_VA)
+#define SMP_STACK_VA             (HEAP_LIMIT_VA)
+
+#define I386_LOCAL_APIC_VA       (SMP_STACK_VA + (MAX_NCPU*KSTACK_NPAGES*COYOTOS_PAGE_SIZE))
 #define I386_IO_APIC_VA          (I386_LOCAL_APIC_VA+4096)
 
 /** @brief Virtual base address of transient map. MUST be a multiple of 4M */

@@ -28,6 +28,7 @@
 #include <stdbool.h>
 #include <hal/config.h>
 #include <hal/atomic.h>
+#include <hal/kerntypes.h>
 #include <kerninc/ccs.h>
 
 #if MAX_NCPU <= 256
@@ -60,13 +61,19 @@ typedef struct CPU {
   /** @brief Unique identifier for this CPU. */
   cpuid_t   id;
 
+  /** @brief Starting (least) address of per-CPU stack. */
+  kva_t     stack;
+
   /** @brief TRUE means this CPU should yield whenever mutex_trylock()
    * does not immediately succeed and we are NOT in a
    * mutex_spinlock().
    */
   bool       shouldDefer;
 
-  /** @brief true iff this CPU has been found and activated. */
+  /** @brief true iff this CPU is present. */
+  bool       present;
+
+  /** @brief true iff this CPU has been started. */
   bool       active;
 
   /** @brief Priority of current process on CPU */

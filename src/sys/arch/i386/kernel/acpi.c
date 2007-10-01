@@ -397,6 +397,8 @@ acpi_probe_cpus()
 	slot = 0;
 
       archcpu_vec[slot].lapic_id = lapic.lapicID;
+      cpu_vec[slot].present = true;
+
       // printf("Entry %d has lapic ID 0x%x\n", slot, lapic.lapicID);
 
       if (slot != 0) ncpu++;
