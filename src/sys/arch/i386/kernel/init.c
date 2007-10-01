@@ -677,6 +677,14 @@ arch_init(void)
   /* Need to get the physical memory map before we do anything else. */
   config_physical_memory();
 
+  /* Need to get this estimate BEFORE we protect the multiboot
+   * regions, because we are going to release those back into the pool
+   * later, and if we don't count them now we will end up
+   * under-supplied with header structures for them.
+   */
+  size_t totPage = 
+    pmem_Available(&pmem_need_pages, COYOTOS_PAGE_SIZE, false);
+
   /* Make sure that we don't overwrite the loaded modules during cache
    * initialization.
    */
@@ -687,14 +695,6 @@ arch_init(void)
      the side effect of updating the execption vector table as we
      discover interrupt sources. */
   (void) cpu_probe_cpus();
-
-  /* Need to get this estimate BEFORE we protect the multiboot
-   * regions, because we are going to release those back into the pool
-   * later, and if we don't count them now we will end up
-   * under-supplied with header structures for them.
-   */
-  size_t totPage = 
-    pmem_Available(&pmem_need_pages, COYOTOS_PAGE_SIZE, false);
 
   printf("%d pages initially available\n", totPage);
 
