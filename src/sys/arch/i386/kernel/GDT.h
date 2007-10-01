@@ -26,7 +26,7 @@
 
 #include <hal/kerntypes.h>
 
-void gdt_ldt_init(void);
-void gdt_SetupTSS(uint32_t whichSeg, kva_t tssAddress);
+void init_gdt();
+void load_gdtr_ldtr(void);
 
 #endif /* __I686_GDT_H__ */

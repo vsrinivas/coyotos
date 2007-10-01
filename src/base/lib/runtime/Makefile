@@ -24,7 +24,7 @@ CROSS_BUILD=yes
 
 include $(COYOTOS_SRC)/build/make/makevars.mk
 
-CFLAGS+=-g -Os
+CFLAGS+=-g -O2
 
 INC=-I. -I$(BUILDDIR) -I$(COYOTOS_ROOT)/usr/include
 SOURCES=$(wildcard *.c) $(wildcard *.S)

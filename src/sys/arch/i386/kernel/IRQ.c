@@ -37,6 +37,7 @@
 #include <kerninc/vector.h>
 
 #include "IA32/GDT.h"
+#include "TSS.h"
 #include "GDT.h"
 #include "IRQ.h"
 #include "Selector.h"
@@ -733,6 +734,20 @@ irq_isEnabled(irq_t irq)
 
   return result;
 }
+
+extern void asm_proc_resume() NORETURN;
+
+	/* This is called with interrupts already disabled. */
+void 
+proc_resume()
+{
+  ia32_TSS *myTSS = &tss[MY_CPU(curCPU)->id];
+  assert(myTSS == &tss[0]);
+  myTSS->esp0 = (uint32_t) & MY_CPU(current)->state.fixregs.ES;
+
+  asm_proc_resume();
+}
+
 
 /****************************************************************
  * BRING-UP SUPPORT

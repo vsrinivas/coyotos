@@ -315,7 +315,7 @@ ENTRY(IdleThisProcessor)
 	jmp	1b
 	
 	/* This is called with interrupts already disabled. */
-ENTRY(proc_resume)
+ENTRY(asm_proc_resume)
 #ifdef EVT_TRACE
 	pushl	$0
 	pushl	$0
@@ -332,8 +332,10 @@ ENTRY(proc_resume)
 	movl	$0, PR_OFF_ISSUES(%esp)
 	
 	leal	PR_OFF_FIXREGS(%esp),%esp
+#if 0
 	leal	FIX_OFF_REENTRY_SP(%esp),%edx
 	movl	%edx,TSS_RING0_SP+EXT(__cpu_private_tss)
+#endif
 
 	/* Pop saved registers */
 	popa

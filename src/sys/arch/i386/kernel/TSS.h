@@ -23,6 +23,16 @@
 /** @file
  * @brief TSS related procedure declarations.
  */
-void tss_init(void);
+
+#include "IA32/TSS.h"
+
+/** @brief Per-CPU Task Switch Segment */
+extern ia32_TSS tss[MAX_NCPU];
+
+/** @brief Initialize the per-CPU TSS region */
+void init_tss(void);
+
+/** @brief Load the task register */
+void load_tr(void);
 
 #endif /* __I686_TSS_H__ */

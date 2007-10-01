@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2005, The EROS Group, LLC.
+ * Copyright (C) 2007, The EROS Group, LLC.
  *
  * This file is part of the Coyotos Operating System.
  *
@@ -25,8 +25,10 @@
  */
 
 
-#include <inttypes.h>
+#include <stddef.h>
 #include <kerninc/ccs.h>
+#include <kerninc/string.h>
+#include <hal/config.h>
 
 #include "IA32/TSS.h"
 
@@ -45,47 +47,52 @@
  * In consequence, TSS is per-CPU.
  */
 
-DEFINE_CPU_PRIVATE(ia32_TSS, tss) = {
-  0,				/* backLink */
-  0,				/* esp0 */
-  sel_KernelData,		/* ss0 */
-  0,				/* esp1 */
-  sel_Null,		        /* ss1 */
-  0,				/* esp2 */
-  sel_Null,		        /* ss2 */
-  0,				/* cr3 */
-  0,				/* eip */
-  0,				/* eflags */
-  0,				/* eax */
-  0,				/* ecx */
-  0,				/* edx */
-  0,				/* ebx */
-  0,				/* esp */
-  0,				/* ebp */
-  0,				/* esi */
-  0,				/* edi */
-  0,				/* es */
-  0,				/* cs */
-  0,				/* ss */
-  0,				/* ds */
-  0,				/* fs */
-  0,				/* gs */
-  0,				/* ldtr */
-  0,				/* trapOnSwitch */
-  sizeof(ia32_TSS)		/* ioMapBase */
+ia32_TSS tss[MAX_NCPU] = {
+  {
+    0,				/* backLink */
+    0,				/* esp0 */
+    sel_KernelData,		/* ss0 */
+    0,				/* esp1 */
+    sel_Null,		        /* ss1 */
+    0,				/* esp2 */
+    sel_Null,		        /* ss2 */
+    0,				/* cr3 */
+    0,				/* eip */
+    0,				/* eflags */
+    0,				/* eax */
+    0,				/* ecx */
+    0,				/* edx */
+    0,				/* ebx */
+    0,				/* esp */
+    0,				/* ebp */
+    0,				/* esi */
+    0,				/* edi */
+    0,				/* es */
+    0,				/* cs */
+    0,				/* ss */
+    0,				/* ds */
+    0,				/* fs */
+    0,				/* gs */
+    0,				/* ldtr */
+    0,				/* trapOnSwitch */
+    sizeof(ia32_TSS)		/* ioMapBase */
+  }
 } ;
 
 
-/**
- * @brief Initialize the LTR register after performing the required
- * GDT entry relocation.
- */
-
-void
-tss_init()
+void 
+init_tss()
 {
-  gdt_SetupTSS(seg_TSS, (kva_t) &MY_CPU(tss));
+  for (size_t i = 1; i < MAX_NCPU; i++)
+    memcpy(&tss[i], &tss[0], sizeof(tss[0]));
+}
 
+/**
+ * @brief Load the TR register.
+ */
+void
+load_tr()
+{
   GNU_INLINE_ASM("ltr  %%ax"
 		 : /* no output */
 		 : "a" (sel_TSS)

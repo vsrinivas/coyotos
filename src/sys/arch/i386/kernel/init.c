@@ -654,6 +654,9 @@ arch_init(void)
   for (size_t i = 0; i < MAX_NCPU; i++)
     cpu_construct(i);
 
+  init_gdt();
+  init_tss();
+
   /* Initialize the transient map, so that later code can access
      arbitrary parts of memory. */
   transmap_init();
@@ -746,12 +749,12 @@ arch_init(void)
 
   /* Initialize the hardware exception vector table. */
   vector_init();
-
+  
   printf("CPU0: GDT/LDT, ");
-  gdt_ldt_init();		/* for CPU 0 */
+  load_gdtr_ldtr();		/* for CPU 0 */
 
   printf("TSS, ");
-  tss_init();
+  load_tr();
 
   irq_init();			/* for CPU 0 */
 

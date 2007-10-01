@@ -29,6 +29,7 @@
 #include <kerninc/PhysMem.h>
 #include <kerninc/string.h>
 #include <kerninc/pstring.h>
+#include <kerninc/util.h>
 #include <kerninc/assert.h>
 #include <hal/transmap.h>
 #include "cpu.h"
@@ -89,6 +90,20 @@ make_cpu_local_page(kva_t tbl_va, void *src_va)
 
 }
 #endif
+
+cpuid_t
+cpu_getMyID(void)
+{
+  cpuid_regs_t regs;
+  (void) cpuid(1u, &regs);
+  uint8_t myApicID = FIELD(regs.ebx, 31, 24);
+
+  for (size_t i = 0; i < cpu_ncpu; i++) 
+    if (archcpu_vec[i].lapic_id == myApicID)
+      return i;
+
+  fatal("CPU ID of current CPU is unknown\n");
+}
 
 size_t
 cpu_probe_cpus(void)

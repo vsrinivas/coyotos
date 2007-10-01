@@ -123,6 +123,14 @@ extern CPU cpu_vec[MAX_NCPU];
  */
 void cpu_construct(cpuid_t ndx);
 
+/** @brief Return the CPUID (index into cpu vector) of the currently
+ * executing processor.
+ *
+ * This is NOT the preferred way to do this, as it is fairly
+ * expensive.
+ */
+__hal cpuid_t cpu_getMyID();
+
 /** @brief Per-CPU pointer to the current CPU. */
 DECLARE_CPU_PRIVATE(CPU*,curCPU);
 
