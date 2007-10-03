@@ -19,12 +19,24 @@
  */
 
 /*
- * Elf Process model program utility functions
+ * Image loading utility functions
  */
-module coyotos.model.Elf {
+module coyotos.Image {
   import elfspace = coyotos.ElfSpace;
+  import vcs = coyotos.VirtualCopySpace;
+  import util = coyotos.Util;
 
-  export def load_image(bank, file) {
+  export def load_small(bank, file) {
+    def image = util.load_small_image(bank, file);
+    image.space = weaken(image.space);
+    return image;
+  }
+
+  export def load_elf(bank, file) {
     return elfspace.load_image(bank, file);
+  }
+
+  export def load_virtualCopy(bank, file) {
+    return vcs.load_image(bank, file);
   }
 }

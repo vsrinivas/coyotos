@@ -444,7 +444,7 @@ initialize(void)
   bool isInvalid = false;
 
   if (!coyotos_AddressSpace_getSlot(CR_TOOLS, 
-				    coyotos_VirtualCopySpace_TOOLS_BACKGROUND,
+				    coyotos_VirtualCopySpace_TOOL_BACKGROUND,
 				    CR_BGGPT))
     goto fail;
 

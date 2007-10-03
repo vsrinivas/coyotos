@@ -29,11 +29,12 @@
  * Verifier:
  *   The global Constructor verifier.
  *
- * make(bank, image, handler):
+ * create(bank, image, tools, handler):
  *
  *   Make a constructor which creates programs obeying *image*, with
  *   process handler *handler*.  *image* should be the result of a
- *   coyotos.model.* "load_image()" call. *handler* should be NullCap() or
+ *   coyotos.model.* "load_image()" call. *tools* should be a set of
+ *   tools created using fresh_tools().  *handler* should be NullCap() or
  *   a constructor for the desired ProcessHandler.  *bank* should be
  *   a fresh bank.
  *
@@ -42,48 +43,22 @@
  *   set_tool() can be used to set up the Tools node the children of this
  *   process will get.
  *
- * make_with_as(bank, as, pc, handler):
+ * create_with_as(bank, as, pc, handler):
  *
  *   Like make(), only you explicitly provide an address space and PC.  
  *   *as* should either be a weak GPT or a constructor of a SpaceHandler
  *   interface.
  *
- * set_tool(cons, slot, tool):
- *
- *   Sets tool slot *slot* to *tool* for the Constructor *cons*, created
- *   using make() or make_with_as().
- * 
- *
- * make_process(bank, image, handler):
- *
- *   *bank* should be a fresh bank.  *image* should be the result of a
- *   coyotos.model.* "load_image()" call. *handler* should be NullCap() or
- *   a constructor for the desired Process handler.
- *
- *   The process will be started up with the default Tools node;  if
- *   other tools are needed, use:
- *
- *     import rt = coyotos.RunTime;
- *     import cons = coyotos.Constructor;
- *     ...
- *     def proc = cons.make_process(...);
- *     ...
- *     proc.capReg[rt.REG.TOOLS][slot] = value;
- *
- *   to add them to the tools array.
- *
- * make_process_from_as(bank, as, pc, handler):
- *
- *   Like make_process(), only you explicitly provide an address space and
- *   PC instead of an image.  *as* can be a constructor of a SpaceHandler
- *   interface, and handler can be a constructor of a ProcessHandler.
+ * fresh_tools(bank):
+ *   Returns a tools CapPage allocated from *bank*, with the default runtime
+ *   tools set up.
  */
 module coyotos.Constructor {
   import sb = coyotos.SpaceBank;
 
-  import llutil = coyotos.LowLevelUtil;
+  import ps = coyotos.ProtoSpace;
   import rt = coyotos.RunTime;
-  import small = coyotos.model.Small;
+  import util = coyotos.Util;
 
   /* Our protected payload values */
   export enum PP {
@@ -129,39 +104,19 @@ module coyotos.Constructor {
     TMP
   };
   
-  /* The initial app registers as seen by ProtoSpace. These overlap those
-   * which may be smashed by runtime initialization.
-   */
-  export capreg PROTOAPP {
-    ADDRSPACE = rt.REG.APP_SMASHED0,
-    HANDLER,
-    SCHEDULE
-  };
-
-  /* Protospace is the primordial address space for a process.  It fits
-   * exactly in a single page.  The target initial PC is stored as a 64-bit
-   * integer at the beginning of the page, and the ProtoSpace entry point
-   * is immediately afterwards, at offset 8.
-   *
-   * To set up a protospace for use, a new page is allocated, the
-   * original protospace is copied into it, and the needed start PC
-   * is written into it at offset 0.
-   */
-  def protospace_image = loadimage(PrimeBank, "coyotos/ProtoSpace");
-  def protospace = weaken(protospace_image.space);
-  
   /* The Constructor program image.
    */
-  def cons_image = small.load_image(PrimeBank, "coyotos/Constructor");
+  def cons_image = util.load_small_image(PrimeBank, "coyotos/Constructor");
+  cons_image.space = weaken(cons_image.space);
 
   /* There's a chicken-and-egg problem with the metaconstructor; we need
    * to know its brand before we can create any constructors, but the
    * metaconstructor is itself a constructor. 
    *
-   * So we allocate its process early, and set it up late, to get around
-   * the issue.
+   * We solve this by allocating the process first, setting up 
+   * constructor_brand, then calling setup_sealed_constructor() late.
    */
-  def metacon_proc = llutil.make_running_process(PrimeBank, cons_image);
+  def metacon_proc = sb.make_running_process(PrimeBank, cons_image);
  
   /* The constructor brand is a distinguished entry cap to
    * the MetaConstructor. 
@@ -176,12 +131,12 @@ module coyotos.Constructor {
   /* The default tools everyone starts with. */ 
   def primordial_tools = readonly(new CapPage(PrimeBank));
   primordial_tools[rt.TOOL.DISCRIM] = Discrim();
-  primordial_tools[rt.TOOL.PROTOSPACE] = protospace;
+  primordial_tools[rt.TOOL.PROTOSPACE] = ps.ProtoSpace;
   primordial_tools[rt.TOOL.CONSTRUCTOR_VERIFY] = Verifier;
   primordial_tools[rt.TOOL.AUDIT_LOG] = NullCap();
 
   export def fresh_tools(bank) {
-    return dup(bank, primordial_tools);
+    return readonly(dup(bank, primordial_tools));
   }
 
   /*
@@ -192,9 +147,8 @@ module coyotos.Constructor {
    *
    * set_tool() can be used to set up its tool page.
    */
-  def setup_sealed_constructor(bank, proc, as, pc, handler) {
-    def my_tools = fresh_tools(bank);
-    def my_protospace = dup(bank, protospace);
+  def setup_sealed_constructor(bank, proc, as, pc, tools, handler) {
+    def my_protospace = dup(bank, ps.ProtoSpace);
     
     def initEpt = proc.capReg[rt.REG.INITEPT];
     
@@ -203,7 +157,7 @@ module coyotos.Constructor {
     proc.brand = constructor_brand;
     
     /* Set up the base capability registers not initialized by 
-     * llutil.make_bare_process()
+     * sb.make_running_process()
      */
     proc.capReg[rt.REG.TOOLS] = primordial_tools;
     proc.capReg[rt.REG.RUNTIME] = NullCap();
@@ -211,7 +165,7 @@ module coyotos.Constructor {
     /* Set up the YIELD app registers for the Constructor so that it
      * will initialize as Sealed.
      */
-    proc.capReg[APP.YIELD_TOOLS] = readonly(my_tools);
+    proc.capReg[APP.YIELD_TOOLS] = readonly(tools);
     proc.capReg[APP.YIELD_PROTOSPACE] = weaken(my_protospace);
     proc.capReg[APP.YIELD_ADDRSPACE] = as;
     proc.capReg[APP.YIELD_HANDLER] = handler;
@@ -231,10 +185,10 @@ module coyotos.Constructor {
    *
    * set_tool() can be used to set up the yield's tool page.
    */
-  export def make_from_as(bank, as, pc, handler) {
-    def proc = llutil.make_running_process(bank, cons_image); 
+  export def make_from_as(bank, as, pc, tools, handler) {
+    def proc = sb.make_running_process(bank, cons_image); 
     
-    return setup_sealed_constructor(bank, proc, as, pc, handler);
+    return setup_sealed_constructor(bank, proc, as, pc, tools, handler);
   }
   
   /* Creates a constructor using *bank* (which should be a fresh bank).
@@ -247,15 +201,8 @@ module coyotos.Constructor {
    *
    * set_tool() can be used to set up the yield's tool page.
    */
-  export def make(bank, image, handler) {
-    return make_from_as(bank, image.space, image.pc, handler);
-  }
-
-  /* Sets the tool at offset *offset* in the tools space for the yield of
-   * *con* to *value*.
-   */
-  export def set_tool(con, offset, value) {
-    con.recipient.capReg[APP.YIELD_TOOLS][offset] = value;
+  export def make(bank, image, tools, handler) {
+    return make_from_as(bank, image.space, image.pc, tools, handler);
   }
 
   /* Now we can set up the metaconstructor;  It's just a constructor whose
@@ -266,65 +213,6 @@ module coyotos.Constructor {
    */
   export def MetaConstructor = 
     setup_sealed_constructor(PrimeBank, metacon_proc, 
-			     cons_image.space, cons_image.pc, NullCap());
-
-  /*** UTILITY FUNCTIONS -- Use ProtoSpace to make a running process */
-
-  /* Make a running process from an AS and PC.
-   *
-   * *bank* should be a fresh bank.  *as_cons* should be the desired
-   * address space, or a constructor for a SpaceHandler object which can
-   * provide the desired address space. *handler* should be NullCap() or
-   * a constructor for the desired Process handler.
-   *
-   * The process will be started up with the default Tools node;  if
-   * other tools are needed, use:
-   *
-   *   import rt = coyotos.RunTime;
-   *   import cons = coyotos.Constructor;
-   *   ...
-   *   def proc = cons.make_process(...);
-   *   ...
-   *   proc.capReg[rt.REG.TOOLS][slot] = value;
-   *
-   * to add them to the tools array.
-   */
-  export def make_process_from_as(bank, as_cons, pc, handler_cons) {
-    def my_protospace = dup(bank, protospace);
-
-    set_page_uint64(my_protospace, 0, pc);
-
-    def proc = llutil.make_running_process_from_as(bank, 
-						   weaken(my_protospace), 8);
-
-    proc.capReg[rt.REG.TOOLS] = readonly(fresh_tools(bank));
-    
-    proc.capReg[PROTOAPP.ADDRSPACE] = as_cons;
-    proc.capReg[PROTOAPP.HANDLER] = handler_cons;
-    proc.capReg[PROTOAPP.SCHEDULE] = proc.schedule;
-
-    return proc;
-  }
-
-  /* Make a running process from an image.
-   *
-   * *bank* should be a fresh bank.  *image* should be the result of a
-   * coyotos.model.* "load_image()" call. *handler* should be NullCap() or
-   * a constructor for the desired Process handler.
-   *
-   * The process will be started up with the default Tools node;  if
-   * other tools are needed, use:
-   *
-   *   import rt = coyotos.RunTime;
-   *   import cons = coyotos.Constructor;
-   *   ...
-   *   def proc = cons.make_process(...);
-   *   ...
-   *   proc.capReg[rt.REG.TOOLS][slot] = value;
-   *
-   * to add them to the tools array.
-   */
-  export def make_process(bank, image, handler) {
-    return make_process_from_as(bank, image.space, image.pc, handler);
-  }
+			     cons_image.space, cons_image.pc, 
+                             primordial_tools, NullCap());
 }

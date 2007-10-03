@@ -1,0 +1,62 @@
+/*
+ * Copyright (C) 2007, The EROS Group, LLC
+ *
+ * This file is part of the Coyotos Operating System.
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 2,
+ * or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+ */
+
+module coyotos.BootProcess {
+  import rt = coyotos.RunTime;
+  import sb = coyotos.SpaceBank;
+  import ps = coyotos.ProtoSpace;
+
+  /*** UTILITY FUNCTIONS -- Use ProtoSpace to make a running process */
+
+  /* Make a running process from an AS and PC.
+   *
+   * *bank* should be a fresh bank.  *as_cons* should be the desired
+   * address space, or a constructor for a SpaceHandler object which can
+   * provide the desired address space. *tools* is a CapPage containing
+   * the tools the process needs.  *handler* should be NullCap(),
+   * a constructor for the desired Process handler, or an Entry capability
+   * to the desired handler.
+   */
+  export def make_from_as(bank, as_cons, pc, tools, handler_cons) {
+    def my_protospace = dup(bank, ps.ProtoSpace);
+
+    set_page_uint64(my_protospace, 0, pc);
+
+    def proc = sb.make_running_process_with_as(bank, weaken(my_protospace), 8);
+
+    proc.capReg[rt.REG.TOOLS] = tools;
+    
+    proc.capReg[ps.APP.ADDRSPACE] = as_cons;
+    proc.capReg[ps.APP.HANDLER] = handler_cons;
+    proc.capReg[ps.APP.SCHEDULE] = proc.schedule;
+
+    return proc;
+  }
+
+  /* Make a running process from an image.
+   *
+   * *bank* should be a fresh bank.  *image* should be the result of a
+   * coyotos.model.* "load_image()" call. *handler* should be NullCap() or
+   * a constructor for the desired Process handler.
+   */
+  export def make(bank, image, tools, handler) {
+    return make_from_as(bank, image.space, image.pc, tools, handler);
+  }
+}

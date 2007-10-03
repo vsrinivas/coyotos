@@ -54,7 +54,7 @@ IDL_HEADERS=\
     $(BASE_IDL_FILES:$(BASE_IDL_DIR)/%.idl=$(BUILDDIR)/idl/coyotos/%.server.h) \
     $(SYS_IDL_FILES:$(SYS_IDL_DIR)/%.idl=$(BUILDDIR)/idl/coyotos/%.server.h)
 
-ENUM_MODULES=coyotos.Constructor
+ENUM_MODULES=coyotos.Constructor coyotos.ProtoSpace
 BASE_MKI_DIR=$(PKG_SRC)/mki
 COMMON_MKI_DIR=$(COYOTOS_ROOT)/usr/include/mki
 ENUM_HDRS=$(ENUM_MODULES:%=$(BUILDDIR)/%.h)

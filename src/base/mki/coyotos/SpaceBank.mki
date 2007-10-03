@@ -39,12 +39,64 @@
 module coyotos.SpaceBank {
    import TargetInfo = coyotos.TargetInfo;
    import rt = coyotos.RunTime;
-   import llutil = coyotos.LowLevelUtil;
+
+  /* Allocate a process, set up its capRegs, address space, and make it 
+   * running. 
+   *
+   * bank should be a freshly created bank.
+   *
+   * First, a process consists of:
+   *   1. A process
+   *   2. One reply endpoint, w/ epID 0 and PM set to 1
+   *   3. One initial endpoint, w/ epID 1 and PM cleared.
+   *
+   * The REPLYEPT, SELF, and INITEPT capability registers are set up to link
+   * all of these together.  The SPACEBANK capability register is set to
+   * the passed in bank.
+   *
+   *   4. image.space is installed as the address space
+   *   5. proc.faultCode is set to PROCESS_FC_STARTUP
+   *   6. proc.faultInfo is set to image.pc
+   */
+   export def make_running_process_with_as(bank, as, pc) {
+     def proc = new Process(bank);
+
+     def replyept = new Endpoint(bank);
+     replyept.pm = 1;
+     replyept.recipient = proc;
+     replyept.endpointID = 0;
+
+     def initept = new Endpoint(bank);
+     initept.recipient = proc;
+     initept.endpointID = 1;
+
+     proc.capReg[rt.REG.REPLYEPT] = replyept;
+     proc.capReg[rt.REG.SELF] = proc;
+     proc.capReg[rt.REG.SPACEBANK] = bank;
+     proc.capReg[rt.REG.INITEPT] = initept;
+
+     proc.schedule = NullCap(); /** @bug this should be a schedule cap */
+     proc.addrSpace = as;
+     proc.faultCode = rt.PROCESS_FC_STARTUP;
+     proc.faultInfo = pc;
+
+     return proc;
+   }
+   export def make_running_process(bank, image) {
+     return make_running_process_with_as(bank, image.space, image.pc);
+   }
 
    /* The Spacebank verifier is a PrimeBank endpoint with all restrictions */
    export def Verifier = enter(PrimeBankEndpoint, 0xffffffff);
 
-   def spacebank = llutil.make_ironman_process(PrimeBank, "coyotos/SpaceBank");
+   /* load the SpaceBank process image, and install a stack page. */
+   def image = loadimage(PrimeBank, "coyotos/SpaceBank");
+   image.space = insert_subspace(PrimeBank,
+				 image.space,
+				 noexec(new Page(PrimeBank)),
+				 TargetInfo.small_stack_page_addr);
+
+   def spacebank = make_running_process(PrimeBank, image);
 
    /* Register assignments for SpaceBank; only exported so that they can
     * be used by spacebank.c.

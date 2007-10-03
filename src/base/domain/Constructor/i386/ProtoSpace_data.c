@@ -6,11 +6,11 @@
 #include <idl/coyotos/Process.h>
 #include <idl/coyotos/Constructor.h>
 #include <idl/coyotos/SpaceHandler.h>
-#include "coyotos.Constructor.h"
+#include "coyotos.ProtoSpace.h"
 
-#define CR_ADDRSPACE	coyotos_Constructor_PROTOAPP_ADDRSPACE
-#define CR_HANDLER	coyotos_Constructor_PROTOAPP_HANDLER
-#define CR_SCHEDULE	coyotos_Constructor_PROTOAPP_SCHEDULE
+#define CR_ADDRSPACE	coyotos_ProtoSpace_APP_ADDRSPACE
+#define CR_HANDLER	coyotos_ProtoSpace_APP_HANDLER
+#define CR_SCHEDULE	coyotos_ProtoSpace_APP_SCHEDULE
 
 #define MY_IPW0(dw, sc) \
     (IPW0_CW|IPW0_SP|IPW0_RP|IPW0_RC|IPW0_SC| \

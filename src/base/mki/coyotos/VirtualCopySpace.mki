@@ -21,9 +21,7 @@
 module coyotos.VirtualCopySpace {
   import rt = coyotos.RunTime;
   import Constructor = coyotos.Constructor;
-  import Util = coyotos.Util;
-
-  import Small = coyotos.model.Small;
+  import util = coyotos.Util;
 
   /* Our protected payload values */
   export enum PP {
@@ -42,17 +40,19 @@ module coyotos.VirtualCopySpace {
     TMP3
   };
 
-  export enum TOOLS {
+  export enum TOOL {
     BACKGROUND = rt.TOOL.APP0
   };
 
-  def vcs_image = Small.load_image(PrimeBank, "coyotos/VirtualCopySpace");
+  def vcs_image = util.load_small_image(PrimeBank, "coyotos/VirtualCopySpace");
+  vcs_image.space = weaken(vcs_image.space);
 
   /* returns a constructor for an arbitrary space */
   export def make(bank, space) {
-    def cons = Constructor.make(bank, vcs_image, NullCap());
+    def tools = Constructor.fresh_tools(bank);
+    tools[TOOL.BACKGROUND] = weaken(space);
 
-    Constructor.set_tool(cons, TOOLS.BACKGROUND, weaken(space));
+    def cons = Constructor.make(bank, vcs_image, tools, NullCap());
 
     return cons;
   }
@@ -92,7 +92,7 @@ module coyotos.VirtualCopySpace {
   export def zeroSpc = weaken(new Page(PrimeBank));
   do {
     def l2v = get_l2g(zeroSpc);
-    def l2g = Util.min(l2v+4, 63);
+    def l2g = util.min(l2v+4, 63);
     zeroSpc = make_filled_gpt(l2g, l2v, zeroSpc);
   } while (get_l2g(zeroSpc) < 63);
 

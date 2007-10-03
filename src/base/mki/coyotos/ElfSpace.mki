@@ -23,8 +23,6 @@ module coyotos.ElfSpace {
   import util = coyotos.Util;
   import Constructor = coyotos.Constructor;
 
-  import small = coyotos.model.Small;
-
   export enum PP {
     EPH = 0,
     Handler = 1
@@ -48,15 +46,17 @@ module coyotos.ElfSpace {
     BACKGROUND  /* pre-set-up image of ELF file */
   };
 
-  def elf_image = small.load_image(PrimeBank, "coyotos/ElfSpace");
+  def elf_image = util.load_small_image(PrimeBank, "coyotos/ElfSpace");
+  elf_image.space = weaken(elf_image.space);
 
   export def load_image(bank, file) {
-    def cons = Constructor.make(bank, elf_image, NullCap());
     def image = loadimage(bank, file);
-    Constructor.set_tool(cons, TOOL.ELFFILE, 
-                         weaken(readfile(bank, file)));
-    Constructor.set_tool(cons, TOOL.BACKGROUND, 
-                         weaken(image.space));
+
+    def tools = Constructor.fresh_tools(bank);
+    tools[TOOL.ELFFILE] = weaken(readfile(bank, file));
+    tools[TOOL.BACKGROUND] = weaken(image.space);
+
+    def cons = Constructor.make(bank, elf_image, tools, NullCap());
 
     image.space = cons;
     return image;

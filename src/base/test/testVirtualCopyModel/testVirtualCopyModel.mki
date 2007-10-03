@@ -19,11 +19,11 @@
  */
 
 module testVirtualCopyModel {
-   import vc = coyotos.model.VirtualCopy;
-   import util = coyotos.Util;
+   import Image = coyotos.Image;
+   import bp = coyotos.BootProcess;
 
    def my_bank = new Bank(PrimeBank);
-   def vc_image = vc.load_image(my_bank, "testLargeModel");
+   def vc_image = Image.load_virtualCopy(my_bank, "testLargeModel");
 
-   def test = util.make_process(my_bank, vc_image, NullCap());
+   def test = bp.make(my_bank, vc_image, NullCap(), NullCap());
 }

@@ -22,7 +22,8 @@
  * Utility functions
  */
 module coyotos.Util {
-  import cons = coyotos.Constructor;
+  import ProtoSpace = coyotos.ProtoSpace;
+  import TargetInfo = coyotos.TargetInfo;
 
   export def min(a, b) {
     if (a <= b) {
@@ -45,25 +46,21 @@ module coyotos.Util {
     return gpt;
   }
 
-  /* Make a running process from an image.
-   *
-   * *bank* should be a fresh bank.  *image* should be the result of a
-   * coyotos.model.* "load_image()" call. *handler* should be NullCap() or
-   * a constructor for the desired Process handler.
-   *
-   * The process will have a copy of the default Tools node;  if other 
-   * tools are needed, use:
-   *
-   *   import rt = coyotos.RunTime;
-   *   import util = coyotos.Util;
-   *   ...
-   *   def proc = util.make_process(...);
-   *   ...
-   *   proc.capReg[rt.REG.TOOLS][slot] = value;
-   *
-   * to add them to the tools array.
-   */
-  export def make_process(bank, image, handler) {
-    return cons.make_process(bank, image, handler);
+  export def load_small_image(bank, file) {
+    def image = loadimage(bank, file);
+
+    if (get_l2g(image.space) == TargetInfo.page_l2g) {
+      // force it to have a GPT by inserting a NullCap at an unused address.
+      if (get_match(image.space) == 0) {
+        image.space = insert_subspace(bank, image.space, NullCap(), 0);
+      } else {
+        image.space = insert_subspace(bank, image.space, NullCap(),
+				      TargetInfo.page_size);
+      }
+    }
+    if (get_l2g(image.space) == TargetInfo.page_l2g + 4) {
+      return image;
+    }
+    fatal("file is too large for small space");
   }
 }

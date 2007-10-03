@@ -47,6 +47,7 @@
 #include <idl/coyotos/Builder.server.h>
 
 #include "coyotos.Constructor.h"
+#include "coyotos.ProtoSpace.h"
 
 #define CR_NEW_PROC    		coyotos_Constructor_APP_NEW_PROC
 #define CR_NEW_ENDPT		coyotos_Constructor_APP_NEW_ENDPT
@@ -265,13 +266,13 @@ HANDLE_coyotos_Constructor_create(caploc_t bank, caploc_t sched,
 				 CR_RUNTIME.fld.loc, runtime) ||
       /* set up the protospace arguments */
       !coyotos_Process_setCapReg(CR_NEW_PROC,
-	coyotos_Constructor_PROTOAPP_ADDRSPACE.fld.loc, 
+	coyotos_ProtoSpace_APP_ADDRSPACE.fld.loc, 
 	CR_YIELD_ADDRSPACE) ||
       !coyotos_Process_setCapReg(CR_NEW_PROC,
-	coyotos_Constructor_PROTOAPP_HANDLER.fld.loc, 
+	coyotos_ProtoSpace_APP_HANDLER.fld.loc, 
 	CR_YIELD_HANDLER) ||
       !coyotos_Process_setCapReg(CR_NEW_PROC,
-	coyotos_Constructor_PROTOAPP_SCHEDULE.fld.loc, 
+	coyotos_ProtoSpace_APP_SCHEDULE.fld.loc, 
         sched) ||
       /* set it up to return to our caller */
       !coyotos_Process_setCapReg(CR_NEW_PROC, CR_RETURN.fld.loc, CR_RETURN) ||

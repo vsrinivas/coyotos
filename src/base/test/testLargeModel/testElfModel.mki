@@ -19,11 +19,11 @@
  */
 
 module testElfModel {
-   import elf = coyotos.model.Elf;
-   import util = coyotos.Util;
+   import Image = coyotos.Image;
+   import bp = coyotos.BootProcess;
 
    def my_bank = new Bank(PrimeBank);
-   def elf_image = elf.load_image(my_bank, "testLargeModel");
+   def elf_image = Image.load_elf(my_bank, "testLargeModel");
 
-   def test = util.make_process(my_bank, elf_image, NullCap());
+   def test = bp.make(my_bank, elf_image, NullCap(), NullCap());
 }

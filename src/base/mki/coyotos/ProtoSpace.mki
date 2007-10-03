@@ -18,29 +18,29 @@
  * Foundation, 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  */
 
-/*
- * Small model program utility functions
- */
-module coyotos.model.Small {
+module coyotos.ProtoSpace {
   import rt = coyotos.RunTime;
-  import ti = coyotos.TargetInfo;
+  import sb = coyotos.SpaceBank;
 
-  export def load_image(bank, file) {
-    def image = loadimage(bank, file);
+  /* The initial app registers as seen by ProtoSpace. These overlap those
+   * which may be smashed by runtime initialization.
+   */
+  export capreg APP {
+    ADDRSPACE = rt.REG.APP_SMASHED0,
+    HANDLER,
+    SCHEDULE
+  };
 
-    if (get_l2g(image.space) == ti.page_l2g) {
-      // force it to have a GPT by inserting a NullCap at an unused address.
-      if (get_match(image.space) == 0) {
-        image.space = insert_subspace(bank, image.space, NullCap(), 0);
-      } else {
-        image.space = insert_subspace(bank, image.space, NullCap(),
-				      ti.page_size);
-      }
-    }
-    if (get_l2g(image.space) == ti.page_l2g + 4) {
-      image.space = weaken(image.space);
-      return image;
-    }
-    fatal("file is too large for small space");
-  }
+  /* Protospace is the primordial address space for a process.  It fits
+   * exactly in a single page.  The target initial PC is stored as a 64-bit
+   * integer at the beginning of the page, and the ProtoSpace entry point
+   * is immediately afterwards, at offset 8.
+   *
+   * To set up a protospace for use, a new page is allocated, the
+   * original protospace is copied into it, and the needed start PC
+   * is written into it at offset 0.
+   */
+  def image = loadimage(PrimeBank, "coyotos/ProtoSpace");
+
+  export def ProtoSpace = weaken(image.space);
 }

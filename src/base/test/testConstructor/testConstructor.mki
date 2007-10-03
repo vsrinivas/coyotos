@@ -21,12 +21,12 @@
 module testConstructor {
    import cons = coyotos.Constructor;
    import rt = coyotos.RunTime;
-   import util = coyotos.Util;
-   import small = coyotos.model.Small;
+   import bp = coyotos.BootProcess;
+   import Image = coyotos.Image;
 
    def bank = new Bank(PrimeBank);
-   def image = small.load_image(bank, "testConstructor");
-   def proc = util.make_process(bank, image, NullCap());
+   def image = Image.load_small(bank, "testConstructor");
+   def proc = bp.make(bank, image, NullCap(), NullCap());
 
    export capreg REG {
       METACON = rt.REG.APP0,

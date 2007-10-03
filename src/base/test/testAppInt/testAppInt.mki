@@ -20,10 +20,11 @@
 
 module testAppInt {
    import rt = coyotos.RunTime;
-   import llutil = coyotos.LowLevelUtil;
+   import util = coyotos.Util;
+   import sb = coyotos.SpaceBank;
 
-   def testAppInt = llutil.make_ironman_process(PrimeBank, "testAppInt");
-   def testProg = llutil.make_ironman_process(PrimeBank, "testProg");
+   def testAppInt = sb.make_running_process(PrimeBank, util.load_small_image(PrimeBank, "testAppInt"));
+   def testProg = sb.make_running_process(PrimeBank, util.load_small_image(PrimeBank, "testProg"));
 
    export capreg APP {
       KERNLOG = rt.REG.APP0 + 4,
