@@ -57,5 +57,5 @@ capability_pop(caploc_t cap)
 bool
 capability_canPush(uint32_t n)
 {
-  return ((max - cur) / COYOTOS_CAPABILITY_SIZE) <= n;
+  return ((max - cur) / COYOTOS_CAPABILITY_SIZE) >= n;
 }
