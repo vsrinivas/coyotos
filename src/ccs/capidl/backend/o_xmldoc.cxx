@@ -137,8 +137,6 @@ symdump(GCPtr<Symbol> s, INOstream& out)
   case sc_exception:
   case sc_caseTag:
   case sc_caseScope:
-  case sc_oneway:
-  case sc_inhOneway:
   case sc_typedef:
   case sc_switch:
     {
@@ -204,6 +202,8 @@ symdump(GCPtr<Symbol> s, INOstream& out)
       out << "</capdoc:" << s->ClassName() << ">\n";
       break;
     }
+  case sc_oneway:
+  case sc_inhOneway:
   case sc_operation:
   case sc_inhOperation:
     {

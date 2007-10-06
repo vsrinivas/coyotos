@@ -3,24 +3,24 @@ package coyotos;
 /**
  * @brief Application-defined interrupt posting interface
  *
- * An App capability authorizes up to 32 distinct notices that are
- * guaranteed to be delivered to the recipient. Notices posted using
- * the @p postNotice method are guaranteed to be delivered when the
- * recipient (if any) next enters a receiving state, but invocation of
- * @p postNotice is also guaranteed not to block. This makes the
- * AppNotice capability useful to support the implementation of flow
- * control in bidirectional streams or input notification in
+ * An AppNotice capability authorizes up to 32 distinct notices that
+ * are guaranteed to be delivered to the recipient. Notices posted
+ * using the @p postNotice method are guaranteed to be delivered when
+ * the recipient (if any) next enters a receiving state, but
+ * invocation of @p postNotice is also guaranteed not to block. This
+ * makes the AppNotice capability useful to support the implementation
+ * of flow control in bidirectional streams or input notification in
  * situations where the notifier must not block.
  *
  * If a given notice is posted multiple times prior to receipt, the
- * receiving application will receive it exactly ones.
+ * receiving application will receive it exactly once.
  */
 interface AppNotice extends Cap {
   /// @brief Post a (set of) application-defined notices @p notices n
   /// to the application.
   ///
-  /// The @p postNotice method posts the authorized subset of @p
-  /// notices to the receiving application if one exists.
+  /// The @p postNotice method posts the authorized subset of
+  /// @p notices to the receiving application if one exists.
   ///
   /// There are two ways in which the invocation of @p postNotice can
   /// fail:
@@ -32,7 +32,8 @@ interface AppNotice extends Cap {
   /// <li>
   /// The endpoint itself may have been destroyed.
   /// </li>
-  /// <ol>
+  /// </ol>
+  ///
   /// In both cases an error is returned internally, but cannot be
   /// received because a <b>oneway</b> invocation does not involve a
   /// receive phase.

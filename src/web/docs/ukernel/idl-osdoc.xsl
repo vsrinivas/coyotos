@@ -255,12 +255,12 @@
 	</xsl:element>
       </xsl:if>
 
-      <xsl:if test="capdoc:operation|capdoc:inhOperation">
+      <xsl:if test="capdoc:operation|capdoc:inhOperation|capdoc:oneway|capdoc:inhOneway">
 	<xsl:element name="{$sect2}">
 	  <xsl:call-template name="emit.sect2.attrs"/>
 	  <title>Operations</title>
 	  <deflist>
-	    <xsl:apply-templates select="capdoc:operation|capdoc:inhOperation"/>
+	    <xsl:apply-templates select="capdoc:operation|capdoc:inhOperation|capdoc:oneway|capdoc:inhOneway"/>
 	  </deflist>
 	</xsl:element>
       </xsl:if>
@@ -397,7 +397,7 @@
     </defli>
   </xsl:template>
 
-  <xsl:template match="capdoc:operation|capdoc:inhOperation">
+  <xsl:template match="capdoc:operation|capdoc:inhOperation|capdoc:oneway|capdoc:inhOneway">
     <defli>
       <label>
 	<term>
@@ -407,7 +407,7 @@
       </label>
       <li>
 	<p>
-	  <xsl:if test="name()='capdoc:inhOperation'">
+	  <xsl:if test="name()='capdoc:inhOperation' or name()='capdoc:inhOneway'">
 	    <em>inherited from </em>
 	    <term><xsl:apply-templates select="@qname"/></term>
 	  </xsl:if>
@@ -415,6 +415,9 @@
 	<xsl:call-template name="emit.brief.description"/>
 	<p>
 	  <tt>
+	    <xsl:if test="name()='capdoc:oneway' or name()='capdoc:inhOneway'">
+	      <xsl:text>/* oneway */ </xsl:text>
+	    </xsl:if>
 	    <xsl:apply-templates select="capdoc:type"/>
 	    <xsl:text> </xsl:text>
 	    <xsl:apply-templates select="@name"/>
