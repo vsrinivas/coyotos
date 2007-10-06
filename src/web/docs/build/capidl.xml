@@ -706,9 +706,9 @@ foo(one|two);</literallayout>
       exceptions that are declared within the raising interface.
     </p>
     <p>
-      The important production here is the one for <em>opr_decl</em>,
+      The important production here is the one for <em>opr_dcl</em>,
       which is used to describe methods of interfaces. The general
-      form of <em>opr_decl</em> is:
+      form of <em>opr_dcl</em> is:
     </p>
     <literallayout>
 <em>opr_dcl</em>:
@@ -718,7 +718,7 @@ foo(one|two);</literallayout>
   | { <b>nostub</b> | <b>client</b> }<sup>?</sup>
     <em>ret_type</em> ident '(' <em>params</em><sup>?</sup> ')'
     { <b>raises</b> '(' <em>exceptions</em> ')' }<sup>?</sup>
-  | { <b>inherits</b> ident
+  | <b>inherits</b> ident
 <em>ret_type</em>: <b>void</b> | <em>type</em>
 <em>inparams</em>: <em>param_type</em> ident 
           { ',' <em>param_type</em> ident }<sup>*</sup>
