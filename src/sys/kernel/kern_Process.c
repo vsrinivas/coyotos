@@ -471,7 +471,7 @@ if (atomic_read(&p->issues) & pi_Preempted) {
   // Last check for IPI response obligations
   // Set interval timer for preemption
 
-  proc_resume();
+  proc_resume(p);
 }
 
 coyotos_Process_FC

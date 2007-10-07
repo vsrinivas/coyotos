@@ -437,6 +437,9 @@ setup_kstack:
 	 */
 	movl	$EXT(kstack_hi), %esp
 	
+	/* Set the curCPU pointer for CPU 0: */
+	movl	$EXT(cpu_vec),EXT(kstack_lo)
+	
 #if HAVE_CONSOLE
 	movl	$0x0765076c,0xc00b8014 /* "le" */
 #endif

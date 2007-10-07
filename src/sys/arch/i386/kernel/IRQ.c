@@ -735,17 +735,19 @@ irq_isEnabled(irq_t irq)
   return result;
 }
 
-extern void asm_proc_resume() NORETURN;
+extern void asm_proc_resume(Process *p) NORETURN;
 
 	/* This is called with interrupts already disabled. */
 void 
-proc_resume()
+proc_resume(Process *p)
 {
+  assert(p == MY_CPU(current));
+
   ia32_TSS *myTSS = &tss[CUR_CPU->id];
   assert(myTSS == &tss[0]);
-  myTSS->esp0 = (uint32_t) & MY_CPU(current)->state.fixregs.ES;
+  myTSS->esp0 = (uint32_t) &p->state.fixregs.ES;
 
-  asm_proc_resume();
+  asm_proc_resume(p);
 }
 
 

@@ -360,7 +360,7 @@ proc_findDataPage(Process *p, uintptr_t addr, bool forWriting,
  *
  * This should always be called with local interrupts DISABLED.
  */
-__hal void proc_resume() NORETURN;
+__hal void proc_resume(Process *p) NORETURN;
 
 /* Debugging only */
 __hal void proc_dump_current_savearea();
