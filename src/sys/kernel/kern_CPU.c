@@ -33,14 +33,6 @@
 CPU cpu_vec[MAX_NCPU] = {
 };
 
-/** @brief For each CPU, a pointer to the local per-CPU structure.
- *
- * This must be re-initialized by each CPU as it creates its
- * local copy of per-CPU state. 
- */
-DEFINE_CPU_PRIVATE(CPU*,curCPU) = &cpu_vec[0];
-
-
 /** @brief Number of identified CPUs. This may increase early in
  * arch-dependent initialization. */
 size_t cpu_ncpu = 1;

@@ -151,6 +151,8 @@ cpu_probe_cpus(void)
 
       kmap_map(pg_va, pa, KMAP_W);
     }
+
+    *((CPU **) stack_va) = &cpu_vec[i];
   }
 
   return cpu_ncpu;

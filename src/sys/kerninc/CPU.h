@@ -29,14 +29,8 @@
 #include <hal/config.h>
 #include <hal/atomic.h>
 #include <hal/kerntypes.h>
+#include <hal/cpu.h>
 #include <kerninc/ccs.h>
-
-#if MAX_NCPU <= 256
-typedef uint8_t cpuid_t;
-#else
-typedef uint32_t cpuid_t;
-#error "Need to reconsider type of MutexValue fields"
-#endif
 
 /** @brief Process executing on current CPU has been preempted. */
 #define CPUFL_WAS_PREEMPTED 0x1
@@ -123,17 +117,6 @@ extern CPU cpu_vec[MAX_NCPU];
  */
 void cpu_construct(cpuid_t ndx);
 
-/** @brief Return the CPUID (index into cpu vector) of the currently
- * executing processor.
- *
- * This is NOT the preferred way to do this, as it is fairly
- * expensive.
- */
-__hal cpuid_t cpu_getMyID();
-
-/** @brief Per-CPU pointer to the current CPU. */
-DECLARE_CPU_PRIVATE(CPU*,curCPU);
-
-#define CUR_CPU MY_CPU(curCPU)
+#define CUR_CPU (current_cpu())
 
 #endif /* __KERNINC_CPU_H__ */

@@ -30,11 +30,10 @@
 #include <hal/irq.h>
 #include "CPU.h"
 
-/** 
- * @brief lock type for cpu-owned lock.
- *
- * A cross-trap is needed to acquire it.
- */
+#if MAX_NCPU > 2048
+#error "Need to reconsider type of MutexValue cpu id field"
+#endif
+
 /** @brief lock type for per-transaction lock */
 #define LTY_TRAN 0x1u
 

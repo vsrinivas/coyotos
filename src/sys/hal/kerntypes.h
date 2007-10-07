@@ -27,6 +27,12 @@
 
 #include <target-hal/kerntypes.h>
 
+#if MAX_NCPU <= 256
+typedef uint8_t cpuid_t;
+#else
+typedef uint32_t cpuid_t;
+#endif
+
 /** @brief Integral type sufficient to hold a kernel-implemented
  * physical address.
  */
