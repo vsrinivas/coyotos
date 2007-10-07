@@ -48,22 +48,6 @@
  */
 #define GNU_INLINE_ASM(...) __asm__ __volatile__(__VA_ARGS__)
 
-#define MY_CPU(nm) __cpu_private_##nm
-
-#if MAX_NCPU > 1
-#define DEFINE_CPU_PRIVATE(ty, nm) \
-  __attribute__((__section__(".data.percpu"))) __typeof__(ty) MY_CPU(nm)
-
-#else /* MAX_CPU==1 */
-
-/// @brief Macro used to introduce a per-cpu variable.
-#define DEFINE_CPU_PRIVATE(ty, nm) __typeof__(ty) MY_CPU(nm)
-
-#endif
-
-#define DECLARE_CPU_PRIVATE(ty, nm) extern __typeof__(ty) MY_CPU(nm)
-
-
 #define CACHE_ALIGN  __attribute__((__aligned__(CACHE_LINE_SIZE), \
                                     __section__(".data.cachealign")))
 

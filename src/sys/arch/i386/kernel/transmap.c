@@ -41,9 +41,6 @@
 #include "hwmap.h"
 #include "kva.h"
 
-static DEFINE_CPU_PRIVATE(uint64_t, TransMetaMap) = ~0ull;
-static DEFINE_CPU_PRIVATE(uint64_t, TransReleased) = 0u;
-
 #define TRANSMAP_SLOT_VA(slot) (TRANSMAP_WINDOW_KVA + (COYOTOS_PAGE_SIZE * (slot)))
 #define TRANSMAP_VA_SLOT(va) ((va - TRANSMAP_WINDOW_KVA) / COYOTOS_PAGE_SIZE)
 

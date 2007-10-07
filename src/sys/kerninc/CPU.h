@@ -43,6 +43,8 @@
  */
 #define CPUFL_NEED_WAKEUP  0x2
 
+struct Process;
+
 typedef struct CPU {
   /** @brief Mutex value for locks held by current process on this
    * CPU.
@@ -52,8 +54,18 @@ typedef struct CPU {
    */
   uint32_t procMutexValue;
 
+  /** @brief Process that is presently running on this CPU (if any). */
+  struct Process *current;
+
   /** @brief Unique identifier for this CPU. */
   cpuid_t   id;
+
+  /** @brief Bitmap of this CPU's available transmap entries. */
+  uint64_t  TransMetaMap;
+
+  /** @brief Bitmap of this CPU's available transmap entries that have
+   * been released but not yet flushed from the TLB. */
+  uint64_t  TransReleased;
 
   /** @brief Starting (least) address of per-CPU stack. */
   kva_t     stack;
@@ -118,5 +130,6 @@ extern CPU cpu_vec[MAX_NCPU];
 void cpu_construct(cpuid_t ndx);
 
 #define CUR_CPU (current_cpu())
+#define MY_CPU(id) CUR_CPU->id
 
 #endif /* __KERNINC_CPU_H__ */

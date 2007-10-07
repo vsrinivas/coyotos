@@ -49,8 +49,6 @@
 // Temporary:
 #include <hal/machine.h>
 
-DEFINE_CPU_PRIVATE(Process *, current);
-
 #define DEFCAP(nm, ft, ty) extern void cap_##nm(InvParam_t *);
 #include <obstore/captype.def>
 
@@ -618,8 +616,19 @@ proc_marshall_src_cap(Process *p, caploc_t from, SrcCap *sc,
   }
 }
 
-/** @brief Per-CPU pointer to the current CPU. */
-DEFINE_CPU_PRIVATE(capability, NullTargetCap);
+/** @brief Dummy capability value to act as a target for capabilities that
+ * should not be received.
+ * 
+ * This object is read-never. It exists to serve as a "sink" for uses
+ * of cap_set(), which does not read its target. If cap_set() is ever
+ * modified in such a way that it sources its target (e.g. to prepare
+ * it), then either this must become CPU-local or we must start
+ * checking that the dest_cap pointer is non-NULL and abandon this
+ * variable. I (shap) chose a dummy sink because cap_set() is used in
+ * a lot of places and it seemed that this way was more
+ * efficient. Note that my assessment is unmeasured and may be wrong.
+ */
+capability NullTargetCap;
 
 /** @brief Marshall @em locations of output capabilities.
  */
@@ -648,7 +657,7 @@ proc_marshall_dest_cap(Process *invokee, caploc_t to,
       if (reg)
 	dc->cap = &invokee->state.capReg[reg];
       else 
-	dc->cap = &MY_CPU(NullTargetCap);
+	dc->cap = &NullTargetCap;
 
       break;
     }

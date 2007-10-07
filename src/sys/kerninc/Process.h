@@ -203,8 +203,6 @@ process_from_link(Link *l)
   return (Process *)((uintptr_t)l - offsetof(struct Process, queue_link));
 }
 
-DECLARE_CPU_PRIVATE(Process*,current);
-
 //#ifdef COYOTOS_HAVE_FPU
 ///* FPU support: */
 //DECLARE_PER_CPU(extern Process*,proc_fpuOwner);

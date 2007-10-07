@@ -44,5 +44,6 @@ cpu_construct(cpuid_t ndx)
 
   INIT_TO_ZERO(cpu);
   cpu->id = ndx;
+  cpu->TransMetaMap = ~0ull;
   cpu->procMutexValue = LOCKVALUE(0, LTY_TRAN, cpu->id);
 }
