@@ -73,13 +73,6 @@ extern uint32_t __end_maps[];
 extern uint32_t kstack_lo[];
 extern uint32_t kstack_hi[];
 
-/** @brief For each CPU, a pointer to the local per-CPU structure.
- *
- * This must be re-initialized by each CPU as it creates its
- * local copy of per-CPU state. 
- */
-DEFINE_CPU_PRIVATE(CPU*,curCPU) = &cpu_vec[0];
-
 extern void hardclock_init();
 
 static PmemClass 

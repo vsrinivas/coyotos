@@ -403,7 +403,7 @@ irq_OnTrapOrInterrupt(Process *inProc, fixregs_t *saveArea)
   LOG_EVENT(ety_Trap, inProc, saveArea->ExceptNo, saveArea->Error);
 
   if (inProc) {
-    atomic_write(&MY_CPU(curCPU)->flags, 0);
+    atomic_write(&CUR_CPU->flags, 0);
     GNU_INLINE_ASM("sti");	/* re-enable interrupts */
   }
 
@@ -741,7 +741,7 @@ extern void asm_proc_resume() NORETURN;
 void 
 proc_resume()
 {
-  ia32_TSS *myTSS = &tss[MY_CPU(curCPU)->id];
+  ia32_TSS *myTSS = &tss[CUR_CPU->id];
   assert(myTSS == &tss[0]);
   myTSS->esp0 = (uint32_t) & MY_CPU(current)->state.fixregs.ES;
 

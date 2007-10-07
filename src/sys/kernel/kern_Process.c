@@ -407,7 +407,7 @@ proc_dispatch_current()
 {
   Process *p = MY_CPU(current);
 
-  if (p->lastCPU != MY_CPU(curCPU)->id || p->mappingTableHdr == 0)
+  if (p->lastCPU != CUR_CPU->id || p->mappingTableHdr == 0)
     proc_migrate_to_current_cpu();
 
   vm_switch_curcpu_to_map(p->mappingTableHdr);
@@ -428,7 +428,7 @@ proc_dispatch_current()
 
     /** @bug what to do here? */
     if (issues & pi_Preempted) {
-      assert(atomic_read(&MY_CPU(curCPU)->flags) & CPUFL_WAS_PREEMPTED);
+      assert(atomic_read(&CUR_CPU->flags) & CPUFL_WAS_PREEMPTED);
 
       /* Stick current at back of ready queue. */
       rq_add(&mainRQ, p, false);
@@ -450,7 +450,7 @@ proc_dispatch_current()
 	   MY_CPU(current) ? MY_CPU(current)->hdr.oid : -1ull);
   }
 
-  if (atomic_read(&MY_CPU(curCPU)->flags) & CPUFL_NEED_WAKEUP)
+  if (atomic_read(&CUR_CPU->flags) & CPUFL_NEED_WAKEUP)
     interval_do_wakeups();
 
   flags_t f = locally_disable_interrupts();
@@ -461,12 +461,12 @@ if (atomic_read(&p->issues) & pi_Preempted) {
     locally_enable_interrupts(f);
 
     /* Stick current at back of ready queue. */
-    assert(atomic_read(&MY_CPU(curCPU)->flags) & CPUFL_WAS_PREEMPTED);
+    assert(atomic_read(&CUR_CPU->flags) & CPUFL_WAS_PREEMPTED);
     rq_add(&mainRQ, p, false);
     sched_abandon_transaction();
   }
 
-  atomic_clear_bits(&MY_CPU(curCPU)->flags, CPUFL_WAS_PREEMPTED);
+  atomic_clear_bits(&CUR_CPU->flags, CPUFL_WAS_PREEMPTED);
 
   // Last check for IPI response obligations
   // Set interval timer for preemption
@@ -557,7 +557,7 @@ proc_ensure_exclusive(Process *p)
   assert(mutex_isheld(&p->hdr.lock));
   if (p->onCPU != NULL) {
     assert(p->state.runState == PRS_RUNNING && p->onQ == NULL);
-    if (p->onCPU == MY_CPU(curCPU)) {
+    if (p->onCPU == CUR_CPU) {
       assert(MY_CPU(current) == p);
     } else {
       bug("do not know how to cross-call to get exclusive process access");

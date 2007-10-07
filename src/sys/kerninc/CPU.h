@@ -134,4 +134,6 @@ __hal cpuid_t cpu_getMyID();
 /** @brief Per-CPU pointer to the current CPU. */
 DECLARE_CPU_PRIVATE(CPU*,curCPU);
 
+#define CUR_CPU MY_CPU(curCPU)
+
 #endif /* __KERNINC_CPU_H__ */

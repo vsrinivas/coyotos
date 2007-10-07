@@ -52,7 +52,7 @@ sched_abandon_transaction()
 
     /* Since process is being abandoned, take notice that we have
        already performed a preemption in case the interval timer goes off. */
-    atomic_set_bits(&MY_CPU(curCPU)->flags, CPUFL_WAS_PREEMPTED);
+    atomic_set_bits(&CUR_CPU->flags, CPUFL_WAS_PREEMPTED);
     atomic_clear_bits(&p->issues, pi_Preempted);
 
     /// @bug Should this path put the process back on to the ready queue
@@ -118,7 +118,7 @@ sched_choose_next()
   Process *p = rq_removeFront(&mainRQ);
   if (p) {
     mutex_grab(&p->hdr.lock);
-    p->onCPU = MY_CPU(curCPU);
+    p->onCPU = CUR_CPU;
   }
 
   return p;

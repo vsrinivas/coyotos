@@ -112,8 +112,8 @@ HoldInfo mutex_handoff(HoldInfo hi, mutex_t *mtx);
  * that is running on this CPU. */
 inline static void mutex_release_all_process_locks()
 {
-  MY_CPU(curCPU)->procMutexValue = 
-    LOCK_INCGEN(MY_CPU(curCPU)->procMutexValue);
+  CPU *myCPU = CUR_CPU;
+  myCPU->procMutexValue = LOCK_INCGEN(myCPU->procMutexValue);
 }
 
 /**

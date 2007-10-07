@@ -9,7 +9,6 @@ commands
   echo \ \ Adding breakpoints on halt(),IdleThisProcessor():\n
   b halt
   b IdleThisProcessor
-  b maybe_kernel_iret
 end
 
 continue

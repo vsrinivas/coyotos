@@ -185,7 +185,7 @@ cmos_pit_wakeup(Process *inProc, fixregs_t *saveArea)
   /* Preemption has occurred. */
   if (inProc) {
     LOG_EVENT(ety_UserPreempt, inProc, 0, 0);
-    atomic_set_bits(&MY_CPU(curCPU)->flags, CPUFL_WAS_PREEMPTED);
+    atomic_set_bits(&CUR_CPU->flags, CPUFL_WAS_PREEMPTED);
     rq_add(&mainRQ, inProc, 0);
     sched_abandon_transaction();
   }
@@ -198,13 +198,13 @@ cmos_pit_wakeup(Process *inProc, fixregs_t *saveArea)
    * case there is nothing to preempt yet.
      */
   if (MY_CPU(current) &&
-      ((atomic_read(&MY_CPU(curCPU)->flags) & CPUFL_WAS_PREEMPTED) == 0)) {
+      ((atomic_read(&CUR_CPU->flags) & CPUFL_WAS_PREEMPTED) == 0)) {
     /* If the timer is free-running, it may be set in motion before
      * there is any process on the current CPU. In that case there is
      * nothing to preempt yet.
      */
     atomic_set_bits(&MY_CPU(current)->issues, pi_Preempted);
-    atomic_set_bits(&MY_CPU(curCPU)->flags, CPUFL_WAS_PREEMPTED);
+    atomic_set_bits(&CUR_CPU->flags, CPUFL_WAS_PREEMPTED);
 
     LOG_EVENT(ety_KernPreempt, MY_CPU(current), 0, 0);
     DEBUG_HARDCLOCK

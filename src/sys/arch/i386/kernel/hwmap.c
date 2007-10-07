@@ -95,7 +95,7 @@ reserve_pgtbls(void)
 
   privatePageDirectory[0].pa = KVTOP(KernPageDir);
   if (!UsingPAE)
-    MY_CPU(curCPU)->curMap = &privatePageDirectory[0];
+    CUR_CPU->curMap = &privatePageDirectory[0];
 
   kpa_t pa = 
     pmem_AllocBytes(&pmem_need_pages, COYOTOS_PAGE_SIZE * (cpu_ncpu-1), 
@@ -138,7 +138,7 @@ reserve_pdpts(void)
   privatePDPT[0].pa = KVTOP(&cpu0_KernPDPT);
 
   if (UsingPAE)
-    MY_CPU(curCPU)->curMap = &privatePDPT[0];
+    CUR_CPU->curMap = &privatePDPT[0];
 
   /* PDPT structures are pointed to by hardware page directory
      register, which can only reference structures within the physical
@@ -201,7 +201,7 @@ pagetable_private_pagetbl_pa(cpuid_t cpu)
 Mapping *
 vm_percpu_kernel_map(void)
 {
-  cpuid_t cpu = MY_CPU(curCPU)->id;
+  cpuid_t cpu = CUR_CPU->id;
 
   return UsingPAE ? &privatePDPT[cpu] : &privatePageDirectory[cpu];
 }
@@ -212,12 +212,12 @@ vm_switch_curcpu_to_map(Mapping *map)
 {
   assert(map);
 
-  LOG_EVENT(ety_MapSwitch, MY_CPU(curCPU)->curMap, map, 0);
+  LOG_EVENT(ety_MapSwitch, CUR_CPU->curMap, map, 0);
 
-  if (map == MY_CPU(curCPU)->curMap)
+  if (map == CUR_CPU->curMap)
     return;
 
-  MY_CPU(curCPU)->curMap = map;
+  CUR_CPU->curMap = map;
 
   GNU_INLINE_ASM("mov %0,%%cr3"
 		 : /* No output */

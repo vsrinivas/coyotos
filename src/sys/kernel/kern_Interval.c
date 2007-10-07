@@ -72,7 +72,7 @@ interval_update_now(Interval i)
       (now.sec == wakeTime.sec && now.usec < wakeTime.usec)) {
     wakeTime.sec = 0;
     wakeTime.usec = 0;
-    atomic_set_bits(&MY_CPU(curCPU)->flags, CPUFL_NEED_WAKEUP);
+    atomic_set_bits(&CUR_CPU->flags, CPUFL_NEED_WAKEUP);
   }
 
   irqlock_release(ihi);
@@ -86,7 +86,7 @@ interval_do_wakeups()
   IrqHoldInfo ihi = irqlock_grab(&interval_irql);
 
   sq_WakeAll(&sleepers, false);
-  atomic_clear_bits(&MY_CPU(curCPU)->flags, CPUFL_NEED_WAKEUP);
+  atomic_clear_bits(&CUR_CPU->flags, CPUFL_NEED_WAKEUP);
 
   irqlock_release(ihi);
 }
