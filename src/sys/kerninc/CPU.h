@@ -82,7 +82,7 @@ typedef struct CPU {
   bool       active;
 
   /** @brief Priority of current process on CPU */
-  uint32_t   priority;
+  Atomic32_t   priority;
 
   /** @brief Per-CPU action flags for this CPU.
    * 

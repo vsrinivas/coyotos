@@ -104,9 +104,19 @@ mutex_grab(mutex_t *mtx)
       assert(cpuidx < cpu_ncpu);
       CPU *cpu = &cpu_vec[cpuidx];
 
-      if (cpu->priority < CUR_CPU->priority ||
-	  (cpu->priority == CUR_CPU->priority &&
-	   cpu->id > CUR_CPU->id)) {
+      /** Contrary to appearances, it is NOT a bug that the target CPU
+       * priority might move out from under us. In that case, the
+       * target CPU transaction ID will also change, and we will
+       * re-attempt the aquisition next time around the loop. This has
+       * the net result that any priority movement gets corrected by
+       * the iteration.
+       * 
+       * Note that cpu->id does not require an atomic read because it
+       * is a constant field.
+       */
+      if (atomic_read(&cpu->priority) < atomic_read(&CUR_CPU->priority) ||
+	  (atomic_read(&cpu->priority) == atomic_read(&CUR_CPU->priority) &&
+	  cpu->id > CUR_CPU->id)) {
 	/// @bug need to be more fair in same-priority case
 	atomic_write(&cpu->shouldDefer, oldval);
       }
