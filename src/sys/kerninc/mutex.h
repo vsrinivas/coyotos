@@ -108,11 +108,13 @@ HoldInfo mutex_handoff(HoldInfo hi, mutex_t *mtx);
 #endif
 
 /** @brief Release all process locks currently held by the process
- * that is running on this CPU. */
+ * that is running on this CPU.
+ */
 inline static void mutex_release_all_process_locks()
 {
   CPU *myCPU = CUR_CPU;
   myCPU->procMutexValue = LOCK_INCGEN(myCPU->procMutexValue);
+  atomic_write(&myCPU->shouldDefer, 0);
 }
 
 /**

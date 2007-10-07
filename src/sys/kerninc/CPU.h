@@ -70,11 +70,10 @@ typedef struct CPU {
   /** @brief Starting (least) address of per-CPU stack. */
   kva_t     stack;
 
-  /** @brief TRUE means this CPU should yield whenever mutex_trylock()
-   * does not immediately succeed and we are NOT in a
-   * mutex_spinlock().
+  /** @brief If shouldDefer matches procMutexValue, this CPU has been
+   * asked to get out of the way if it cannot aquire a mutex immediately.
    */
-  bool       shouldDefer;
+  Atomic32_t shouldDefer;
 
   /** @brief true iff this CPU is present. */
   bool       present;

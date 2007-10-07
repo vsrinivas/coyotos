@@ -95,7 +95,8 @@ mutex_grab(mutex_t *mtx)
       return hi;
     }
 
-    if (CUR_CPU->shouldDefer)
+    if (atomic_read(&CUR_CPU->shouldDefer) == 
+	CUR_CPU->procMutexValue)
       sched_abandon_transaction();
 
     if (LOCK_TYPE(oldval) == LTY_TRAN) {
@@ -107,8 +108,7 @@ mutex_grab(mutex_t *mtx)
 	  (cpu->priority == CUR_CPU->priority &&
 	   cpu->id > CUR_CPU->id)) {
 	/// @bug need to be more fair in same-priority case
-	if (!cpu->shouldDefer)
-	  cpu->shouldDefer = 1;
+	atomic_write(&cpu->shouldDefer, oldval);
       }
     }
   }
