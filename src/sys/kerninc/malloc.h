@@ -27,7 +27,7 @@
  * @brief Definition of the heap interface, including malloc, free.
  *
  * While this header is called malloc.h for reasons of tradition, the
- * corresponding kernel implementation is found in kern_heap.c
+ * corresponding kernel implementation is found in kern_malloc.c
  */
 
 /** @brief Called from machine-dependent code to set up initial heap
