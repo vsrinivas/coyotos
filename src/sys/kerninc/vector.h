@@ -57,6 +57,69 @@
  *   calls using machine-dependent structures and code.
  */
 
+/** @page IntHandling Handling of Interrupts
+ *
+ * This page describes how interrupt handling is performed within the
+ * Coyotos kernel.
+ *
+ * @section IntLow Low-Level Interrupt Handling
+ *
+ * In general, interrupts are handled by applications. The exception
+ * is the interval timer interrupt, which is handled within the kernel
+ * as a special case. Conceptually, the low-level interrupt management
+ * pattern is as follows:
+ *
+ * - At the interrupt controller level, an interrupt is unmasked when a
+ *   process blocks waiting for that interrupt.
+ * - When an interrupt arrives, the interrupt is masked and
+ *   acknowledged. The waiting driver, if any, is awakened and allowed
+ *   to proceed.
+ *
+ * In practice, the details are a bit different. First, the driver
+ * wakeup actually causes it to re-execute the "wait for interrupt"
+ * call, this time discovering that the interrupt is already
+ * pending. Second, the driver sleep may get cancelled, in which case
+ * we can see a hardware interrupt arrive on a line that was unmasked,
+ * but for which no driver is currently waiting. There is no easy way
+ * to tell the first case from the second.
+ *
+ * @section IntDriver Driver-Layer Interrupt Enable/Disable
+ *
+ * Orthogonal to the chip layer, the software layer may request that
+ * interrupts be disabled. The kernel currently maintains a counter of
+ * such requests, but this is subject to revision as we refine the
+ * user-mode design.
+ *
+ * This request is subject to a race: because of per-CPU interrupt
+ * disables, we can see the following sequence of events:
+ *
+ * 1. Driver requests disable, blocking interrupts on current CPU.
+ * 2. Interrupt controller attempts to issue that interrupt.
+ * 3. Kernel masks the interrupt, but note that it is already in
+ *    service.
+ *
+ * Following this sequence of events, there is a design issue to
+ * consider about whether this interrupt should be delivered
+ * (i.e. whether the driver should be awakened).
+ *
+ * Our answer is "no". The hardware-level interrupt remains pending
+ * within the kernel until the driver re-enables interrupts, and will
+ * then be delivered.
+ *
+ * So then there is a second question: should the hardware level
+ * interrupt be masked when it is disabled? Our @em current answer is
+ * again "no". We defer the mask operation until the interrupt
+ * actually arrives from the controller chip. This is probably the
+ * wrong thing to do. A potential race exists in either case, but
+ * spurious interrupts can probably be reduced by masking.
+ *
+ * @section IntWakeup Wakeup Handling
+ *
+ * Conceptually, the net effect of interrupt arrival is to move a
+ * blocked process from the appropriate per-vector stall queue onto
+ * the ready queue.
+ */
+
 #include <hal/irq.h>
 #include <kerninc/Process.h>
 #include <kerninc/StallQueue.h>
