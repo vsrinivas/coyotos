@@ -711,7 +711,6 @@ irq_EnableVector(irq_t irq)
 
   vector->disableCount--;
   if (vector->disableCount == 0 && vector->pending)
-    // BUG:
     sq_WakeAll(&vector->stallQ, false);
 
   vector_release(vhi);
