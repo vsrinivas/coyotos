@@ -28,7 +28,7 @@
 
 
 /** @brief Align a value down to the next multiple of al. The value of
-    al must be a power of two. */
+ * al must be a power of two. */
 #define align_down(v, al) ((v) & ~((al) - 1))
 #define align_up(v, al)   align_down(((v) + (al) - 1), al)
 
