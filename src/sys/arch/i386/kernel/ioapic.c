@@ -49,15 +49,50 @@ kva_t lapic_va = 0;
 #define DEBUG_IOAPIC if (1)
 
 static void ioapic_setup(VectorInfo *vector);
-static void ioapic_enable(VectorInfo *vector);
-static void ioapic_disable(VectorInfo *vector);
+static void ioapic_unmask(VectorInfo *vector);
+static void ioapic_mask(VectorInfo *vector);
 static void ioapic_earlyAck(VectorInfo *vector);
 static void ioapic_lateAck(VectorInfo *vector);
 
 // static void ioapic_acknowledge(IrqController *ctrlr, irq_t irq);
 static bool ioapic_isPending(VectorInfo *vector);
 
-static IrqController ioapic[3];
+static IrqController ioapic[3] = {
+  {
+    .baseIRQ = 0,		/* placeholder */
+    .nIRQ = 24,			/* placeholder */
+    .va = 0,			/* placeholder */
+    .setup = ioapic_setup,
+    .unmask = ioapic_unmask,
+    .mask = ioapic_mask,
+    .isPending = ioapic_isPending,
+    .earlyAck = ioapic_earlyAck,
+    .lateAck = ioapic_lateAck
+  },
+  {
+    .baseIRQ = 0,		/* placeholder */
+    .nIRQ = 24,			/* placeholder */
+    .va = 0,			/* placeholder */
+    .setup = ioapic_setup,
+    .unmask = ioapic_unmask,
+    .mask = ioapic_mask,
+    .isPending = ioapic_isPending,
+    .earlyAck = ioapic_earlyAck,
+    .lateAck = ioapic_lateAck
+  },
+  {
+    .baseIRQ = 0,		/* placeholder */
+    .nIRQ = 24,			/* placeholder */
+    .va = 0,			/* placeholder */
+    .setup = ioapic_setup,
+    .unmask = ioapic_unmask,
+    .mask = ioapic_mask,
+    .isPending = ioapic_isPending,
+    .earlyAck = ioapic_earlyAck,
+    .lateAck = ioapic_lateAck
+  }
+};
+
 static size_t nIoAPIC = 0;
 
 void
@@ -69,13 +104,6 @@ ioapic_register(irq_t baseIRQ, kva_t va)
   ioapic[nIoAPIC].baseIRQ = baseIRQ;
   ioapic[nIoAPIC].nIRQ = 0;	/* not yet known */
   ioapic[nIoAPIC].va = va;
-  ioapic[nIoAPIC].setup = ioapic_setup;
-  ioapic[nIoAPIC].enable = ioapic_enable;
-  ioapic[nIoAPIC].disable = ioapic_disable;
-  ioapic[nIoAPIC].isPending = ioapic_isPending;
-  ioapic[nIoAPIC].earlyAck = ioapic_earlyAck;
-  ioapic[nIoAPIC].lateAck = ioapic_lateAck;
-
 
   nIoAPIC++;
 }
@@ -166,7 +194,7 @@ ioapic_setup(VectorInfo *vi)
 }
 
 static void
-ioapic_enable(VectorInfo *vi)
+ioapic_unmask(VectorInfo *vi)
 {
   SpinHoldInfo shi = spinlock_grab(&ioapic_lock);
   size_t pin = vi->irq - vi->ctrlr->baseIRQ;
@@ -183,7 +211,7 @@ ioapic_enable(VectorInfo *vi)
 }
 
 static void
-ioapic_disable(VectorInfo *vi)
+ioapic_mask(VectorInfo *vi)
 {
   SpinHoldInfo shi = spinlock_grab(&ioapic_lock);
   size_t pin = vi->irq - vi->ctrlr->baseIRQ;
@@ -272,7 +300,7 @@ ioapic_ctrlr_init(IrqController *ctrlr)
     VectorMap[vec].level = VEC_LEVEL_FROMBUS; /* all legacy IRQs are active high. */
     VectorMap[vec].irq = irq;
     VectorMap[vec].fn = vh_UnboundIRQ;
-    VectorMap[vec].enabled = 0;
+    VectorMap[vec].masked = 1;
     VectorMap[vec].ctrlr = ctrlr;
 
     // Wire the IOAPIC's pin register to correspond to the selected vector.

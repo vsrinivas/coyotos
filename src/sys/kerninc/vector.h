@@ -23,10 +23,10 @@
 /** @file
  * @brief Common interrupt distribution logic.
  *
- * While the low-level handling of interrupts is
- * architecture-dependent, the high-level handling is more or less
- * common, and the information that needs to be tracked concerning
- * interrupt vectors is likewise more or less common.
+ * While the low-level handling of interrupts is architecture
+ * dependent, the high-level handling is more or less common, and the
+ * information that needs to be tracked concerning interrupt vectors
+ * is likewise more or less common.
  *
  * Coyotos uses a single vector to describe exceptions, traps, system
  * calls, and interrupts. A given target MUST use this vector for
@@ -71,9 +71,9 @@ struct IrqController {
   irq_t nIRQ;		   /**< @brief Number of IRQ sources */
   kva_t va;			/**< @brief For memory-mapped controllers. */
   void (*setup)(struct VectorInfo *vi);
-  void (*enable)(struct VectorInfo *vi);
-  void (*disable)(struct VectorInfo *vi);
   bool (*isPending)(struct VectorInfo *vi);
+  void (*unmask)(struct VectorInfo *vi);
+  void (*mask)(struct VectorInfo *vi);
   void (*earlyAck)(struct VectorInfo *vi);
   void (*lateAck)(struct VectorInfo *vi);
 };
@@ -115,8 +115,8 @@ struct VectorInfo {
   uint8_t  user : 1;		/**< @brief User accessable */
   uint8_t  mode : 2;		/**< @brief Trigger mode */
   uint8_t  level : 2;		/**< @brief Active hi/lo */
-  uint8_t  enabled : 1;		/**< @brief Vector enabled  */
-  uint32_t  irq;			/**< @brief Global interrupt pin number. */
+  uint8_t  masked : 1;		/**< @brief Vector masked at ctrlr chip  */
+  uint32_t  irq;		/**< @brief Global interrupt pin number. */
   irqlock_t lock;		/**< @brief For manipulation of this vector. */
   IrqController* ctrlr;		/**< @brief Controller chip */
   // StallQ stallQ;

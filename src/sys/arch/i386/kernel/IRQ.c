@@ -517,7 +517,7 @@ void vector_init()
     VectorMap[i].type = vt_HardTrap;
     VectorMap[i].mode = VEC_MODE_FROMBUS;
     VectorMap[i].level = VEC_LEVEL_FROMBUS;
-    VectorMap[i].enabled = 1;
+    VectorMap[i].masked = 0;
     VectorMap[i].fn = vh_ReservedException; /* Until otherwise proven. */
   }
 
@@ -549,7 +549,7 @@ void vector_init()
 
   /* Set up the system call vector. */
   VectorMap[vec_Syscall].type = vt_SysCall;
-  VectorMap[vec_Syscall].enabled = 1;
+  VectorMap[vec_Syscall].masked = 0;
   VectorMap[vec_Syscall].user = 1;
   VectorMap[vec_Syscall].fn = vh_SysCall;
 
@@ -695,8 +695,8 @@ irq_Enable(irq_t irq)
 
   IrqHoldInfo ihi = irqlock_grab(&vector->lock);
 
-  vector->ctrlr->enable(vector);
-  vector->enabled = 1;
+  vector->ctrlr->unmask(vector);
+  vector->masked = 0;
 
   irqlock_release(ihi);
 }
@@ -710,8 +710,8 @@ irq_Disable(irq_t irq)
 
   IrqHoldInfo ihi = irqlock_grab(&vector->lock);
 
-  vector->ctrlr->disable(vector);
-  vector->enabled = 0;
+  vector->ctrlr->mask(vector);
+  vector->masked = 1;
 
   irqlock_release(ihi);
 }
@@ -726,8 +726,8 @@ irq_isEnabled(irq_t irq)
 
   IrqHoldInfo ihi = irqlock_grab(&vector->lock);
 
-  vector->ctrlr->enable(vector);
-  if (vector->enabled)
+  vector->ctrlr->unmask(vector);
+  if (vector->masked == 0)
     result = true;
 
   irqlock_release(ihi);

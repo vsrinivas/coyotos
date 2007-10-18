@@ -101,7 +101,7 @@ lapic_setup(VectorInfo *vi)
 }
 
 static void
-lapic_enable(VectorInfo *vi)
+lapic_unmask(VectorInfo *vi)
 {
   switch(vi->irq) {
   case irq_LAPIC_SVR:
@@ -118,7 +118,7 @@ lapic_enable(VectorInfo *vi)
 }
 
 static void
-lapic_disable(VectorInfo *vi)
+lapic_mask(VectorInfo *vi)
 {
   switch(vi->irq) {
   case irq_LAPIC_SVR:
@@ -147,15 +147,15 @@ lapic_acknowledge(VectorInfo *vi)
 }
 
 static IrqController lapic = {
-  0,
-  16,
-  0,
-  lapic_setup,
-  lapic_enable,
-  lapic_disable,
-  lapic_isPending,
-  lapic_acknowledge,
-  pic_no_op,
+  .baseIRQ = 0,
+  .nIRQ = 16,
+  .va = 0,
+  .setup = lapic_setup,
+  .unmask = lapic_unmask,
+  .mask = lapic_mask,
+  .isPending = lapic_isPending,
+  .earlyAck = lapic_acknowledge,
+  .lateAck = pic_no_op,
 };
 
 void
@@ -222,7 +222,7 @@ lapic_init()
     vector->level = VEC_LEVEL_FROMBUS;
     vector->irq = irq_LAPIC_Timer;
     vector->fn = vh_UnboundIRQ;
-    vector->enabled = 0;
+    vector->masked = 1;
     vector->ctrlr = &lapic;
   }
 
@@ -233,7 +233,7 @@ lapic_init()
     vector->level = VEC_LEVEL_ACTLOW; /* ?? */
     vector->irq = irq_LAPIC_IPI;
     vector->fn = vh_UnboundIRQ;
-    vector->enabled = 0;
+    vector->masked = 1;
     vector->ctrlr = &lapic;
   }
 
@@ -244,7 +244,7 @@ lapic_init()
     vector->level = VEC_LEVEL_FROMBUS; /* ??? */
     vector->irq = irq_LAPIC_SVR;
     vector->fn = vh_UnboundIRQ;
-    vector->enabled = 0;
+    vector->masked = 1;
     vector->ctrlr = &lapic;
   }
 

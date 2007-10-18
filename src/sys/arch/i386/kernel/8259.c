@@ -55,7 +55,7 @@ i8259_setup(VectorInfo *vi)
 }
 
 static void
-i8259_enable(VectorInfo *vector)
+i8259_unmask(VectorInfo *vector)
 {
   assert(cpu_ncpu == 1);
 
@@ -93,7 +93,7 @@ i8259_enable(VectorInfo *vector)
 }
 
 static void
-i8259_disable(VectorInfo *vector)
+i8259_mask(VectorInfo *vector)
 {
   assert(cpu_ncpu == 1);
 
@@ -162,15 +162,15 @@ i8259_acknowledge(VectorInfo *vector)
 }
 
 static IrqController i8259 = {
-  0,
-  16,
-  0,
-  i8259_setup,
-  i8259_enable,
-  i8259_disable,
-  i8259_isPending,
-  i8259_acknowledge,
-  pic_no_op,
+  .baseIRQ = 0,
+  .nIRQ = 16,
+  .va = 0,
+  .setup = i8259_setup,
+  .mask = i8259_mask,
+  .unmask = i8259_unmask,
+  .isPending = i8259_isPending,
+  .earlyAck = i8259_acknowledge,
+  .lateAck = pic_no_op,
 };
 
 /** @brief Initialize the PC motherboard legacy ISA peripheral
@@ -193,7 +193,7 @@ i8259_init()
     VectorMap[vec].level = VEC_LEVEL_FROMBUS; /* all legacy IRQs are active high. */
     VectorMap[vec].irq = irq;
     VectorMap[vec].fn = vh_UnboundIRQ;
-    VectorMap[vec].enabled = 0;
+    VectorMap[vec].masked = 1;
     VectorMap[vec].ctrlr = &i8259;
   }
 
