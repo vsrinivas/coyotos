@@ -36,6 +36,7 @@
 #include <kerninc/ReadyQueue.h>
 #include <kerninc/string.h>
 #include <kerninc/util.h>
+#include <kerninc/vector.h>
 #include <kerninc/assert.h>
 #include <hal/transmap.h>
 #include <hal/irq.h>
@@ -452,6 +453,9 @@ proc_dispatch_current()
     interval_do_wakeups();
 
   flags_t f = locally_disable_interrupts();
+
+  if (CUR_CPU->wakeVectors)
+    cpu_wake_vectors();
 
   // Last check for preemption interrupt:
 if (atomic_read(&p->issues) & pi_Preempted) {

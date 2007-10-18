@@ -169,8 +169,7 @@ static IrqController i8259 = {
   .mask = i8259_mask,
   .unmask = i8259_unmask,
   .isPending = i8259_isPending,
-  .earlyAck = i8259_acknowledge,
-  .lateAck = pic_no_op,
+  .ack = i8259_acknowledge,
 };
 
 /** @brief Initialize the PC motherboard legacy ISA peripheral
@@ -193,7 +192,7 @@ i8259_init()
     VectorMap[vec].level = VEC_LEVEL_FROMBUS; /* all legacy IRQs are active high. */
     VectorMap[vec].irq = irq;
     VectorMap[vec].fn = vh_UnboundIRQ;
-    VectorMap[vec].masked = 1;
+    VectorMap[vec].unmasked = 0;
     VectorMap[vec].ctrlr = &i8259;
   }
 

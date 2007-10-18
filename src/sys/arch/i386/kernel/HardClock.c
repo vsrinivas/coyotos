@@ -155,10 +155,8 @@ static inline uint16_t cmos_read_tick()
  * The assumption here is that we will never miss a tick!
  */
 static void 
-cmos_pit_wakeup(Process *inProc, fixregs_t *saveArea)
+cmos_pit_wakeup(VectorInfo *vec, Process *inProc, fixregs_t *saveArea)
 {
-  VectorInfo *vector = &VectorMap[saveArea->ExceptNo];
-
   uint32_t last = cmos_last_count;
   cmos_last_count = cmos_read_tick();
 
@@ -178,7 +176,9 @@ cmos_pit_wakeup(Process *inProc, fixregs_t *saveArea)
   interval_update_now(curTick);
 
   /* Re-enable the periodic timer interrupt line: */
-  irq_Enable(vector->irq);
+  vec->unmasked = 1;
+  vec->pending = 0;
+  vec->ctrlr->unmask(vec);
 
   //  printf("%s Timer Interrupt!\n", inProc ? "Process" : "Kernel");
 
@@ -224,10 +224,18 @@ static void cmos_interval_init()
   /* CMOS chip is already programmed with a slow but acceptable
      interval timer. Just use that. */
   irq_Bind(irq_ISA_PIT, VEC_MODE_FROMBUS, VEC_LEVEL_FROMBUS, cmos_pit_wakeup);
-  irq_Enable(irq_ISA_PIT);
 
   cmos_ticks_since_start = 0;
   cmos_last_count = cmos_read_tick();
+
+  VectorInfo *vector = irq_MapInterrupt(irq_ISA_PIT);
+  VectorHoldInfo vhi = vector_grab(vector);
+
+  vector->pending = 0;
+  vector->unmasked = 1;
+  vector->ctrlr->unmask(vector);
+
+  vector_release(vhi);
 }
 
 

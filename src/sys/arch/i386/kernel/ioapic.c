@@ -51,8 +51,7 @@ kva_t lapic_va = 0;
 static void ioapic_setup(VectorInfo *vector);
 static void ioapic_unmask(VectorInfo *vector);
 static void ioapic_mask(VectorInfo *vector);
-static void ioapic_earlyAck(VectorInfo *vector);
-static void ioapic_lateAck(VectorInfo *vector);
+static void ioapic_acknowledge(VectorInfo *vector);
 
 // static void ioapic_acknowledge(IrqController *ctrlr, irq_t irq);
 static bool ioapic_isPending(VectorInfo *vector);
@@ -66,8 +65,7 @@ static IrqController ioapic[3] = {
     .unmask = ioapic_unmask,
     .mask = ioapic_mask,
     .isPending = ioapic_isPending,
-    .earlyAck = ioapic_earlyAck,
-    .lateAck = ioapic_lateAck
+    .ack = ioapic_acknowledge,
   },
   {
     .baseIRQ = 0,		/* placeholder */
@@ -77,8 +75,7 @@ static IrqController ioapic[3] = {
     .unmask = ioapic_unmask,
     .mask = ioapic_mask,
     .isPending = ioapic_isPending,
-    .earlyAck = ioapic_earlyAck,
-    .lateAck = ioapic_lateAck
+    .ack = ioapic_acknowledge,
   },
   {
     .baseIRQ = 0,		/* placeholder */
@@ -88,8 +85,7 @@ static IrqController ioapic[3] = {
     .unmask = ioapic_unmask,
     .mask = ioapic_mask,
     .isPending = ioapic_isPending,
-    .earlyAck = ioapic_earlyAck,
-    .lateAck = ioapic_lateAck
+    .ack = ioapic_acknowledge,
   }
 };
 
@@ -228,31 +224,10 @@ ioapic_mask(VectorInfo *vi)
 }
 
 static void
-ioapic_earlyAck(VectorInfo *vi)
+ioapic_acknowledge(VectorInfo *vi)
 {
-  if (vi->mode == VEC_MODE_EDGE)
-    // If intterupt was edge triggered, issue early EOI:
-    lapic_eoi();
+  lapic_eoi();
 }
-
-static void
-ioapic_lateAck(VectorInfo *vi)
-{
-  if (vi->mode == VEC_MODE_LEVEL)
-    lapic_eoi();
-}
-
-#if 0
-static void
-ioapic_acknowledge(IrqController *ctrlr, irq_t irq)
-{
-  SpinHoldInfo shi = spinlock_grab(&ioapic_lock);
-
-  bug("Cat can't acknowledge food in tin apics\n");
-
-  spinlock_release(shi);
-}
-#endif
 
 /**
  * There does not appear to be any way to check for interrupt
@@ -300,7 +275,7 @@ ioapic_ctrlr_init(IrqController *ctrlr)
     VectorMap[vec].level = VEC_LEVEL_FROMBUS; /* all legacy IRQs are active high. */
     VectorMap[vec].irq = irq;
     VectorMap[vec].fn = vh_UnboundIRQ;
-    VectorMap[vec].masked = 1;
+    VectorMap[vec].unmasked = 0;
     VectorMap[vec].ctrlr = ctrlr;
 
     // Wire the IOAPIC's pin register to correspond to the selected vector.
@@ -313,8 +288,6 @@ ioapic_ctrlr_init(IrqController *ctrlr)
     e.u.fld.dest = archcpu_vec[0].lapic_id; /* CPU0 for now */
 
     ioapic_write_entry(ctrlr, pin, e);
-
-    irq_Disable(irq);
 
     DEBUG_IOAPIC {
       irq_t irq = ctrlr->baseIRQ + pin;

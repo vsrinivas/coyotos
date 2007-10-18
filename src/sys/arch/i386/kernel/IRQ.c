@@ -153,7 +153,7 @@ proc_dump_current_savearea()
 }
 
 static void
-vh_DebugException(Process *inProc, fixregs_t *saveArea)
+vh_DebugException(VectorInfo *vec, Process *inProc, fixregs_t *saveArea)
 {
   assert(inProc);
   proc_TakeFault(inProc, coyotos_Process_FC_Debug, 0);
@@ -161,7 +161,7 @@ vh_DebugException(Process *inProc, fixregs_t *saveArea)
 
 
 static void 
-vh_BptTrap(Process *inProc, fixregs_t *saveArea)
+vh_BptTrap(VectorInfo *vec, Process *inProc, fixregs_t *saveArea)
 {
   assert(inProc);
   
@@ -171,7 +171,7 @@ vh_BptTrap(Process *inProc, fixregs_t *saveArea)
 }
 
 static void
-vh_FatalFault(Process *inProc, fixregs_t *saveArea)
+vh_FatalFault(VectorInfo *vec, Process *inProc, fixregs_t *saveArea)
 {
   uint32_t vecno = saveArea->ExceptNo;
 
@@ -200,7 +200,8 @@ vh_FatalFault(Process *inProc, fixregs_t *saveArea)
   }
 }
 
-void vh_DeviceNotAvailable(Process *inProc, fixregs_t *saveArea)
+void vh_DeviceNotAvailable(VectorInfo *vec, 
+			   Process *inProc, fixregs_t *saveArea)
 {
   fatal("Device Not Available\n");
 }
@@ -212,7 +213,7 @@ void vh_DeviceNotAvailable(Process *inProc, fixregs_t *saveArea)
 #define PAGEFAULT_ERROR_ID  0x10  /**<@brief If set, instruction fetch. */
 
 static void 
-vh_PageFault(Process *inProc, fixregs_t *saveArea)
+vh_PageFault(VectorInfo *vec, Process *inProc, fixregs_t *saveArea)
 {
   uintptr_t e = saveArea->Error;
   uintptr_t addr = saveArea->ExceptAddr;
@@ -271,7 +272,7 @@ vh_PageFault(Process *inProc, fixregs_t *saveArea)
 }
 
 static void 
-vh_UserFault(Process *inProc, fixregs_t *saveArea)
+vh_UserFault(VectorInfo *vec, Process *inProc, fixregs_t *saveArea)
 {
 #ifndef NDEBUG
   if (inProc == 0) {
@@ -345,13 +346,13 @@ vh_UserFault(Process *inProc, fixregs_t *saveArea)
 }
 
 static void 
-vh_ReservedException(Process *inProc, fixregs_t *saveArea)
+vh_ReservedException(VectorInfo *vec, Process *inProc, fixregs_t *saveArea)
 {
   fatal("Reserved exception 0x%x\n", saveArea->ExceptNo);
 }
 
 void
-vh_SysCall(Process *inProc, fixregs_t *saveArea)
+vh_SysCall(VectorInfo *vec, Process *inProc, fixregs_t *saveArea)
 {
   assert(inProc);
 
@@ -369,16 +370,29 @@ vh_SysCall(Process *inProc, fixregs_t *saveArea)
 
 /** @brief Handler function for unbound interrupts. */
 void
-vh_UnboundIRQ(Process *inProc, fixregs_t *saveArea)
+vh_UnboundIRQ(VectorInfo *vec, Process *inProc, fixregs_t *saveArea)
 {
   fatal("Received orphaned %s interrupt %d [err=0x%x]\n", 
-      inProc ? "process" : "kernel",
-      VectorMap[saveArea->ExceptNo].irq, saveArea->Error);
+	inProc ? "process" : "kernel",
+	vec->irq, saveArea->Error);
+}
+
+/** @brief Handler function for user-mode interrupts. */
+void
+vh_UserIRQ(VectorInfo *vec, Process *inProc, fixregs_t *saveArea)
+{
+  assert(!local_interrupts_enabled());
+
+  vec->pending = 1;
+  if (!sq_IsEmpty(&vec->stallQ)) {
+    vec->next = CUR_CPU->wakeVectors;
+    CUR_CPU->wakeVectors = vec;
+  }
 }
 
 /** @brief Handler function for unbound vectors. */
 static void
-vh_UnboundVector(Process *inProc, fixregs_t *saveArea)
+vh_UnboundVector(VectorInfo *vec, Process *inProc, fixregs_t *saveArea)
 {
   fatal("Trap from %s to unbound vector %d [err=0x%x]\n", 
       inProc ? "process" : "kernel",
@@ -425,33 +439,27 @@ irq_OnTrapOrInterrupt(Process *inProc, fixregs_t *saveArea)
      */
     if (! ctrlr->isPending(vector)) {
       fatal("IRQ %d no longer pending\n", irq);
-      ctrlr->earlyAck(vector);
+      ctrlr->ack(vector);
 
       return;
     }
 
-    /* Interrupt actually appears to be pending. This is good. Disable
-     * the interrupt at the PIC and acknowledge to the PIC that we
-     * have taken responsibility for it.
+    /* Interrupt actually appears to be pending. This is good. Mask
+     * the interrupt at the PIC/IOAPIC and acknowledge to the
+     * PIC/LAPIC that we have taken responsibility for it.
      */
-    /// @bug IOAPIC requires a late acknowledge rather than an early
-    /// acknowledge. I do not understand their theory of operation
-    /// well enough to do anything sensible about them here. Need to
-    /// read up on that.
-    irq_Disable(irq);
-    ctrlr->earlyAck(vector);
+    ctrlr->mask(vector);
+    ctrlr->ack(vector);
 
     vector->count++;
-    vector->fn(inProc, saveArea);
-
-    vector->ctrlr->lateAck(vector);
+    vector->fn(vector, inProc, saveArea);
   }
   else {
     if (inProc)
       mutex_grab(&inProc->hdr.lock);
 
     vector->count++;
-    vector->fn(inProc, saveArea);
+    vector->fn(vector, inProc, saveArea);
   }
 
   /* We do NOT re-enable the taken interrupt on the way out. That is
@@ -513,11 +521,17 @@ typedef struct {
  */
 void vector_init()
 {
+  for (size_t i = 0; i < NUM_VECTOR; i++) {
+    VectorMap[i].type = vt_Unbound;
+    VectorMap[i].fn = vh_UnboundVector;
+    sq_Init(&VectorMap[i].stallQ);
+  }
+
   for (size_t i = 0; i < 32; i++) {
     VectorMap[i].type = vt_HardTrap;
     VectorMap[i].mode = VEC_MODE_FROMBUS;
     VectorMap[i].level = VEC_LEVEL_FROMBUS;
-    VectorMap[i].masked = 0;
+    VectorMap[i].unmasked = 1;
     VectorMap[i].fn = vh_ReservedException; /* Until otherwise proven. */
   }
 
@@ -549,7 +563,7 @@ void vector_init()
 
   /* Set up the system call vector. */
   VectorMap[vec_Syscall].type = vt_SysCall;
-  VectorMap[vec_Syscall].masked = 0;
+  VectorMap[vec_Syscall].unmasked = 1;
   VectorMap[vec_Syscall].user = 1;
   VectorMap[vec_Syscall].fn = vh_SysCall;
 
@@ -674,7 +688,7 @@ irq_Bind(irq_t irq, uint32_t mode, uint32_t level, VecFn fn)
 
   assert(vector);
 
-  IrqHoldInfo ihi = irqlock_grab(&vector->lock);
+  VectorHoldInfo vhi = vector_grab(vector);
 
   vector->count = 0;
   vector->fn = fn;
@@ -683,37 +697,38 @@ irq_Bind(irq_t irq, uint32_t mode, uint32_t level, VecFn fn)
   vector->level = level;
   vector->ctrlr->setup(vector);
 
-  irqlock_release(ihi);
+  vector_release(vhi);
 }
 
 void
-irq_Enable(irq_t irq)
+irq_EnableVector(irq_t irq)
 {
   VectorInfo *vector = irq_MapInterrupt(irq);
 
   assert(vector);
 
-  IrqHoldInfo ihi = irqlock_grab(&vector->lock);
+  VectorHoldInfo vhi = vector_grab(vector);
 
-  vector->ctrlr->unmask(vector);
-  vector->masked = 0;
+  vector->disableCount--;
+  if (vector->disableCount == 0 && vector->pending)
+    // BUG:
+    sq_WakeAll(&vector->stallQ, false);
 
-  irqlock_release(ihi);
+  vector_release(vhi);
 }
 
 void
-irq_Disable(irq_t irq)
+irq_DisableVector(irq_t irq)
 {
   VectorInfo *vector = irq_MapInterrupt(irq);
 
   assert(vector);
 
-  IrqHoldInfo ihi = irqlock_grab(&vector->lock);
+  VectorHoldInfo vhi = vector_grab(vector);
 
-  vector->ctrlr->mask(vector);
-  vector->masked = 1;
+  vector->disableCount++;
 
-  irqlock_release(ihi);
+  vector_release(vhi);
 }
 
 bool
@@ -724,13 +739,12 @@ irq_isEnabled(irq_t irq)
   VectorInfo *vector = irq_MapInterrupt(irq);
   assert(vector);
 
-  IrqHoldInfo ihi = irqlock_grab(&vector->lock);
+  VectorHoldInfo vhi = vector_grab(vector);
 
-  vector->ctrlr->unmask(vector);
-  if (vector->masked == 0)
+  if (vector->disableCount == 0)
     result = true;
 
-  irqlock_release(ihi);
+  vector_release(vhi);
 
   return result;
 }

@@ -34,6 +34,7 @@
 
 /** @brief Process executing on current CPU has been preempted. */
 #define CPUFL_WAS_PREEMPTED 0x1
+
 /** @brief Wakeup processing is required on current CPU.
  *
  * This bit is "owned" by the interval management logic. It is set
@@ -115,6 +116,12 @@ typedef struct CPU {
    * its appropriate free list.
    */
   void (*yieldAllocFixup)(void *);
+
+  /** @brief Linked list of vector entries that we need to awaken.
+   *
+   * This needs to be manipulated with interrupts disabled.
+   */
+  struct VectorInfo *wakeVectors;
 } CPU;
 
 /* Guaranteed <= MAX_NCPU, defined in hal/machine.h */
@@ -127,6 +134,11 @@ extern CPU cpu_vec[MAX_NCPU];
  * given CPU.
  */
 void cpu_construct(cpuid_t ndx);
+
+/** @brief Wake up the processes that are blocked waiting for pending
+ * interrupts on this CPU.
+ */
+void cpu_wake_vectors();
 
 #define CUR_CPU (current_cpu())
 #define MY_CPU(id) CUR_CPU->id

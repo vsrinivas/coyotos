@@ -28,7 +28,9 @@
 #include <kerninc/CPU.h>
 #include <hal/config.h>
 #include <kerninc/mutex.h>
+#include <kerninc/vector.h>
 #include <kerninc/string.h>
+#include <kerninc/assert.h>
 
 CPU cpu_vec[MAX_NCPU] = {
 };
@@ -46,4 +48,28 @@ cpu_construct(cpuid_t ndx)
   cpu->id = ndx;
   cpu->TransMetaMap = ~0ull;
   cpu->procMutexValue = LOCKVALUE(0, LTY_TRAN, cpu->id);
+  cpu->wakeVectors = 0;
+}
+
+/** @brief Wake up the processes that are blocked waiting for pending
+ * interrupts on this CPU.
+ */
+void cpu_wake_vectors()
+{
+  assert(!local_interrupts_enabled());
+  VectorInfo *vi;
+
+  while ((vi = CUR_CPU->wakeVectors)) {
+    CUR_CPU->wakeVectors = vi->next;
+
+    /* Note that taking the lock on vi->stallQ cannot compete with our
+     * own interrupt handler, because local interrupts are
+     * disabled. We will not compete with remote CPUs on vi->stallQ
+     * because the interrupt is pending on our local CPU and therefore
+     * should not be simultaneously pending on any other CPU. We MAY
+     * compete with other CPUs while updating the ready queue.
+    */
+    sq_WakeAll(&vi->stallQ, false);
+    vi->next = 0;
+  }
 }

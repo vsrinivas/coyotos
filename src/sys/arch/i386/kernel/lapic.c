@@ -154,8 +154,7 @@ static IrqController lapic = {
   .unmask = lapic_unmask,
   .mask = lapic_mask,
   .isPending = lapic_isPending,
-  .earlyAck = lapic_acknowledge,
-  .lateAck = pic_no_op,
+  .ack = lapic_acknowledge,
 };
 
 void
@@ -222,7 +221,7 @@ lapic_init()
     vector->level = VEC_LEVEL_FROMBUS;
     vector->irq = irq_LAPIC_Timer;
     vector->fn = vh_UnboundIRQ;
-    vector->masked = 1;
+    vector->unmasked = 0;
     vector->ctrlr = &lapic;
   }
 
@@ -233,7 +232,7 @@ lapic_init()
     vector->level = VEC_LEVEL_ACTLOW; /* ?? */
     vector->irq = irq_LAPIC_IPI;
     vector->fn = vh_UnboundIRQ;
-    vector->masked = 1;
+    vector->unmasked = 0;
     vector->ctrlr = &lapic;
   }
 
@@ -244,7 +243,7 @@ lapic_init()
     vector->level = VEC_LEVEL_FROMBUS; /* ??? */
     vector->irq = irq_LAPIC_SVR;
     vector->fn = vh_UnboundIRQ;
-    vector->masked = 1;
+    vector->unmasked = 0;
     vector->ctrlr = &lapic;
   }
 
@@ -252,6 +251,10 @@ lapic_init()
 
   irq_Bind(irq_LAPIC_SVR, VEC_MODE_EDGE, VEC_LEVEL_ACTHIGH, 
 	   lapic_spurious_interrupt);
+
+  VectorInfo *vector = irq_MapInterrupt(irq_LAPIC_SVR);
+  vector->unmasked = 1;
+  vector->ctrlr->unmask(vector);
+
   lapic_eoi();
-  irq_Enable(irq_LAPIC_SVR);
 }

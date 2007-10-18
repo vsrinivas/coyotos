@@ -59,11 +59,13 @@
 
 #include <hal/irq.h>
 #include <kerninc/Process.h>
-
-/**@brief Signature of a vector handler function. */
-typedef void (*VecFn)(struct Process *, fixregs_t *saveArea);
+#include <kerninc/StallQueue.h>
 
 struct VectorInfo;
+
+/**@brief Signature of a vector handler function. */
+typedef void (*VecFn)(struct VectorInfo *vec, struct Process *,
+		      fixregs_t *saveArea);
 
 /** @brief Method dispatch for interrupt controller chips */
 struct IrqController {
@@ -74,8 +76,7 @@ struct IrqController {
   bool (*isPending)(struct VectorInfo *vi);
   void (*unmask)(struct VectorInfo *vi);
   void (*mask)(struct VectorInfo *vi);
-  void (*earlyAck)(struct VectorInfo *vi);
-  void (*lateAck)(struct VectorInfo *vi);
+  void (*ack)(struct VectorInfo *vi);
 };
 typedef struct IrqController IrqController;
 
@@ -115,11 +116,16 @@ struct VectorInfo {
   uint8_t  user : 1;		/**< @brief User accessable */
   uint8_t  mode : 2;		/**< @brief Trigger mode */
   uint8_t  level : 2;		/**< @brief Active hi/lo */
-  uint8_t  masked : 1;		/**< @brief Vector masked at ctrlr chip  */
+  uint8_t  unmasked : 1;	/**< @brief Vector unmasked at ctrlr chip  */
+  uint8_t  pending : 1;		/**< @brief Interrupt accepted on this
+				   vector.  */
+  uint32_t disableCount;	/**< @brief Number of application
+				   disable requests for this vector.  */
   uint32_t  irq;		/**< @brief Global interrupt pin number. */
-  irqlock_t lock;		/**< @brief For manipulation of this vector. */
   IrqController* ctrlr;		/**< @brief Controller chip */
-  // StallQ stallQ;
+  StallQueue stallQ;
+
+  struct VectorInfo *next;
 };
 typedef struct VectorInfo VectorInfo;
 
@@ -134,10 +140,36 @@ extern VectorInfo *IrqVector[NUM_IRQ];
  */
 __hal void vector_init(void);
 
+typedef struct VectorHoldInfo {
+  SpinHoldInfo shi;
+  flags_t oldFlags;
+} VectorHoldInfo;
+
+/** @brief Lock a vector entry for manipulation, including guarding
+ * against interrupts.
+ */
+static inline VectorHoldInfo vector_grab(VectorInfo *v)
+{
+  VectorHoldInfo vhi;
+  vhi.oldFlags = locally_disable_interrupts();
+  vhi.shi = spinlock_grab(&v->stallQ.qLock);
+
+  return vhi;
+}
+
+/** @brief Release a vector entry, allowing further interrupts or
+ * activity on this vector.
+ */
+static inline void vector_release(VectorHoldInfo vhi)
+{
+  spinlock_release(vhi.shi);
+  locally_enable_interrupts(vhi.oldFlags);
+}
+
 /** @brief Enable specified interupt pin. */
-void irq_Enable(irq_t irq);
+void irq_EnableVector(irq_t irq);
 /** @brief Disable specified interupt pin. */
-void irq_Disable(irq_t irq);
+void irq_DisableVector(irq_t irq);
 
 /** @brief Return true IFF vector is currently enabled. */
 bool irq_isEnabled(irq_t irq);
@@ -160,6 +192,7 @@ VectorInfo *irq_MapInterrupt(irq_t irq);
 
 /** @brief Handler to use prior to interrupt binding, as a sanity
  * provision. */
-__hal void vh_UnboundIRQ(Process *inProc, fixregs_t *saveArea);
+__hal void vh_UnboundIRQ(VectorInfo *vec, Process *inProc, 
+			 fixregs_t *saveArea);
 
 #endif /* __KERNINC_VECTOR_H__ */
