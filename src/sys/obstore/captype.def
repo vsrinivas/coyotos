@@ -40,7 +40,7 @@ DEFCAP(CapBits,     Invalid,  0x03)
 DEFCAP(Discrim,     Invalid,  0x04)
 DEFCAP(Range,       Invalid,  0x05)
 DEFCAP(Sleep,       Invalid,  0x06)
-DEFCAP(IRQCtl,      Invalid,  0x07)
+DEFCAP(IrqCtl,      Invalid,  0x07)
 DEFCAP(SchedCtl,    Invalid,  0x08)
 DEFCAP(Checkpoint,  Invalid,  0x09)
 DEFCAP(ObStore,     Invalid,  0x0A)
@@ -49,10 +49,10 @@ DEFCAP(Schedule,    Invalid,  0x0C)
 DEFCAP(SysCtl,      Invalid,  0x0D)
 DEFCAP(KernLog,     Invalid,  0x0E)
 DEFCAP(IOPriv,      Invalid,  0x0F)
+DEFCAP(IrqWait,     Invalid,  0x10)
 
-// Insert new miscellaneous capabilities after 0x0F
+// Insert new miscellaneous capabilities after 0x10
 
-NODEFCAP(reserved,  Invalid,  0x10)
 NODEFCAP(reserved,  Invalid,  0x11)
 NODEFCAP(reserved,  Invalid,  0x12)
 NODEFCAP(reserved,  Invalid,  0x13)

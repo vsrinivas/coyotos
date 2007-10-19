@@ -1284,7 +1284,7 @@ pf_mk_misccap(PrimFnValue& pfv,
     return new CapValue(is.ci, is.ci->CiCap(ct_Sleep));
 
   if (pfv.nm == "IrqCtl")
-    return new CapValue(is.ci, is.ci->CiCap(ct_IRQCtl));
+    return new CapValue(is.ci, is.ci->CiCap(ct_IrqCtl));
 
   if (pfv.nm == "SchedCtl")
     return new CapValue(is.ci, is.ci->CiCap(ct_SchedCtl));

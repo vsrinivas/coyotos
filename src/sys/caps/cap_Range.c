@@ -251,7 +251,7 @@ void cap_Range(InvParam_t *iParam)
 	}
 #endif
 
-	INIT_TO_ZERO(&iParam->srcCap[0].theCap);
+	cap_init(&iParam->srcCap[0].theCap);
 
 	/* Set up a deprepared cap, then prepare it. */
 	iParam->srcCap[0].theCap.type = ct_Page;
@@ -333,7 +333,7 @@ void cap_Range(InvParam_t *iParam)
 	  InvErrorMessage(iParam, RC_coyotos_Range_RangeErr);
 	  return;
       }
-      INIT_TO_ZERO(&iParam->srcCap[0].theCap);
+      cap_init(&iParam->srcCap[0].theCap);
 
       /* Set up a deprepared cap, then prepare it. */
       iParam->srcCap[0].theCap.type = capType;

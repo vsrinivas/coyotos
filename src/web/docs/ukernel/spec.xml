@@ -3970,10 +3970,14 @@ typedef struct {
 	holder to receive an event at a scheduled time.
       </p>
       <p>
-	The <progident>irqCtl</progident> capability allows the
-	holder to register interest in hardware interrupt
-	events. This capability is highly sensitive, and should be
-	closely held.
+	The <progident>IrqCtl</progident> capability allows the holder
+	to allocate <progident>IrqWait</progident> capabilities. This
+	capability is highly sensitive, and should be closely held.
+      </p>
+      <p>
+	The <progident>IrqWait</progident> capability allows the
+	holder to wait for a particular interrupt to occur. This
+	capability is highly sensitive, and should be closely held.
       </p>
       <p>
 	The <progident>schedctl</progident> capability
@@ -4001,13 +4005,14 @@ typedef struct {
     <xi:include href="AddressSpace.xmli"/>
     <xi:include href="AppNotice.xmli"/>
     <xi:include href="Cap.xmli"/>
+    <xi:include href="CapBits.xmli"/>
     <xi:include href="CapPage.xmli"/>
     <xi:include href="Checkpoint.xmli"/>
     <xi:include href="Discrim.xmli"/>
     <xi:include href="Endpoint.xmli"/>
     <xi:include href="GPT.xmli"/>
     <xi:include href="IrqCtl.xmli"/>
-    <xi:include href="CapBits.xmli"/>
+    <xi:include href="IrqWait.xmli"/>
     <xi:include href="LocalWindow.xmli"/>
     <xi:include href="Memory.xmli"/>
     <xi:include href="MemoryHandler.xmli"/>

@@ -258,4 +258,8 @@ VectorInfo *irq_MapInterrupt(irq_t irq);
 __hal void vh_UnboundIRQ(VectorInfo *vec, Process *inProc, 
 			 fixregs_t *saveArea);
 
+/** @brief Handler to use when an interrupt vector is bound. */
+__hal void vh_BoundIRQ(VectorInfo *vec, Process *inProc, 
+		       fixregs_t *saveArea);
+
 #endif /* __KERNINC_VECTOR_H__ */

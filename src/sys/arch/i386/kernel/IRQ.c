@@ -379,7 +379,7 @@ vh_UnboundIRQ(VectorInfo *vec, Process *inProc, fixregs_t *saveArea)
 
 /** @brief Handler function for user-mode interrupts. */
 void
-vh_UserIRQ(VectorInfo *vec, Process *inProc, fixregs_t *saveArea)
+vh_BoundIRQ(VectorInfo *vec, Process *inProc, fixregs_t *saveArea)
 {
   assert(!local_interrupts_enabled());
 

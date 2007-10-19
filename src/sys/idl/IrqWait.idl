@@ -9,24 +9,15 @@ package coyotos;
 /// interrupts that the wielder can wait for. A given process can wait
 /// for only one interrupt at a time.
 
-interface IrqCtl extends Cap {
-  typedef unsigned long irq_t;
-
-  /// @brief Retrieve a capability enabling the wielder to wait for an 
-  /// interrupt. 
-  IrqWait getIrqWait(irq_t irq);
-
-  /// @brief Mark an interrupt line as being bound to real hardware.
-  void bindIrq(irq_t irq);
-
+interface IrqWait extends Cap {
   /// @brief Disable a given hardware interrupt line.
-  void disable(irq_t irq);
+  void disable();
 
   /// @brief Enable a given hardware interrupt line.
-  void enable(irq_t irq);
+  void enable();
 
   /// @brief Wait for an interrupt to occur on a given hardware
   /// interrupt line.
-  void wait(irq_t irq);
+  void wait();
 };
 
