@@ -39,7 +39,7 @@ interface Range extends Cap raises(RangeErr, NotMounted, IoErr) {
 
   /// @brief Object types returned by identify.
   ///
-  /// This must match the enumaration in obstore/ObFrameType.h
+  /// This must match the enumeration in obstore/ObFrameType.h
   ///
   /// @bug At some point the enumeration here should become
   /// definitive, and the enumeration in ObFrameType.h should be retired.

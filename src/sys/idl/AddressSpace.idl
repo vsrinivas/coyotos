@@ -45,7 +45,7 @@ abstract interface AddressSpace extends Memory {
   /// Raises NoAccess if the invoked capability is weak or read-only.
   void setSlot(slot_t slot, Cap c) raises (NoAccess);
 
-  /// @brief Store capabilty @p c into the specified slot, adjusting
+  /// @brief Store capability @p c into the specified slot, adjusting
   /// the guard according to @p guard.
   ///
   /// Raises NoSuchSlot if the invoked capability designates a memory

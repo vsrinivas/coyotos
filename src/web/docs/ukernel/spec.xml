@@ -167,7 +167,7 @@
 	failure to merge the architectures was a disappointment, the
 	idea that there would be a controlled experiment that would
 	allow us to directly evaluate the <tt>map/unmap</tt> approach
-	againts the EROS <tt>node</tt> approach was a promising result
+	against the EROS <tt>node</tt> approach was a promising result
 	in its own right.
       </p>
     </sect1>
@@ -196,7 +196,7 @@
 	about the L4.sec design emerged <cite ref="kauer2005thesis"/>,
 	it became clear that copyable protected references might be
 	problematic on the L4.sec interface as well. Walfield and
-	Brinkmann travelled to Baltimore for a month-long set of
+	Brinkmann traveled to Baltimore for a month-long set of
 	design discussions in January 2006, leading to the current
 	design for Coyotos.
       </p>
@@ -220,7 +220,7 @@
 	differences are the introduction of endpoints, a first-class
 	process object, and GPTs. It also reflects the January 2006
 	discussions between Walfield, Brinkmann, and Shapiro. As a
-	result of those discussions, the archtecture has been
+	result of those discussions, the architecture has been
 	challenged a bit harder than it had been.
 	Coyotos retains the atomicity and pure capability-based design
 	of the EROS system.
@@ -360,7 +360,7 @@
       <p>
 	<leadin>Receive Queues</leadin> Receive queues provide a means
 	for several processes to receive from a single endpoint. The
-	receive queue acts as a rendevous point for the receiving
+	receive queue acts as a rendezvous point for the receiving
 	processes.  When a message is sent via the endpoint, the
 	kernel will select a waiting process from the receive queue
 	and deliver the message to that receiver. This permits kernel
@@ -574,7 +574,7 @@
       <title>Exception and Interrupt Handling</title>
       <p>
 	For reasons of performance, the Coyotos kernel handles
-	scheduling-related interrrupts directly. It does not specify
+	scheduling-related interrupts directly. It does not specify
 	or implement a policy for other interrupt handling. The kernel
 	maintains a capability-named interface for interrupt handler
 	registry. With the exception of low-level scheduling
@@ -1498,8 +1498,8 @@
 		<td><term>cs</term></td>
 		<td>
 		  <p>
-		    <leadin>Call Step</leadin> if set (1), indicate
-		    thats the <term>tc</term> bit should be ignored at
+		    <leadin>Call Step</leadin> if set (1), indicates
+		    that the <term>tc</term> bit should be ignored at
 		    the next point where it would normally take
 		    effect.
 		  </p>
@@ -1678,7 +1678,7 @@
 	    process attempting to deliver a fault notification to its
 	    external handler will effectively cease to execute
 	    instructions without notice to anyone. It is the
-	    reponsibility of the programmer to ensure that an
+	    responsibility of the programmer to ensure that an
 	    external handler capability is defined if noticing
 	    this condition is required.
 	  </p>
@@ -2465,7 +2465,7 @@ C := gpt-&gt;cap[<em>u</em>]</literallayout>
 	  </ol>
 	  <p>
 	    All methods of cycle detection introduce a complication
-	    for implementors: the validity of addresses within a
+	    for implementers: the validity of addresses within a
 	    subspace is contextually dependent on the number of
 	    bound-countable events in the prefix path leading to that
 	    subtree. This means that two process address spaces may
@@ -3234,7 +3234,7 @@ C := gpt-&gt;cap[<em>u</em>]</literallayout>
 	  parameter registers, respectively.  Except where required by
 	  the architecture-specific system call mechanism, or
 	  explicitly noted by the system call, output registers retain
-	  their value at the time of system call netry.
+	  their value at the time of system call entry.
 	</p>
       </sect1>
       <sect1 id="syscall_exceptions">
@@ -3603,7 +3603,7 @@ typedef struct {
 		    The index of the last sent capability. No
 		    capabilities are sent if the
 		    <progident>SC</progident> field is clear
-		    (0). Following a receive phase, this fieldwill
+		    (0). Following a receive phase, this field will
 		    contain the value specified in the sender's
 		    invocation control word.
 		  </p>
@@ -3716,8 +3716,8 @@ typedef struct {
 		<td>Send Capabilities</td>
 		<td>
 		  <p>
-		    If set (1), capabilities will be transmited.
-		    Following a receive phase, this fieldwill contain
+		    If set (1), capabilities will be transmitted.
+		    Following a receive phase, this field will contain
 		    the value specified in the sender's invocation
 		    control word.
 		  </p>
@@ -3751,7 +3751,7 @@ typedef struct {
 		  <p>
 		    If set (1), indicates that the message payload
 		    describes an exception.
-		    Following a receive phase, this fieldwill contain
+		    Following a receive phase, this field will contain
 		    the value specified in the sender's invocation
 		    control word.
 		  </p>
@@ -3795,10 +3795,10 @@ typedef struct {
 	    <p>
 	      <leadin>Replies</leadin> If
 	      <progident>OPR0.ex</progident> is clear (0), then the
-	      remaining paramter words contain the specified out
+	      remaining parameter words contain the specified out
 	      parameters according to the interface specification. If
 	      <progident>OPR0.ex</progident> is set (0), then the
-	      remaining paramter words contain the exception message,
+	      remaining parameter words contain the exception message,
 	      which consists of a 64-bit exception code followed by an
 	      optional structure containing additional
 	      information. The exception code may occupy
@@ -3945,7 +3945,7 @@ typedef struct {
       </p>
       <p>
 	The <progident>keybits</progident> capability discloses the
-	canonical representation of capablities. The
+	canonical representation of capabilities. The
 	<progident>keybits</progident> capability is considered
 	sensitive, and should be closely held. The value of the
 	hazard bit <term>HZ</term> is always shown as zero.
@@ -4151,10 +4151,10 @@ typedef struct {
 	    </p>
 	  </footnote>
 	  The protocol for invoking the preferred system call trap
-	  instruction is to marshall all arguments 
+	  instruction is to marshal all arguments 
 	  and perform a
 	  <em>far jump</em> to this address. The use of a far address
-	  allows the kernel interface page to be accessable to both
+	  allows the kernel interface page to be accessible to both
 	  large and small address spaces within a single compilation
 	  and execution model.  This address is a well-known constant
 	  that is part of the architecture specification, and will not
@@ -4281,7 +4281,7 @@ typedef struct {
 	  <b>The permissions of the implementation state must never exceed
 	  those of the abstract state.</b> Any instruction whose
 	  effect is permitted by the implementation state must be
-	  permited by the abstract machine state. The implementation
+	  permitted by the abstract machine state. The implementation
 	  state is a conservative approximation of the abstract state.
 	</p>
       </li>
@@ -4370,7 +4370,7 @@ typedef struct {
 	  Assuming the capability is valid, the object designated by an
 	  unprepared capability may or may not be in memory. This can
 	  only be determined by performing an object lookup to discover
-	  whether the object is in memory. In all current implemenations
+	  whether the object is in memory. In all current implementations
 	  of KeyKOS, EROS, and Coyotos, a hash table is maintained that
 	  provides a mapping from object id (<progident>OID</progident>)
 	  to the actual object for every object that is currently in
@@ -4582,7 +4582,7 @@ typedef struct {
 	  <p>
 	    Note that the algorithm is <em>not</em> trying to detect
 	    unreferenced objects. This is the responsibility of the
-	    ageing logic, which is handled separately.
+	    aging logic, which is handled separately.
 	  </p>
 	  <p>
 	    When the algorithm is executed incrementally, there is the
@@ -4611,7 +4611,7 @@ typedef struct {
 	    <li>
 	      <p>
 		Slot B is overwritten before it is reached by the mark
-		pass. A now holds the only capablity to the
+		pass. A now holds the only capability to the
 		<progident>ObTable</progident> entry, but it will not
 		be seen by the mark pass.
 	      </p>
@@ -4749,7 +4749,7 @@ typedef struct {
 	      A GPT may produce multiple page tables because it spans
 	      multiple entries in a page directory (Figure&nbsp;<xref
 	      ref="gpt-pt-span"/>). This arises only in hardware
-	      system having hierarhical translation systems, but it
+	      system having hierarchical translation systems, but it
 	      can arise at any ``layer'' of the translation system. In
 	      fact, a single GPT can span three or more layers if it
 	      describes the only valid path across multiple levels of
