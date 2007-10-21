@@ -55,30 +55,8 @@ module coyotos.driver.TextConsole {
   // For testing, hand fabricate this as a running process:
   def tc_proc = bp.make(bank, image, NullCap(), NullCap());
 
-  /* Hand-construct an initial space for the MDA console (temporary).
-   *
-   * We wish to map this at 0xB0000, for which we need a containing
-   * GPT.
-   */
-  def newSpc = util.make_gpt(bank, page_l2g+4, page_l2g+8);
-  print newSpc;
-  newSpc.cap[0xa] = util.make_gpt(bank, page_l2g, page_l2g+4);
-  newSpc.cap[0xb] = util.make_gpt(bank, page_l2g, page_l2g+4);
-
-  {
-    def i = 0;
-    while (i < 16) {
-      newSpc.cap[0xa].cap[i] = nocache(PhysPageCap(0xa0 + i));
-      newSpc.cap[0xb].cap[i] = nocache(PhysPageCap(0xb0 + i));
-      i = i + 1;
-    }
-  };
-
-  print_space(newSpc);
-  print_tree(newSpc);
   print tc_proc;
 
-  tc_proc.capReg[APP.MYSPACE] = newSpc;
   tc_proc.capReg[APP.PHYSRANGE] = Range();
   tc_proc.capReg[APP.LOG] = KernLog();
   tc_proc.ioSpace = IoPerm();

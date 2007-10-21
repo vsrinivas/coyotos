@@ -47,6 +47,7 @@
 #include <idl/coyotos/SpaceBank.h>
 #include <idl/coyotos/GPT.h>
 #include <idl/coyotos/Process.h>
+#include <idl/coyotos/Range.h>
 
 /* all of our handler procedures are static */
 #define IDL_SERVER_HANDLER_PREDECL static
@@ -58,6 +59,7 @@
 #define CR_PHYSRANGE   		coyotos_driver_TextConsole_APP_PHYSRANGE
 #define CR_LOG   		coyotos_driver_TextConsole_APP_LOG
 #define CR_TMP1   		coyotos_driver_TextConsole_APP_TMP1
+#define CR_TMP2   		coyotos_driver_TextConsole_APP_TMP2
 
 typedef union {
   _IDL_IFUNION_coyotos_driver_TextConsole
@@ -765,6 +767,52 @@ ProcessRequests(ISE *_env)
   }
 }
 
+static inline bool
+insert_physpages(caploc_t range, caploc_t gpt, caploc_t tmp, uintptr_t pa)
+{
+  bool result = true;
+  size_t i;
+
+  for (i = 0; (i < coyotos_GPT_nSlots) && result; i++, pa += COYOTOS_PAGE_SIZE)
+    result = 
+      coyotos_Range_getCap(range, 
+			   ( coyotos_Range_physOidStart + 
+			     (pa >> COYOTOS_PAGE_ADDR_BITS) ),
+			   coyotos_Range_obType_otPage, tmp) &&
+      coyotos_AddressSpace_setSlot(gpt, i, tmp);
+
+  return result;
+}
+
+static inline bool
+alloc_gpt(caploc_t bank, coyotos_Memory_l2value_t l2v,
+	  coyotos_Memory_guard_t guard, caploc_t dest)
+{
+  coyotos_Memory_l2value_t old_l2v;
+
+  return
+    coyotos_SpaceBank_alloc(CR_SPACEBANK,
+			    coyotos_Range_obType_otGPT,
+			    coyotos_Range_obType_otInvalid,
+			    coyotos_Range_obType_otInvalid,
+			    dest,
+			    CR_NULL,
+			    CR_NULL) &&
+    coyotos_GPT_setl2v(dest, l2v, &old_l2v) &&
+    coyotos_Memory_setGuard(dest, guard, dest)
+    ;
+}
+
+static inline bool
+exit_gracelessly(errcode_t  errCode)
+{
+  kprintf(CR_LOG, "Exiting -- startup error\n");
+  return
+    coyotos_SpaceBank_destroyBankAndReturn(CR_SPACEBANK, 
+					   CR_RETURN,
+					   errCode);
+}
+
 bool 
 initialize()
 {
@@ -772,9 +820,30 @@ initialize()
      to install the larger map as our own. */
   uint8_t hi, lo;
 
-  coyotos_Process_getSlot(CR_SELF, coyotos_Process_cslot_addrSpace, CR_TMP1);
-  coyotos_AddressSpace_setSlot(CR_MYSPACE, 0, CR_TMP1);
-  coyotos_Process_setSlot(CR_SELF, coyotos_Process_cslot_addrSpace, CR_MYSPACE);
+  (void) 
+    (
+     (
+      // Allocate a new GPT to be the root GPT of our address space
+      alloc_gpt(CR_SPACEBANK, COYOTOS_I386_PAGE_ADDR_BITS + 4,
+		make_guard(0, COYOTOS_I386_PAGE_ADDR_BITS + 8), CR_MYSPACE) &&
+      // Rotate our current GPT to live in slot 0 of the new root GPT:
+      coyotos_Process_getSlot(CR_SELF, coyotos_Process_cslot_addrSpace, CR_TMP1) &&
+      coyotos_AddressSpace_setSlot(CR_MYSPACE, 0, CR_TMP1) &&
+      coyotos_Process_setSlot(CR_SELF, coyotos_Process_cslot_addrSpace, CR_MYSPACE) &&
+    
+      // Allocate covering GPTs for the 0xA0000-0xAFFFF and
+      // 0xB0000-0xBFFFF ranges:
+      alloc_gpt(CR_SPACEBANK, COYOTOS_I386_PAGE_ADDR_BITS,
+		make_guard(0, COYOTOS_I386_PAGE_ADDR_BITS + 4), CR_TMP1) &&
+      coyotos_AddressSpace_setSlot(CR_MYSPACE, 0xA, CR_TMP1) &&
+      insert_physpages(CR_PHYSRANGE, CR_TMP1, CR_TMP2, 0xA0000) &&
+
+      alloc_gpt(CR_SPACEBANK, COYOTOS_I386_PAGE_ADDR_BITS,
+		make_guard(0, COYOTOS_I386_PAGE_ADDR_BITS + 4), CR_TMP1) &&
+      coyotos_AddressSpace_setSlot(CR_MYSPACE, 0xB, CR_TMP1) &&
+      insert_physpages(CR_PHYSRANGE, CR_TMP1, CR_TMP2, 0xB0000)
+      )
+     || exit_gracelessly(IDL_exceptCode));
 
   kprintf(CR_LOG, "Calling outb on 0x3D4\n");
   outb(0xC, 0x3D4);
@@ -798,6 +867,8 @@ initialize()
     processInput(*message++);
 
   return true;
+
+  return false;
 }
 
 int
