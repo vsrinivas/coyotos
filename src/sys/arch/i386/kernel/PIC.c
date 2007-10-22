@@ -45,7 +45,7 @@
 
 #define DEBUG_IOAPIC if (0)
 
-bool use_ioapic = false;
+bool use_ioapic = true;
 
 /** @brief Physical address of local APIC 
  *

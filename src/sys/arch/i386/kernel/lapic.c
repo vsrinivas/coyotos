@@ -204,8 +204,6 @@ lapic_dump()
 void
 lapic_init()
 {
-  assert(cpu_ncpu == 1);
-
   if (lapic_requires_8259_disable) {
     /* Following disables all interrupts on the primary and secondary
      * 8259. Disabling secondary shouldn't be necessary, but that
