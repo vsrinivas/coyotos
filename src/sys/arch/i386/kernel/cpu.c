@@ -139,7 +139,7 @@ cpu_probe_cpus(void)
   for (size_t i = 1; i < ncpu; i++) {
     kva_t stack_va = SMP_STACK_VA + i*(KSTACK_NPAGES * COYOTOS_PAGE_SIZE);
     kva_t stack_top = stack_va + (KSTACK_NPAGES * COYOTOS_PAGE_SIZE);
-    cpu_vec[0].topOfStack = stack_top;
+    cpu_vec[i].topOfStack = stack_top;
 
     for (size_t pg = 0; pg < KSTACK_NPAGES; pg++) {
       kva_t pg_va = stack_va + pg*COYOTOS_PAGE_SIZE;
