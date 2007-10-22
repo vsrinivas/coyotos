@@ -56,7 +56,7 @@ SECTIONS
    * The ones below are used for CPU0. Subsequent CPUs are set up by
    * hand in the architecture-dependent initialization logic. Note
    * that all CPUs use the same virtual address for their stack, which
-   * is /kstack_hi/.
+   * is /cpu0_kstack_hi/.
    */
   KernPageDir = .;
   . = . + COYOTOS_PAGE_SIZE;
