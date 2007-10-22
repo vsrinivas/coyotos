@@ -68,8 +68,8 @@ typedef struct CPU {
    * been released but not yet flushed from the TLB. */
   uint64_t  TransReleased;
 
-  /** @brief Starting (least) address of per-CPU stack. */
-  kva_t     stack;
+  /** @brief Per-CPU kernel stack reload address. */
+  kva_t     topOfStack;
 
   /** @brief If shouldDefer matches procMutexValue, this CPU has been
    * asked to get out of the way if it cannot aquire a mutex immediately.

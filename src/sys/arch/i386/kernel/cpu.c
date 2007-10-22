@@ -37,7 +37,7 @@
 #include "hwmap.h"
 
 extern kva_t TransientMap[];
-extern uint32_t kstack_lo[];
+extern uint32_t cpu0_kstack_hi[];
 
 ArchCPU archcpu_vec[MAX_NCPU];
 
@@ -129,7 +129,7 @@ cpu_probe_cpus(void)
   /* Boot CPU is certainly present and started */
   cpu_vec[0].present = true;
   cpu_vec[0].active = true;
-  cpu_vec[0].stack = (kva_t) kstack_lo;
+  cpu_vec[0].topOfStack = (kva_t) cpu0_kstack_hi;
 
   cpu_ncpu = ncpu;
 
@@ -138,7 +138,8 @@ cpu_probe_cpus(void)
   /* Allocate the per-CPU stack pages. */
   for (size_t i = 1; i < ncpu; i++) {
     kva_t stack_va = SMP_STACK_VA + i*(KSTACK_NPAGES * COYOTOS_PAGE_SIZE);
-    cpu_vec[0].stack = stack_va;
+    kva_t stack_top = stack_va + (KSTACK_NPAGES * COYOTOS_PAGE_SIZE);
+    cpu_vec[0].topOfStack = stack_top;
 
     for (size_t pg = 0; pg < KSTACK_NPAGES; pg++) {
       kva_t pg_va = stack_va + pg*COYOTOS_PAGE_SIZE;

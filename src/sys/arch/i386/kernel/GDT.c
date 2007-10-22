@@ -68,11 +68,11 @@ typedef uint32_t GDT_t[gseg_NGDT*2];
 GDT_t gdtTables[MAX_NCPU] = {
 
   {
-    /* Entry 0 - Null Segment */
+				/* Entry 0 - Null Segment */
     0x0,
     0x0,
 
-    /* Entry 1 - TSS descriptor */
+				/* Entry 1 - TSS descriptor */
     sizeof(ia32_TSS)-1,		/* 104 bytes, base at XXXX */
     0x00008900,			/* TSS,DPL0,byte granularity, base at XXXX */
 
@@ -87,7 +87,7 @@ GDT_t gdtTables[MAX_NCPU] = {
        See the SYSEXIT instruction documentation to see the rules for
        how segment selectors are reloaded for details. */
 
-    /* Entry 2 - Kernel Code */
+				/* Entry 2 - Kernel Code */
     0x0000ffff,			/* 4G (for now), base at 0 */
     0x00cf9b00,			/* accessed, ReadExec, paged, 386, DPL0 */
 

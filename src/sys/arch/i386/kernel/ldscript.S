@@ -40,50 +40,6 @@ SECTIONS
       } = 0x9090
   __esyscallpg = .;
 
-  /* This next part is a bit subtle. In Coyotos, CPU-local storage is
-   * in fact CPU *private*. All CPUs see their private storage at the 
-   * same virtual address. This helps us ensure isolation between
-   * CPUs more effectively. It improves code generation, because
-   * we do not need to maintain a global register to point to
-   * CPU-local storage. Finally, it makes multiprocessing possible, 
-   * because on IA-32 we don't have a large enough kernel virtual
-   * region to be able to cross-map things in any case.
-   *
-   * A consequence of this design choice is that CPUs can never share
-   * a page directory. There is at least one page table in the kernel
-   * region that is CPU-private, and therefore at least one entry in the
-   * page directory that is CPU-private.
-   *
-   * On PAE, recall that the entire kernel virtual region is <1G, so
-   * there is only *one* CPU-private page directory on PAE.
-   *
-   * In arranging the order of data below, the goal is to get all of
-   * the CPU-private data gathered in such a way that it all falls
-   * within the leading 2Mbytes. If we can do this, then it will all
-   * fall within the leading page table, even on PAE).
-   *
-   * The other option would be to explicitly gather all of this stuff
-   * into a separately aligned and loaded region. In many respects I
-   * would prefer that, but it makes setting up the initial page
-   * tables harder, and it appears that GRUB will not load any
-   * executable having more than two loadable sections.
-   */
-
-  . = ALIGN(COYOTOS_PAGE_SIZE);
-  /* Everything mapped between _percpu_start and _percpu_end is
-   * CPU-private.
-   */
-
-  __cpu_start = .;
-  __cpu_data_start = .;
-  .data.percpu :
-      AT( ADDR(.data.percpu) - KVA )
-      {
-        *(.data.percpu) 
-        . = ALIGN(COYOTOS_PAGE_SIZE);
-      }
-  __cpu_data_end = .;
-
   . = ALIGN(COYOTOS_PAGE_SIZE);
   __begin_maps = .;
 
@@ -119,9 +75,9 @@ SECTIONS
 
   /* Note that we are already aligned to page size here, but just in case: */
   . = ALIGN(KSTACK_SIZE);
-  kstack_lo = .;
+  cpu0_kstack_lo = .;
   . = . + KSTACK_SIZE;
-  kstack_hi = .;
+  cpu0_kstack_hi = .;
 
   /* PAGE DATA REGION (all data whose size is a page multiple and 
      is page aligned) */

@@ -63,15 +63,13 @@ extern uint32_t _start[];
 extern uint32_t _etext[];
 extern uint32_t __syscallpg[];
 extern uint32_t __esyscallpg[];
-extern uint32_t __cpu_data_start[];
-extern uint32_t __cpu_data_end[];
 extern uint32_t _pagedata[];
 extern uint32_t _end[];
 extern uint32_t _bss_end[];
 extern uint32_t __begin_maps[];
 extern uint32_t __end_maps[];
-extern uint32_t kstack_lo[];
-extern uint32_t kstack_hi[];
+extern uint32_t cpu0_kstack_lo[];
+extern uint32_t cpu0_kstack_hi[];
 
 extern void hardclock_init();
 
@@ -397,14 +395,10 @@ config_physical_memory(void)
   pmem_AllocRegion(KVTOP(__syscallpg), KVTOP(__esyscallpg),
 		   pmc_RAM, pmu_KERNEL,
 		   "Syscall page");
-  pmem_AllocRegion(KVTOP(__cpu_data_start), 
-		   KVTOP(__cpu_data_end),
-		   pmc_RAM, pmu_KERNEL,
-		   "CPU private data");
   pmem_AllocRegion(KVTOP(__begin_maps), KVTOP(__end_maps), pmc_RAM, pmu_KERNEL,
   		   "Kernel mapping pages");
-  pmem_AllocRegion(KVTOP(kstack_lo), KVTOP(kstack_hi), pmc_RAM, pmu_KERNEL,
-  		   "Kernel stack");
+  pmem_AllocRegion(KVTOP(cpu0_kstack_lo), KVTOP(cpu0_kstack_hi), 
+		   pmc_RAM, pmu_KERNEL, "CPU0 stack");
   pmem_AllocRegion(KVTOP(_pagedata), KVTOP(_bss_end), pmc_RAM, pmu_KERNEL,
 		   "Kernel shared data/bss");
 

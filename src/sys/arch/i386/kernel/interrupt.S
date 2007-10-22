@@ -43,6 +43,7 @@
 #include "Selector.h"
 #include "asm-offsets.h"
 #include <hal/irq.h>
+#include <hal/config.h>
 #include <kerninc/event.h>
 	
 #ifdef BRING_UP
@@ -241,11 +242,15 @@ L_no_led:
 	mov	%ax,%ds
 	mov	%ax,%es
 	
-	/* Re-load kernel stack */
-	movl	$EXT(kstack_hi),%esp
+	subl	$PR_OFF_FIXREGS,%ebp
+
+	/* Re-load per-CPU kernel stack */
+	movl	PR_OFF_ONCPU(%ebp),%esp
+	movl	CPU_OFF_STACKTOP(%esp),%esp
 	
 	pushl	%ebp	/* pointer to save area */
-	subl	$PR_OFF_FIXREGS,%ebp
+	addl	$PR_OFF_FIXREGS,(%esp)
+	
 	pushl	%ebp	/* pointer to process structure */
 	
 	/* Call generic user mode interrupt/trap handler: */
@@ -299,7 +304,8 @@ L_kernel_iret:
 	
 	.text
 ENTRY(sched_low_level_yield)
-	movl	$EXT(kstack_hi),%esp
+	andl	$KSTACK_MASK,%esp
+	addl	$KSTACK_SIZE,%esp
 	call	EXT(sched_dispatch_something)
 	
 	/* Take the processor into its idle mode setting until the
@@ -514,11 +520,16 @@ iret_recover:
 	movl	%edx,FIX_OFF_EDX(%ebp)
 	movl	%eax,FIX_OFF_EAX(%ebp)
 	
+	subl	$PR_OFF_FIXREGS,%ebp
+	
 	/* Re-load kernel stack */
-	movl	$EXT(kstack_hi),%esp
+	movl	PR_OFF_ONCPU(%ebp),%esp
+	movl	CPU_OFF_STACKTOP(%esp),%esp
+	addl	$KSTACK_SIZE, %esp
 	
 	pushl	%ebp	/* pointer to save area */
-	subl	$PR_OFF_FIXREGS,%ebp
+	addl	$PR_OFF_FIXREGS,(%esp)
+	
 	pushl	%ebp	/* pointer to process structure */
 	
 	/* Call generic kernel mode interrupt/trap handler: */

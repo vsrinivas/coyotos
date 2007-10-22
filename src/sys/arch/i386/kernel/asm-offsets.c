@@ -92,6 +92,9 @@ main(void)
   ASMDEF(PR_OFF_EIP, Process, state.fixregs.EIP);
   ASMDEF(PR_OFF_EFLAGS, Process, state.fixregs.EFLAGS);
 
+  ASMDEF(PR_OFF_ONCPU, Process, onCPU);
+  ASMDEF(CPU_OFF_STACKTOP, CPU, topOfStack);
+
   ASMDEF(FIX_OFF_CS, fixregs_t, CS);
   ASMDEF(FIX_OFF_DS, fixregs_t, DS);
   ASMDEF(FIX_OFF_ES, fixregs_t, ES);

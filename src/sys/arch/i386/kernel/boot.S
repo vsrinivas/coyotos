@@ -182,7 +182,7 @@ general_entry:
 	 * we can use PUSHF and POPF. We will later overwrite %esp with
 	 * a more appropriate value.
 	 */
-	movl $kstack_hi-KVA, %esp
+	movl	$EXT(cpu0_kstack_hi)-KVA, %esp
 	
 	pushf				/* push flags onto stack */
 	xorl	$EFLAGS_AC,(%esp)
@@ -435,10 +435,10 @@ setup_kstack:
 	/* Now set up the stack for the first CPU (CPU0). Stacks for other 
 	 * CPUs will be set up by the C code.
 	 */
-	movl	$EXT(kstack_hi), %esp
+	movl	$EXT(cpu0_kstack_hi), %esp
 	
 	/* Set the curCPU pointer for CPU 0: */
-	movl	$EXT(cpu_vec),EXT(kstack_lo)
+	movl	$EXT(cpu_vec),EXT(cpu0_kstack_lo)
 	
 #if HAVE_CONSOLE
 	movl	$0x0765076c,0xc00b8014 /* "le" */
