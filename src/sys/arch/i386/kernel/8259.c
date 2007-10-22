@@ -57,8 +57,6 @@ i8259_setup(VectorInfo *vi)
 static void
 i8259_unmask(VectorInfo *vector)
 {
-  assert(cpu_ncpu == 1);
-
   irq_t irq = vector->irq;
   assert(irq < 16);
 
@@ -95,8 +93,6 @@ i8259_unmask(VectorInfo *vector)
 static void
 i8259_mask(VectorInfo *vector)
 {
-  assert(cpu_ncpu == 1);
-
   irq_t irq = vector->irq;
   assert(irq < 16);
 
@@ -120,8 +116,6 @@ i8259_mask(VectorInfo *vector)
 static bool
 i8259_isPending(VectorInfo *vector)
 {
-  assert(cpu_ncpu == 1);
-
   irq_t irq = vector->irq;
   assert(irq < 16);
 
@@ -143,8 +137,6 @@ i8259_isPending(VectorInfo *vector)
 static void
 i8259_acknowledge(VectorInfo *vector)
 {
-  assert(cpu_ncpu == 1);
-
   irq_t irq = vector->irq;
   assert(irq < 16);
 
@@ -178,8 +170,6 @@ static IrqController i8259 = {
 void
 i8259_init()
 {
-  assert(cpu_ncpu == 1);
-
   nGlobalIRQ = 16;
 
   /* Set up the vector entries */
