@@ -245,8 +245,6 @@ lapic_init()
     vector->ctrlr = &lapic;
   }
 
-  __asm__ __volatile__ ("sti;nop;nop");
-
   irq_Bind(irq_LAPIC_SVR, VEC_MODE_EDGE, VEC_LEVEL_ACTHIGH, 
 	   lapic_spurious_interrupt);
 
