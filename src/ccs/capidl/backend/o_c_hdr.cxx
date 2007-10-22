@@ -2357,7 +2357,7 @@ client_header_symdump(GCPtr<Symbol> s, INOstream& out)
     }
   case sc_exception:
     {
-      unsigned long long sig = s->CodedName();
+      uint64_t sig = s->CodedName();
 
       {
 	size_t indent = out.indent_for_macro();
@@ -2395,7 +2395,7 @@ client_header_symdump(GCPtr<Symbol> s, INOstream& out)
   case sc_interface:
   case sc_absinterface:
     {
-      unsigned long sig = s->CodedName();
+      uint64_t sig = s->CodedName();
 
       out << "\n";
       out << "/* BEGIN Interface "
@@ -2546,7 +2546,7 @@ client_header_symdump(GCPtr<Symbol> s, INOstream& out)
 	    << " is client-only */\n";
       }
       else {
-	unsigned long sig = s->CodedName();
+	uint32_t sig = s->CodedName();
 	size_t indent = out.indent_for_macro();
 	out << "\n#define OC_"
 	    << s->QualifiedName('_')
