@@ -217,25 +217,6 @@ product_recall(Mapping *m)
   *mPtr = m->nextProduct;
 }
 
-Mapping *
-pgdir_alloc()
-{
-  bug("pgdir alloc not yet implemented\n");
-#if 0
-  if (pgtbl_freelist) {
-    Mapping *pt = pgtbl_freelist;
-    pgtbl_freelist = pt->next;
-
-    return pt;
-  }
-  else {
-    // do something obnoxious
-
-    return NULL;
-  }
-#endif
-}
-
 static Mapping *
 alloc_mapping_table(size_t level)
 {
