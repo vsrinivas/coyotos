@@ -73,3 +73,8 @@ void cpu_wake_vectors()
     vi->next = 0;
   }
 }
+
+CPU *cpu_getMyCPU()
+{
+  return &cpu_vec[cpu_getMyID()];
+}

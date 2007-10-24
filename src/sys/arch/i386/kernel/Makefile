@@ -34,6 +34,7 @@ OPTIM+= -std=gnu99 -ffreestanding -g
 LINKOPTS= -g
 OBJECTS=\
 	$(BUILDDIR)/boot.o \
+	$(BUILDDIR)/apboot.o \
 	$(BUILDDIR)/interrupt.o \
 	$(BUILDDIR)/GDT.o \
 	$(BUILDDIR)/TSS.o \
@@ -114,6 +115,7 @@ $(BUILDDIR)/asm-offsets.s: asm-offsets.c $(MAKE_BUILDDIR)
 	$(GCC) $(GCCFLAGS) $(GCCWARN) -S $< -o $@
 
 $(BUILDDIR)/interrupt.o: $(BUILDDIR)/asm-offsets.h
+$(BUILDDIR)/apboot.o: $(BUILDDIR)/asm-offsets.h
 
 $(BUILDDIR)/asm-offsets.h: $(BUILDDIR)/asm-offsets.s
 	@echo "/* This file is public domain." > $@

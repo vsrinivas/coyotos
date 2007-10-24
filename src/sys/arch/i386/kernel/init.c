@@ -346,6 +346,11 @@ config_physical_memory(void)
   /* Reserve some additional regions: */
   pmem_AllocRegion(0, 1024, pmc_RAM, pmu_BIOS, "BIOS area");
 
+#if MAX_NCPU > 1
+  /* Reserve some additional regions: */
+  pmem_AllocRegion(4096, 8192, pmc_RAM, pmu_SMP, "SMP AP boot");
+#endif
+
   {
     /* We need to guard the EBDA region. Not all BIOS memory queries
      * report this region, with the consequence that multiboot itself
@@ -724,8 +729,6 @@ arch_init(void)
 
   pagetable_init();
 
-  cpu_vector_init();
-
   //  pmem_showall();
 
   cpu_scan_features();
@@ -742,6 +745,8 @@ arch_init(void)
   irq_init();			/* for CPU 0 */
 
   printf(" established\n");
+
+  cpu_init_all_aps();
 
   //  pmem_showall();
 

@@ -131,6 +131,7 @@ enum PmemUse {
   pmu_KMAP,	    /**<! @brief Kernel mapping frame. */
   pmu_PAGES,	    /**<! @brief Used by page space. */
   pmu_PGTBL,	    /**<! @brief User page tables or directories. */
+  pmu_SMP,	    /**<! @brief SMP bootstrap pages */
 
   // Following uses are not mergeable because they can be deleted:
   pmu_DEV,	    /**<! @brief Region owned by a device. */

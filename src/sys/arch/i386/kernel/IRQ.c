@@ -757,7 +757,6 @@ proc_resume(Process *p)
   assert(p == MY_CPU(current));
 
   ia32_TSS *myTSS = &tss[CUR_CPU->id];
-  assert(myTSS == &tss[0]);
   myTSS->esp0 = (uint32_t) &p->state.fixregs.ES;
 
   asm_proc_resume(p);

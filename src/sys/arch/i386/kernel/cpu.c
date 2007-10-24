@@ -32,6 +32,9 @@
 #include <kerninc/util.h>
 #include <kerninc/assert.h>
 #include <hal/transmap.h>
+#include "GDT.h"
+#include "TSS.h"
+#include "IRQ.h"
 #include "cpu.h"
 #include "acpi.h"
 #include "hwmap.h"
@@ -41,55 +44,6 @@ extern uint32_t cpu0_kstack_hi[];
 
 ArchCPU archcpu_vec[MAX_NCPU];
 
-
-#if 0
-static void
-map_pa_in_table(kva_t tbl_va, kva_t page_va, kpa_t page_pa)
-{
-  if (UsingPAE) {
-    uint32_t lndx = PAE_PGTBL_NDX((kva_t) page_va);
-    IA32_PAE *pgtbl = (IA32_PAE *) tbl_va;
-	
-    pgtbl[lndx].value = 0;
-    pgtbl[lndx].bits.frameno = PAE_KPA_TO_FRAME(page_pa);
-    pgtbl[lndx].bits.V = 1;
-    pgtbl[lndx].bits.W = 1;
-    pgtbl[lndx].bits.PGSZ = 0;
-    pgtbl[lndx].bits.ACC = 1;
-    pgtbl[lndx].bits.DIRTY = 1;
-    pgtbl[lndx].bits.PGSZ = 0;
-  }
-  else {
-    uint32_t lndx = PTE_PGTBL_NDX((kva_t) page_va);
-    IA32_PTE *pgtbl = (IA32_PTE *) tbl_va;
-	
-    pgtbl[lndx].value = 0;
-    pgtbl[lndx].bits.frameno = PTE_KPA_TO_FRAME(page_pa);
-    pgtbl[lndx].bits.V = 1;
-    pgtbl[lndx].bits.W = 1;
-    pgtbl[lndx].bits.PGSZ = 0;
-    pgtbl[lndx].bits.ACC = 1;
-    pgtbl[lndx].bits.DIRTY = 1;
-    pgtbl[lndx].bits.PGSZ = 0;
-  }
-}
-
-static void
-make_cpu_local_page(kva_t tbl_va, void *src_va)
-{
-  kpa_t pg_pa = 
-    pmem_AllocBytes(&pmem_need_pages, COYOTOS_PAGE_SIZE, 
-		    pmu_KERNEL, "CPU Priv. Data");
-
-  void * pg_va = TRANSMAP_MAP(pg_pa, void *);
-  memcpy(pg_va, src_va, COYOTOS_PAGE_SIZE);
-
-  map_pa_in_table(tbl_va, (kva_t)pg_va, pg_pa);
-
-  TRANSMAP_UNMAP(pg_va);
-
-}
-#endif
 
 cpuid_t
 cpu_getMyID(void)
@@ -159,53 +113,90 @@ cpu_probe_cpus(void)
   return cpu_ncpu;
 }
 
-void
-cpu_vector_init(void)
+/* Note that this spinlock violates the spinlock hold rules, because
+   it is held for a long time. This is a special case, and the long
+   hold is appropriate here to support AP CPU initialization. */
+SpinHoldInfo smp_startlock_info;
+spinlock_t smp_startlock = SPINLOCK_INIT;
+
+/** @brief IPL all attached APs and get them to a sensible, quiescent
+ * state.
+ *
+ * APs are halted in APIC INIT state. We need to issue a Startup IPI for the APs.
+ * The Startup IPI conveys an 8-bit vector specified by the software that issues
+ * the IPI to the APs. This vector provides the upper 8 bits of a 20-bit physical
+ * address. Therefore, the AP startup code must reside in the lower 1Mbyte of
+ * physical memory—with the entry point at offset 0 on that particular page.
+ * 
+ * In response to the Startup IPI, the APs start executing at the
+ * specified location in 16-bit real mode. This AP startup code must
+ * set up protections on each processor as determined by the SL or
+ * SK. It must also set GIF to re-enable interrupts, and restore the
+ * pre-SKINIT system context (as directed by the SL or SK executing on
+ * the BSP), before resuming normal system operation.  The SL must
+ * guarantee the integrity of the AP startup sequence, for example by
+ * including the startup code in the hashed SL image and setting up
+ * DEV protection for it before copying it to the desired area.  The
+ * AP startup code does not need to (and should not) execute SKINIT.
+*/
+void 
+cpu_init_all_aps()
 {
-  assert(cpu_ncpu <= MAX_NCPU);
+  /* Start and end of 16-bit AP bootstrap code */
+  extern uint32_t ap_boot[];
+  extern uint32_t ap_boot_end[];
 
-#if 0
-  /* For each configured CPU other than CPU0, we need to clone the
-   * CPU-private region.
-   *
-   *   A CPU-local page table
-   *   A CPU-local data area
-   *   A CPU-local transmap
-   */
+  smp_startlock_info = spinlock_grab(&smp_startlock);
 
-  for (size_t i = 1; i < cpu_ncpu; i++) {
-    printf("Setting up CPU %d\n", i);
-    kpa_t tbl_pa = 
-      pmem_AllocBytes(&pmem_need_pages, COYOTOS_PAGE_SIZE, 
-		      pmu_KMAP, "CPU Priv. pgtbl");
+  if (cpu_ncpu > 1) {
+    hwmap_enable_low_map();
 
-    archcpu_vec[i].localDataPageTable = tbl_pa;
+    size_t ap_boot_size = ((uint32_t)ap_boot_end - (uint32_t)ap_boot);
 
-    void *tbl_va = TRANSMAP_MAP(tbl_pa, void *);
+    memcpy_vtop(COYOTOS_PAGE_SIZE, ap_boot, ap_boot_size);
 
-    /* For the most part, this page table looks like the main one: */
-    memcpy(tbl_va, &KernPageTable, COYOTOS_PAGE_SIZE);
+    for (size_t i = 1; i < cpu_ncpu; i++) {
+      printf("Setting up CPU %d\n", i);
 
-    char *localData = (char *) &_data_cpu;
-    while (localData != (char *) &_edata_cpu) {
-      make_cpu_local_page((kva_t)tbl_va, localData);
-      localData += COYOTOS_PAGE_SIZE;
+      // lapic_ipi_init(i);
+
+      /* FIX: Add code here to kick off the APs one at a time. */
     }
 
-#if 1
-    kpa_t cpu_transmap =
-      pmem_AllocBytes(&pmem_need_pages, COYOTOS_PAGE_SIZE, 
-		      pmu_KMAP, "transmap");
-
-    printf("Got transmap_pa 0x%llx\n", cpu_transmap);
-    memset_p(cpu_transmap, 0, COYOTOS_PAGE_SIZE);
-
-    archcpu_vec[i].transMapMappingPage = cpu_transmap;
-
-    map_pa_in_table((kva_t)tbl_va, (kva_t)&TransientMap, cpu_transmap);
-#endif
-
-    TRANSMAP_UNMAP(tbl_va);
+    /* FIX: Cannot disable this until all APs are properly
+     * started. How to know when that has happened? Perhaps add an
+     * atomic "active" field in the CPU structure and check that as we
+     * proceed? */
+    hwmap_disable_low_map();
   }
-#endif
+}
+
+void 
+cpu_start_all_aps()
+{
+  spinlock_release(smp_startlock_info);
+}
+
+/** @brief Called from the low-level AP IPL code. When called, this AP
+ * has a temporary GDT loaded and no IDT. We need to fix that up here.
+ */
+void
+cpu_finish_ap_setup()
+{
+  load_gdtr_ldtr();
+  load_tr();
+  irq_init();			/* for CPU 0 */
+
+  // lapic_ipi_wait();
+
+  /* Eventually we need to enable interrupts, but we don't want to do
+   * so until everything is fully initialized. Wait until we can get
+   * the smp_startlock before we do that.
+   */
+  SpinHoldInfo shi = spinlock_grab(&smp_startlock);
+  spinlock_release(shi);
+
+  GNU_INLINE_ASM ("sti");
+  printf("AP %x: Online\n", MY_CPU(id));
+  sched_dispatch_something();
 }

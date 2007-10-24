@@ -36,7 +36,6 @@
  */
 extern size_t cpu_probe_cpus(void);
 
-extern void cpu_vector_init(void);
 extern void cpu_scan_features(void);
 
 /**

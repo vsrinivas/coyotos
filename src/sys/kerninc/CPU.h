@@ -143,4 +143,17 @@ void cpu_wake_vectors();
 #define CUR_CPU (current_cpu())
 #define MY_CPU(id) CUR_CPU->id
 
+/** @brief Return the CPU structure pointer (entry in cpu vector) of
+ * the currently executing processor.
+ *
+ * This is NOT the preferred way to do this, as it is fairly
+ * expensive. The difference between this and current_cpu is that it
+ * can be called by a processor whose stack is not yet set up.
+ */
+struct CPU* cpu_getMyCPU();
+
+/** @brief IPL any attached processors */
+__hal extern void cpu_init_all_aps(void);
+__hal extern void cpu_start_all_aps(void);
+
 #endif /* __KERNINC_CPU_H__ */

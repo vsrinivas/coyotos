@@ -68,6 +68,8 @@ kernel_main(void)
   console_detach();
 #endif
 
+  cpu_start_all_aps();
+
   sched_dispatch_something();
 
   fatal("Unexpected return from sched_dispatch_something\n");

@@ -204,53 +204,59 @@ lapic_dump()
 void
 lapic_init()
 {
-  if (lapic_requires_8259_disable) {
+  if (lapic_requires_8259_disable && MY_CPU(id) == 0) {
     /* Following disables all interrupts on the primary and secondary
      * 8259. Disabling secondary shouldn't be necessary, but that
      * assumes that the ASIC emulating the 8259 is sensible.
      */
     i8259_shutdown();
   }
-    
-  {
-    VectorInfo *vector = irq_MapInterrupt(irq_LAPIC_Timer);
-    vector->type = vt_Interrupt;
-    vector->mode = VEC_MODE_FROMBUS;
-    vector->level = VEC_LEVEL_FROMBUS;
-    vector->irq = irq_LAPIC_Timer;
-    vector->fn = vh_UnboundIRQ;
-    vector->unmasked = 0;
-    vector->ctrlr = &lapic;
-  }
 
-  {
-    VectorInfo *vector = irq_MapInterrupt(irq_LAPIC_IPI);
-    vector->type = vt_Interrupt;
-    vector->mode = VEC_MODE_EDGE;
-    vector->level = VEC_LEVEL_ACTLOW; /* ?? */
-    vector->irq = irq_LAPIC_IPI;
-    vector->fn = vh_UnboundIRQ;
-    vector->unmasked = 0;
-    vector->ctrlr = &lapic;
-  }
+  if (MY_CPU(id) == 0) {
+    {
+      VectorInfo *vector = irq_MapInterrupt(irq_LAPIC_Timer);
+      vector->type = vt_Interrupt;
+      vector->mode = VEC_MODE_FROMBUS;
+      vector->level = VEC_LEVEL_FROMBUS;
+      vector->irq = irq_LAPIC_Timer;
+      vector->fn = vh_UnboundIRQ;
+      vector->unmasked = 0;
+      vector->ctrlr = &lapic;
+    }
 
-  {
+    {
+      VectorInfo *vector = irq_MapInterrupt(irq_LAPIC_IPI);
+      vector->type = vt_Interrupt;
+      vector->mode = VEC_MODE_EDGE;
+      vector->level = VEC_LEVEL_ACTLOW; /* ?? */
+      vector->irq = irq_LAPIC_IPI;
+      vector->fn = vh_UnboundIRQ;
+      vector->unmasked = 0;
+      vector->ctrlr = &lapic;
+    }
+
+    {
+      VectorInfo *vector = irq_MapInterrupt(irq_LAPIC_SVR);
+      vector->type = vt_Interrupt;
+      vector->mode = VEC_MODE_FROMBUS;
+      vector->level = VEC_LEVEL_FROMBUS; /* ??? */
+      vector->irq = irq_LAPIC_SVR;
+      vector->fn = vh_UnboundIRQ;
+      vector->unmasked = 0;
+      vector->ctrlr = &lapic;
+    }
+
+    irq_Bind(irq_LAPIC_SVR, VEC_MODE_EDGE, VEC_LEVEL_ACTHIGH, 
+	     lapic_spurious_interrupt);
+
     VectorInfo *vector = irq_MapInterrupt(irq_LAPIC_SVR);
-    vector->type = vt_Interrupt;
-    vector->mode = VEC_MODE_FROMBUS;
-    vector->level = VEC_LEVEL_FROMBUS; /* ??? */
-    vector->irq = irq_LAPIC_SVR;
-    vector->fn = vh_UnboundIRQ;
-    vector->unmasked = 0;
-    vector->ctrlr = &lapic;
+    vector->unmasked = 1;
+    vector->ctrlr->unmask(vector);
   }
-
-  irq_Bind(irq_LAPIC_SVR, VEC_MODE_EDGE, VEC_LEVEL_ACTHIGH, 
-	   lapic_spurious_interrupt);
-
-  VectorInfo *vector = irq_MapInterrupt(irq_LAPIC_SVR);
-  vector->unmasked = 1;
-  vector->ctrlr->unmask(vector);
+  else {
+    VectorInfo *vector = irq_MapInterrupt(irq_LAPIC_SVR);
+    vector->ctrlr->unmask(vector);
+  }
 
   lapic_eoi();
 }
