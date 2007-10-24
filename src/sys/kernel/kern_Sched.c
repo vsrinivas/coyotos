@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2006, The EROS Group, LLC.
+ * Copyright (C) 2007, The EROS Group, LLC.
  *
  * This file is part of the Coyotos Operating System.
  *
@@ -29,6 +29,7 @@
 #include <kerninc/Sched.h>
 #include <kerninc/assert.h>
 #include <kerninc/event.h>
+#include <kerninc/Mapping.h>
 #include <hal/machine.h>
 #include <hal/irq.h>
 
@@ -44,7 +45,7 @@ sched_abandon_transaction()
 
   /* Once current process is off CPU, it's mapping structures may be
    * deallocated, so ensure that we aren't running off of them: */
-  vm_switch_curcpu_to_map(vm_percpu_kernel_map());
+  vm_switch_curcpu_to_map(&KernMapping);
 
   if (p) {
     /* Current process no longer on CPU. */

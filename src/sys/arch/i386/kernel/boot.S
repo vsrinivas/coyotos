@@ -341,7 +341,7 @@ setup_pae_map:
 	orl	$(PAE_V),%edx	/* On legacy PAE, *not* W, USER */
 	
 	/* Load KernPageDir into the PDBR: */
-	movl	$EXT(cpu0_KernPDPT)-KVA,%esi
+	movl	$EXT(KernPDPT)-KVA,%esi
 	movl	%edx,(%esi)	/* lower bits, entry 0 */
 	movl	$0,4(%esi)	/* upper bits, entry 0 */
 	movl	$0,8(%esi)	/* lower bits, entry 1 */
@@ -351,7 +351,7 @@ setup_pae_map:
 	movl	%edx,24(%esi)	/* lower bits, entry 3 */
 	movl	$0,28(%esi)	/* upper bits, entry 3 */
 	
-	movl	$EXT(cpu0_KernPDPT)-KVA,%edx
+	movl	$EXT(KernPDPT)-KVA,%edx
 	mov	%edx,%cr3
 	
 #if HAVE_CONSOLE
@@ -414,7 +414,7 @@ drop_low_map:
 	movb	$1,EXT(UsingPAE)
 	
 	/* Whack the low-memory mapping: */
-	movl	$EXT(cpu0_KernPDPT),%esi
+	movl	$EXT(KernPDPT),%esi
 	movl	$0,(%esi)	/* Kill mapping at VA=0 */
 	movl	$0,4(%esi)
 	jmp	reload_map

@@ -38,7 +38,7 @@
 #include "hwmap.h"
 #include "kva.h"
 
-PDPT cpu0_KernPDPT;
+PDPT KernPDPT;
 
 spinlock_t mappingListLock;
 
@@ -47,10 +47,7 @@ Mapping *pdpt = 0;
 AgeList ptAgeList = { { &ptAgeList.list, &ptAgeList.list, } } ;
 AgeList pdptAgeList = { { &pdptAgeList.list, &pdptAgeList.list, } } ;
 
-Mapping privatePageTable[MAX_NCPU];
-Mapping privatePageDirectory[MAX_NCPU];
-Mapping privatePDPT[MAX_NCPU];
-
+Mapping KernMapping;
 
 /** @brief True if we are using PAE mode. Set in boot.S as we do
  * initial CPU feature probe.
@@ -93,29 +90,7 @@ reserve_pgtbls(void)
 
   assert(nPageTableFrame <= nContig);
 
-  privatePageDirectory[0].pa = KVTOP(KernPageDir);
-  if (!UsingPAE)
-    CUR_CPU->curMap = &privatePageDirectory[0];
-
   kpa_t pa = 
-    pmem_AllocBytes(&pmem_need_pages, COYOTOS_PAGE_SIZE * (cpu_ncpu-1), 
-		    pmu_PGTBL, "CPU priv. pgdir");
-
-  for(size_t i = 1; i < cpu_ncpu; i++)
-    privatePageDirectory[i].pa = pa + COYOTOS_PAGE_SIZE * (i-1);
-
-
-  privatePageTable[0].pa = KVTOP(KernPageTable);
-
-  pa = 
-    pmem_AllocBytes(&pmem_need_pages, COYOTOS_PAGE_SIZE * (cpu_ncpu-1), 
-		    pmu_PGTBL, "CPU priv. pgtbl");
-
-  for(size_t i = 1; i < cpu_ncpu; i++)
-    privatePageTable[i].pa = pa + COYOTOS_PAGE_SIZE * (i-1);
-
-
-  pa = 
     pmem_AllocBytes(&pmem_need_pages, COYOTOS_PAGE_SIZE * nPageTableFrame, 
 		    pmu_PGTBL, "page tbls");
 
@@ -135,25 +110,6 @@ reserve_pdpts(void)
 
   assert(Cache.c_Process.count);
 
-  privatePDPT[0].pa = KVTOP(&cpu0_KernPDPT);
-
-  if (UsingPAE)
-    CUR_CPU->curMap = &privatePDPT[0];
-
-  /* PDPT structures are pointed to by hardware page directory
-     register, which can only reference structures within the physical
-     low 4G. Grab page-aligned start for best possible alignment. */
-  PmemConstraint low4g = pmem_need_pages;
-  low4g.bound = 0x0ffffffffllu;
-
-  kpa_t pa = 
-    pmem_AllocBytes(&low4g, 
-		    align_up(sizeof(PDPT) * (cpu_ncpu-1), COYOTOS_PAGE_SIZE), 
-		    pmu_PGTBL, "CPU priv. PDPT");
-
-  for(size_t i = 1; i < cpu_ncpu; i++)
-    privatePDPT[i].pa = pa + sizeof(PDPT) * (i-1);
-
   size_t nPDPT = Cache.c_Process.count * 16;	/* pretty arbitrary */
   size_t nPDPTbytes = align_up(nPDPT * sizeof(PDPT), COYOTOS_PAGE_SIZE);
   nPDPT = nPDPTbytes / sizeof(PDPT);
@@ -162,7 +118,13 @@ reserve_pdpts(void)
      pleasant alignment. */
   size_t nPDPTpages = nPDPTbytes / COYOTOS_PAGE_SIZE;
 
-  pa = 
+  /* PDPT structures are pointed to by hardware page directory
+     register, which can only reference structures within the physical
+     low 4G. Grab page-aligned start for best possible alignment. */
+  PmemConstraint low4g = pmem_need_pages;
+  low4g.bound = 0x0ffffffffllu;
+
+  kpa_t pa = 
     pmem_AllocBytes(&low4g, COYOTOS_PAGE_SIZE * nPDPTpages, 
 		    pmu_PGTBL, "PDPTs");
 
@@ -180,31 +142,37 @@ pagetable_init(void)
   printf("Reserving page tables\n");
   reserve_pgtbls();
   reserve_pdpts();
+
+  if (UsingPAE) {
+    KernMapping.pa = KVTOP(&KernPDPT);
+    KernMapping.level = 2;
+  }
+  else {
+    KernMapping.pa = KVTOP(&KernPageDir);
+    KernMapping.level = 1;
+  }
+  link_init(&KernMapping.ageLink);
+  CUR_CPU->curMap = &KernMapping;
 }
 
-/** @brief Return physical address of CPU-private page directory for @p
-    cpu */
-static inline Mapping *
-pagetable_private_pagedir_pa(cpuid_t cpu)
+void
+hwmap_enable_low_map()
 {
-  return &privatePageDirectory[cpu];
+  if (UsingPAE)
+    KernPDPT.entry[0] = KernPDPT.entry[3];
+  else
+    KernPageDir[0] = KernPageDir[768];
 }
 
-/** @brief Return physical address of CPU-private page table for @p
-    cpu */
-static inline Mapping *
-pagetable_private_pagetbl_pa(cpuid_t cpu)
+void
+hwmap_disable_low_map()
 {
-  return &privatePageTable[cpu];
+  if (UsingPAE)
+    PTE_CLEAR(KernPDPT.entry[0]);
+  else
+    PTE_CLEAR(KernPageDir[0]);
 }
 
-Mapping *
-vm_percpu_kernel_map(void)
-{
-  cpuid_t cpu = CUR_CPU->id;
-
-  return UsingPAE ? &privatePDPT[cpu] : &privatePageDirectory[cpu];
-}
 
 /// @bug Need to grab locks here!
 void
@@ -295,7 +263,7 @@ alloc_mapping_table(size_t level)
 
   /* Re-initialize mapping table to safe state */
   if (level == 2) {
-    memcpy_vtop(pt->pa, &cpu0_KernPDPT, sizeof(cpu0_KernPDPT));
+    memcpy_vtop(pt->pa, &KernPDPT, sizeof(KernPDPT));
     pt->userSlots = PDPT_SIZE - 1;
   } else if (level == 1 && !UsingPAE) {
     /* Re-initialize PDPT to safe state */
@@ -516,7 +484,7 @@ rm_whack_process(Process *proc)
   HoldInfo hi = mutex_grab(&proc->hdr.lock);
   proc->mappingTableHdr = 0;
   if (proc == MY_CPU(current))
-    vm_switch_curcpu_to_map(vm_percpu_kernel_map());
+    vm_switch_curcpu_to_map(&KernMapping);
   mutex_release(hi);
 }
 
@@ -636,4 +604,4 @@ hwmap_dump_table(kpa_t kpa, int level, int indent)
     TRANSMAP_UNMAP(table);
   }
 }
-#endif /*DEBUGGER_SUPPORT*/
+#endif /* DEBUGGER_SUPPORT */

@@ -31,17 +31,7 @@
 #include <hal/kerntypes.h>
 
 /** @brief Allocate page table frames and management structures. */
-void pagetable_init(void);
-
-#if 0
-/** @brief Return physical address of CPU-private page directory for @p
-    cpu */
-PageTable *pagetable_private_pagedir_pa(cpuid_t cpu);
-
-/** @brief Return physical address of CPU-private page table for @p
-    cpu */
-PageTable *pagetable_private_pagetbl_pa(cpuid_t cpu);
-#endif
+__hal void pagetable_init(void);
 
 /** @brief Abstraction of a virtual address mapping context.
  *
@@ -98,6 +88,8 @@ typedef struct Mapping {
 #error non-Hierarchical map not implemented
 #endif /* HIERARCHICAL_MAP */
 } Mapping;
+
+__hal extern Mapping KernMapping;
 
 __hal extern spinlock_t mappingListLock;
 

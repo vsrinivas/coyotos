@@ -706,10 +706,6 @@ arch_init(void)
   /** @bug This is a placeholder until we allocate the per-CPU
       stacks. */
 
-  /* Every CPU beyond the first one is going to need a per-cpu page
-     directory and a per-cpu page table for CPU-local storage: */
-  totPage -= (2 * cpu_ncpu);
-
   /* The directory window will require page tables containing 16,384
      total slots: */
   totPage -= (16384 / (UsingPAE ? NPAE_PER_PAGE : NPTE_PER_PAGE));

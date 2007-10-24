@@ -88,10 +88,17 @@ typedef struct PDPT {
   IA32_PAE entry[PDPT_SIZE];
 } PDPT;
 
-extern PDPT cpu0_KernPDPT;
+extern PDPT KernPDPT;
 
 void local_tlb_flush();
 void local_tlb_flushva(kva_t va);
+
+/** @brief Re-establish the kernel mapping for the least 4M (PAE: 2M)
+ * of physical memory. */
+void hwmap_enable_low_map();
+/** @brief Erase the kernel mapping for the least 4M (PAE: 2M)
+ * of physical memory. */
+void hwmap_disable_low_map();
 
 /* Number of page tables to reserve for a given number of pages. */
 #define RESERVED_PAGE_TABLES(nPage) (nPage / 10)
