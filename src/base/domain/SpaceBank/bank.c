@@ -241,7 +241,7 @@ bank_create(Bank *parent, caploc_t out)
   Extent *ext = endpt->extent;
   Bank *bank = &ext->bankArray[endpt - ext->array];
 
-  assert(bank->parent = 0 && bank != primeBank);
+  assert(bank->parent == 0 && bank != primeBank);
 
   // link it in to the bank hierarchy.
   bank->parent = parent;
