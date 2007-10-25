@@ -108,7 +108,7 @@ $(BUILDDIR)/coyotos: $(OBJECTS) $(BUILDDIR)/ldscript
 	$(GCC) -Wl,-T$(BUILDDIR)/ldscript  -nostdlib -o $@ $(OBJECTS) $(LINKOPTS) -lgcc
 	$(SIZE) $@
 
-$(BUILDDIR)/ldscript: ldscript.S $(MAKE_BUILDDIR)
+$(BUILDDIR)/ldscript: ldscript.S target-hal/config.h $(MAKE_BUILDDIR)
 	$(GCC) -E -P $(INC) $(DEF) $< > $@
 
 $(BUILDDIR)/asm-offsets.s: asm-offsets.c $(MAKE_BUILDDIR)
