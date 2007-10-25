@@ -63,23 +63,35 @@
 #define FIELD(word, hi, lo) \
   ( (((2u << (hi))-1u) & (word)) >> (lo))
 
-/** @brief Return the bits above @p bits in @p addr, shifted to be at the
+/** @brief Return the bits above @p bits in @p value, shifted to be at the
  * bottom of value.
  *
  * Checks for shift width exceeding word size.
  *
- * Precondition: 0 @< bits @<= COYOTOS_ADDRESS_BITS
+ * Precondition: 0 @< bits @<= 8*sizeof(value)
  */
-#define safe_right_shift(addr, n)			\
-  ({ size_t _maxbits = sizeof(addr)*8;			\
-    __typeof__(n) _n = (n);				\
-    (_n < _maxbits ? ((addr) >> _n) : 0); })
+#define safe_right_shift(value, n)			\
+  ({ size_t _maxbits = sizeof(value)*8;			\
+    size_t _n = (n);					\
+    ((_n < _maxbits) ? ((value) >> _n) : 0); })
 
-#define safe_low_bits(addr, n)				\
-  ({ size_t _maxbits = sizeof(addr)*8;			\
-     __typeof__(n) _n = (n);				\
-     typeof(addr) _mask = (_n < _maxbits ?		\
-       ((typeof(addr))1 << _n) - 1 : -(typeof(addr))1);	\
-     ((addr) & _mask); })
+/** @brief Return the bits below @p bits in @p value, shifted to be at the
+ * top of value.
+ *
+ * Checks for shift width exceeding word size.
+ *
+ * Precondition: 0 @< bits @<= 8*sizeof(value)
+ */
+#define safe_left_shift(value, n)			\
+  ({ size_t _maxbits = sizeof(value)*8;			\
+    size_t _n = (n);					\
+    ((_n < _maxbits) ? ((value) << _n) : 0); })
+
+#define safe_low_bits(value, n)					\
+  ({ size_t _maxbits = sizeof(value)*8;				\
+    size_t _n = (n);						\
+    typeof(value) _mask = ((_n < _maxbits) ?			\
+       ((typeof(value))1 << _n) - 1 : -(typeof(value))1);	\
+     ((value) & _mask); })
 
 #endif /* __KERNINC_UTIL_H__ */

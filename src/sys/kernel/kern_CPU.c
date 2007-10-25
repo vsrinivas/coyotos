@@ -29,11 +29,11 @@
 #include <hal/config.h>
 #include <kerninc/mutex.h>
 #include <kerninc/vector.h>
+#include <kerninc/util.h>
 #include <kerninc/string.h>
 #include <kerninc/assert.h>
 
-CPU cpu_vec[MAX_NCPU] = {
-};
+CPU cpu_vec[MAX_NCPU];
 
 /** @brief Number of identified CPUs. This may increase early in
  * arch-dependent initialization. */
@@ -46,7 +46,8 @@ cpu_construct(cpuid_t ndx)
 
   INIT_TO_ZERO(cpu);
   cpu->id = ndx;
-  cpu->TransMetaMap = ~0ull;
+  cpu->TransMetaMap = safe_left_shift(1ull, TRANSMAP_ENTRIES_PER_CPU) - 1ull;
+
   cpu->procMutexValue = LOCKVALUE(0, LTY_TRAN, cpu->id);
   cpu->wakeVectors = 0;
 }

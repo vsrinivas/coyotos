@@ -62,11 +62,11 @@ typedef struct CPU {
   cpuid_t   id;
 
   /** @brief Bitmap of this CPU's available transmap entries. */
-  uint64_t  TransMetaMap;
+  transmeta_t  TransMetaMap;
 
   /** @brief Bitmap of this CPU's available transmap entries that have
    * been released but not yet flushed from the TLB. */
-  uint64_t  TransReleased;
+  transmeta_t  TransReleased;
 
   /** @brief Per-CPU kernel stack reload address. */
   kva_t     topOfStack;

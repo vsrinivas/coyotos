@@ -1,7 +1,7 @@
 #ifndef I386_HAL_KERNTYPES_H
 #define I386_HAL_KERNTYPES_H
 /*
- * Copyright (C) 2005, The EROS Group, LLC.
+ * Copyright (C) 2007, The EROS Group, LLC.
  *
  * This file is part of the Coyotos Operating System runtime library.
  *
@@ -43,5 +43,11 @@
 
 /** @brief Integral type sufficient to hold a user virtual address. */
 #define TARGET_HAL_UVA_T uint32_t
+
+#if TRANSMAP_ENTRIES_PER_CPU <= 32
+#define TARGET_TRANSMETA_T uint32_t
+#else
+#define TARGET_TRANSMETA_T uint64_t
+#endif
 
 #endif /* I386_HAL_KERNTYPES_H */

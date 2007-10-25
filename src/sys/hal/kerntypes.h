@@ -1,7 +1,7 @@
 #ifndef HAL_KERNTYPES_H
 #define HAL_KERNTYPES_H
 /*
- * Copyright (C) 2005, The EROS Group, LLC.
+ * Copyright (C) 2007, The EROS Group, LLC.
  *
  * This file is part of the Coyotos Operating System runtime library.
  *
@@ -54,5 +54,8 @@ typedef TARGET_HAL_KVA_T kva_t;
 
 /** @brief Integral type sufficient to hold a user virtual address. */
 typedef TARGET_HAL_UVA_T uva_t;
+
+/** @brief Integral type sufficient to hold transmap meta-map entries. */
+typedef TARGET_TRANSMETA_T transmeta_t;
 
 #endif /* HAL_KERNTYPES_H */

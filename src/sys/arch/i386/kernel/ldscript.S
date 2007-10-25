@@ -1,4 +1,24 @@
 /* -*- text -*- */
+/*
+ * Copyright (C) 2007, The EROS Group, LLC.
+ *
+ * This file is part of the Coyotos Operating System runtime library.
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 2
+ * of the License, or (at your option) any later version.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, 59 Temple Place - Suite 330 Boston, MA 02111-1307, USA.
+ */
+
 /** @file
  * @brief Linker directives for x86 kernel linkage.
  */
@@ -43,20 +63,8 @@ SECTIONS
   . = ALIGN(COYOTOS_PAGE_SIZE);
   __begin_maps = .;
 
-  /* CPU0 Page Directory and Page Table. Other CPUs will have their
-   * CPU-specific page directory and page table appear at the same
-   * virtual addresses.
-   *
-   * The CPU0 page directory and page table will serve double duty as
-   * the *master* page directory and page table, for which purpose these
-   * pages will be given secondary mapping addresses at
-   * MASTER_PAGE_DIRECTORY_VA and MASTER_PAGE_TABLE_VA respectively.
-   */
-   /*
-   * The ones below are used for CPU0. Subsequent CPUs are set up by
-   * hand in the architecture-dependent initialization logic. Note
-   * that all CPUs use the same virtual address for their stack, which
-   * is /cpu0_kstack_hi/.
+  /* Kernel master page directory and page table. This page directory
+   * is used when no per-process mapping structure is appropriate.
    */
   KernPageDir = .;
   . = . + COYOTOS_PAGE_SIZE;
@@ -67,10 +75,11 @@ SECTIONS
   . = . + COYOTOS_PAGE_SIZE;
 
 
-  /* Page table for the CPU0 transient mappings page. This location
-   * will be re-mapped to a private page on each CPU. */
+  /* Page tables for the transient mapping region. In PAE mode, each
+   * mapping page holds 512 entries, so each table can support up to
+   * (512/TRANSMAP_ENTRIES_PER_CPU) CPUs. */
   TransientMap = .;
-  . = . + COYOTOS_PAGE_SIZE;
+   . += COYOTOS_PAGE_SIZE * TRANSMAP_PAGES;
   __end_maps = .;
 
   /* Note that we are already aligned to page size here, but just in case: */

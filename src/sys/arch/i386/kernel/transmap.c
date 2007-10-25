@@ -41,11 +41,13 @@
 #include "hwmap.h"
 #include "kva.h"
 
-#define TRANSMAP_SLOT_VA(slot) (TRANSMAP_WINDOW_KVA + (COYOTOS_PAGE_SIZE * (slot)))
-#define TRANSMAP_VA_SLOT(va) ((va - TRANSMAP_WINDOW_KVA) / COYOTOS_PAGE_SIZE)
+#define TRANSMAP_PERCPU_ENTRY(slot) ((slot) + (MY_CPU(id) * TRANSMAP_ENTRIES_PER_CPU))
+#define TRANSMAP_ENTRY_VA(slot) (TRANSMAP_WINDOW_KVA + (COYOTOS_PAGE_SIZE * (slot)))
+#define TRANSMAP_VA_ENTRY(va) (((va) - TRANSMAP_WINDOW_KVA) / COYOTOS_PAGE_SIZE)
+#define TRANSMAP_ENTRY_SLOT(entry) ((entry) % TRANSMAP_ENTRIES_PER_CPU)
 
-/* The actual transient map is mapped differently on each CPU, but at
-   the same address on all CPUs. */
+/* The transient map is mapped comonly on all CPUs, but each CPU
+   accesses a disjoint subregion of it. */
 
 extern kva_t TransientMap[];
 
@@ -54,29 +56,35 @@ extern kva_t TransientMap[];
 void
 transmap_init()
 {
-  memset(TransientMap, 0, COYOTOS_PAGE_SIZE);
+  memset(TransientMap, 0, COYOTOS_PAGE_SIZE * TRANSMAP_PAGES);
 
-  if (UsingPAE) {
-    uint32_t undx = PAE_PGDIR_NDX(TRANSMAP_WINDOW_KVA);
-    IA32_PAE *upper = ((IA32_PAE*) &KernPageDir) + undx;
+  for (size_t i = 0; i < TRANSMAP_PAGES; i++) {
+    const uint32_t offset = COYOTOS_PAGE_SIZE * i;
+    const kva_t va = TRANSMAP_WINDOW_KVA + offset;
+    const uint32_t pa = (((uint32_t)&TransientMap) - KVA) + offset;
 
-    upper->value = ((uint32_t)&TransientMap) - KVA;
-    upper->bits.W = 1;
-    upper->bits.V = 1;
-    upper->bits.ACC = 1;
-    upper->bits.DIRTY = 1;
-    upper->bits.PGSZ = 0;
-  }
-  else {
-    uint32_t undx = PTE_PGDIR_NDX(TRANSMAP_WINDOW_KVA);
-    IA32_PTE *upper = ((IA32_PTE*) &KernPageDir) + undx;
+    if (UsingPAE) {
+      uint32_t undx = PAE_PGDIR_NDX(va);
+      IA32_PAE *upper = ((IA32_PAE*) &KernPageDir) + undx;
 
-    upper->value = ((uint32_t)&TransientMap) - KVA;
-    upper->bits.W = 1;
-    upper->bits.V = 1;
-    upper->bits.ACC = 1;
-    upper->bits.DIRTY = 1;
-    upper->bits.PGSZ = 0;
+      upper->value = pa;
+      upper->bits.W = 1;
+      upper->bits.V = 1;
+      upper->bits.ACC = 1;
+      upper->bits.DIRTY = 1;
+      upper->bits.PGSZ = 0;
+    }
+    else {
+      uint32_t undx = PTE_PGDIR_NDX(va);
+      IA32_PTE *upper = ((IA32_PTE*) &KernPageDir) + undx;
+
+      upper->value = pa;
+      upper->bits.W = 1;
+      upper->bits.V = 1;
+      upper->bits.ACC = 1;
+      upper->bits.DIRTY = 1;
+      upper->bits.PGSZ = 0;
+    }
   }
 }
 
@@ -97,32 +105,25 @@ transmap_map(kpa_t pa)
 
   uint32_t ndx = ffsll(MY_CPU(TransMetaMap));
   if (ndx == 0) {
-#if 1
     /* Grab back just one at a time, and use selective flush
      * instruction. This works much better on emulators.
      */
     ndx = ffsll(MY_CPU(TransReleased));
     assert(ndx);
     uint32_t slot = ndx-1;
+    uint32_t entry = TRANSMAP_PERCPU_ENTRY(slot);
     MY_CPU(TransReleased) &= ~(1u << slot);
-    local_tlb_flushva(TRANSMAP_SLOT_VA(slot));
-#else
-    MY_CPU(TransMetaMap) |= MY_CPU(TransReleased);
-    MY_CPU(TransReleased) = 0u;
-
-    local_tlb_flush();
-
-    ndx = ffsll(MY_CPU(TransMetaMap));
-#endif
+    local_tlb_flushva(TRANSMAP_ENTRY_VA(entry));
   }
 
   assert(ndx);
 
   uint32_t slot = ndx - 1;
+  uint32_t entry = TRANSMAP_PERCPU_ENTRY(slot);
 
   if (UsingPAE) {
     IA32_PAE *theMap = (IA32_PAE *) &TransientMap;
-    IA32_PAE *theEntry = &theMap[slot];
+    IA32_PAE *theEntry = &theMap[entry];
 
     PAE_CLEAR(*theEntry);
     theEntry->value = pa;
@@ -133,7 +134,7 @@ transmap_map(kpa_t pa)
   }
   else {
     IA32_PTE *theMap = (IA32_PTE *) &TransientMap;
-    IA32_PTE *theEntry = &theMap[slot];
+    IA32_PTE *theEntry = &theMap[entry];
 
     PTE_CLEAR(*theEntry);
     theEntry->value = pa;
@@ -143,7 +144,7 @@ transmap_map(kpa_t pa)
     theEntry->bits.DIRTY = 1;
   }
 
-  kva_t va = TRANSMAP_SLOT_VA(slot);
+  kva_t va = TRANSMAP_ENTRY_VA(entry);
   MY_CPU(TransMetaMap) &= ~(1u << slot);
 
   DEBUG_TRANSMAP
@@ -155,19 +156,20 @@ transmap_map(kpa_t pa)
 void 
 transmap_unmap(kva_t va)
 {
-  uint32_t slot = TRANSMAP_VA_SLOT(va);
+  uint32_t entry = TRANSMAP_VA_ENTRY(va);
+  uint32_t slot = TRANSMAP_ENTRY_SLOT(entry);
 
   assert ((MY_CPU(TransMetaMap) & (1u << slot)) == 0);
   assert ((MY_CPU(TransReleased) & (1u << slot)) == 0);
 
   if (UsingPAE) {
     IA32_PAE *theMap = (IA32_PAE *) &TransientMap;
-    IA32_PAE *theEntry = &theMap[slot];
+    IA32_PAE *theEntry = &theMap[entry];
     theEntry->value = 0;
   }
   else {
     IA32_PTE *theMap = (IA32_PTE *) &TransientMap;
-    IA32_PTE *theEntry = &theMap[slot];
+    IA32_PTE *theEntry = &theMap[entry];
     theEntry->value = 0;
   }
 

@@ -400,6 +400,7 @@ config_physical_memory(void)
   pmem_AllocRegion(KVTOP(__syscallpg), KVTOP(__esyscallpg),
 		   pmc_RAM, pmu_KERNEL,
 		   "Syscall page");
+  /* Following includes the transmap page(s) */
   pmem_AllocRegion(KVTOP(__begin_maps), KVTOP(__end_maps), pmc_RAM, pmu_KERNEL,
   		   "Kernel mapping pages");
   pmem_AllocRegion(KVTOP(cpu0_kstack_lo), KVTOP(cpu0_kstack_hi), 

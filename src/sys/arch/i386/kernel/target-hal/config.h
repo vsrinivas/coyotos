@@ -1,7 +1,7 @@
 #ifndef I386_HAL_CONFIG_H
 #define I386_HAL_CONFIG_H
 /*
- * Copyright (C) 2005, The EROS Group, LLC.
+ * Copyright (C) 2007, The EROS Group, LLC.
  *
  * This file is part of the Coyotos Operating System runtime library.
  *
@@ -28,6 +28,26 @@
 /** @brief Maximum (static) number of CPUs we will support */
 #define MAX_NCPU 4
 #endif
+
+#if MAX_NCPU > 32
+#error "This kernel implementation does not support more than 32 CPUs"
+#endif
+
+/* Note that spacing is significant in the TRANSMAP_xxx macros. These
+ * macros are referenced by the linker script ldscript.S, and the
+ * linker script parser is very picky about tokenization. */
+
+/** @brief Number of transmap entries reserved for each CPU. */
+#define TRANSMAP_ENTRIES_PER_CPU 64
+/** @brief Number of CPUS supported by a single transmap page.
+ *
+ * Note this assumes PAE mappings. PTE mappings can handle 1024 per
+ * page, but we need to decide this statically here, so choose the
+ * conservative outcome. */
+#define TRANSMAP_PAGE_CPUS (512 / TRANSMAP_ENTRIES_PER_CPU)
+/** @brief Number of transmap pages we require, given the selected
+ * value of MAX_NCPU */
+#define TRANSMAP_PAGES  ((MAX_NCPU + TRANSMAP_PAGE_CPUS - 1) / TRANSMAP_PAGE_CPUS)
 
 /** @brief Whether we have a console.
  */
@@ -106,6 +126,10 @@
 #define I386_IO_APIC_VA          (I386_LOCAL_APIC_VA+4096)
 
 /** @brief Virtual base address of transient map. MUST be a multiple of 4M */
-#define TRANSMAP_WINDOW_KVA 0xFF800000
+#define TRANSMAP_WINDOW_KVA      0xFF800000
+
+#if TRANSMAP_PAGES > 2
+#error "TRANSMAP_WINDOW_KVA requires adjustment for this many CPUs"
+#endif
 
 #endif /* I386_HAL_CONFIG_H */
