@@ -73,12 +73,12 @@ DEFCAP(Endpoint,    Endpoint, 0x20)
 DEFCAP(Page,        Page,     0x21)
 DEFCAP(CapPage,     CapPage,  0x22)
 DEFCAP(GPT,         GPT,      0x23)
-NODEFCAP(reserved,  Invalid,  0x24)	/* formerly oGPT */
-DEFCAP(Process,     Process,  0x25)
-DEFCAP(AppNotice,   Endpoint, 0x26)
+DEFCAP(Process,     Process,  0x24)
+DEFCAP(AppNotice,   Endpoint, 0x25)
 
-// Insert new object capabilities at 0x27.
+// Insert new object capabilities at 0x26.
 
+NODEFCAP(reserved,  Invalid,  0x26)
 NODEFCAP(reserved,  Invalid,  0x27)
 NODEFCAP(reserved,  Invalid,  0x28)
 NODEFCAP(reserved,  Invalid,  0x29)

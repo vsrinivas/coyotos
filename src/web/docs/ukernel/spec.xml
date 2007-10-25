@@ -773,7 +773,52 @@
 	    </td>
 	  </tr>
 	  <tr>
-	    <td><em>13-31</em></td>
+	    <td>12</td>
+	    <td>Schedule</td>
+	    <td>
+	      <p>
+		Permission to execute under a particular schedule.
+	      </p>
+	    </td>
+	  </tr>
+	  <tr>
+	    <td>13</td>
+	    <td>SysCtl</td>
+	    <td>
+	      <p>
+		Start, stop system, enter sleep states.
+	      </p>
+	    </td>
+	  </tr>
+	  <tr>
+	    <td>14</td>
+	    <td>KernLog</td>
+	    <td>
+	      <p>
+		Append text to kernel log.
+	      </p>
+	    </td>
+	  </tr>
+	  <tr>
+	    <td>15</td>
+	    <td>IOPriv</td>
+	    <td>
+	      <p>
+		Authority to read/write IO ports.
+	      </p>
+	    </td>
+	  </tr>
+	  <tr>
+	    <td>16</td>
+	    <td>IrqWait</td>
+	    <td>
+	      <p>
+		Authority to wait for an arriving interrupt.
+	      </p>
+	    </td>
+	  </tr>
+	  <tr>
+	    <td><em>17-31</em></td>
 	    <td><em>Reserved</em></td>
 	    <td>
 	      <p>
@@ -792,15 +837,6 @@
 	  </tr>
 	  <tr>
 	    <td>33</td>
-	    <td>Receive Queue</td>
-	    <td>
-	      <p>
-		Control capability for a receive queue.
-	      </p>
-	    </td>
-	  </tr>
-	  <tr>
-	    <td>34</td>
 	    <td>Page</td>
 	    <td>
 	      <p>
@@ -813,7 +849,7 @@
 	    </td>
 	  </tr>
 	  <tr>
-	    <td>35</td>
+	    <td>34</td>
 	    <td>CapPage</td>
 	    <td>
 	      <p>
@@ -827,7 +863,7 @@
 	    </td>
 	  </tr>
 	  <tr>
-	    <td>36</td>
+	    <td>35</td>
 	    <td>GPT</td>
 	    <td>
 	      <p>
@@ -840,7 +876,7 @@
 	    </td>
 	  </tr>
 	  <tr>
-	    <td>38</td>
+	    <td>36</td>
 	    <td>Process</td>
 	    <td>
 	      <p>
@@ -850,7 +886,7 @@
 	    </td>
 	  </tr>
 	  <tr>
-	    <td>39</td>
+	    <td>37</td>
 	    <td>AppNotice</td>
 	    <td>
 	      <p>
@@ -860,7 +896,7 @@
 	    </td>
 	  </tr>
 	  <tr>
-	    <td><em>40-62</em></td>
+	    <td><em>38-62</em></td>
 	    <td><em>Reserved</em></td>
 	    <td>
 	      <p>
