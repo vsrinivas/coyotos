@@ -21,8 +21,10 @@
 #include <idl/coyotos/Constructor.h>
 #include <idl/coyotos/Process.h>
 #include <idl/coyotos/SpaceBank.h>
+#include <idl/coyotos/driver/TextConsole.h>
 #include <coyotos/runtime.h>
 #include <coyotos/kprintf.h>
+#include <string.h>
 
 #define CR_CTOR         CR_APP(0)
 #define CR_LOG          CR_APP(1)
@@ -53,6 +55,21 @@ main(int argc, char *argv[])
   CHECK (coyotos_Constructor_create(CR_CTOR, CR_SUBBANK, CR_SCHED, CR_RUNTIME, CR_YIELD));
 
   kprintf(CR_LOG, "Construction completed.\n");	\
+
+  CHECK(coyotos_driver_TextConsole_putChar(CR_YIELD, 'Z'));
+  CHECK(coyotos_driver_TextConsole_putChar(CR_YIELD, '\n'));
+  CHECK(coyotos_driver_TextConsole_putChar(CR_YIELD, 'A'));
+  CHECK(coyotos_driver_TextConsole_putChar(CR_YIELD, '\n'));
+
+  coyotos_driver_TextConsole_chString s;
+  s.data = "Never mind but furthermore the plea is self defense.\n";
+  s.len = strlen(s.data);
+  s.max = s.len;
+
+  CHECK(coyotos_driver_TextConsole_putCharSequence(CR_YIELD, s));
+
+  CHECK(coyotos_driver_TextConsole_putChar(CR_YIELD, 'B'));
+  CHECK(coyotos_driver_TextConsole_putChar(CR_YIELD, '\n'));
 
   for(;;) ;
   return 0;

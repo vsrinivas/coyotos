@@ -697,8 +697,8 @@ HANDLE_coyotos_driver_TextConsole_putChar(char c,
 }
 
 IDL_SERVER_HANDLER_PREDECL uint64_t 
-HANDLE_coyotos_driver_TextConsole_putCharArray(coyotos_driver_TextConsole_chString s,
-					       ISE *_env)
+HANDLE_coyotos_driver_TextConsole_putCharSequence(coyotos_driver_TextConsole_chString s,
+						  ISE *_env)
 {
   size_t i;
   for (i = 0; i < s.len; i++)

@@ -32,5 +32,5 @@ interface TextConsole extends coyotos.Cap {
   typedef sequence<char, 4095> chString;
 
   /** @brief Write ASSCII character string to display. */
-  void putCharArray(chString s);
+  void putCharSequence(chString s);
 };

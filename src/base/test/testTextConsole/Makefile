@@ -34,7 +34,7 @@ include $(COYOTOS_SRC)/build/make/makerules.mk
 install all: $(TARGETS) $(BUILDDIR)/mkimage.out
 
 $(BUILDDIR)/testTextConsole: $(OBJECTS)
-	$(GCC) -small-space $(GPLUSFLAGS) $(OBJECTS) $(LIBS) $(STDLIBDIRS) -o $@
+	$(GCC) $(GPLUSFLAGS) $(OBJECTS) $(LIBS) $(STDLIBDIRS) -o $@
 
 # for test images
 $(BUILDDIR)/mkimage.out: $(TARGETS) testTextConsole.mki
