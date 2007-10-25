@@ -48,6 +48,7 @@
 #include <idl/coyotos/GPT.h>
 #include <idl/coyotos/Process.h>
 #include <idl/coyotos/Range.h>
+#include <idl/coyotos/Endpoint.h>
 
 /* Utility quasi-syntax */
 #define unless(x) if (!(x))
@@ -66,6 +67,7 @@
 
 #define TOOL_PHYSRANGE 		coyotos_driver_TextConsole_TOOL_PHYSRANGE
 #define TOOL_LOG 		coyotos_driver_TextConsole_TOOL_LOG
+#define TOOL_IOPERM 		coyotos_driver_TextConsole_TOOL_IOPERM
 
 typedef union {
   _IDL_IFUNION_coyotos_driver_TextConsole
@@ -827,7 +829,11 @@ initialize()
   uint8_t hi, lo;
 
   unless (
-	  // Copy tool capabilities into application working registers:
+	  // Set up the I/O space permissions:
+	  coyotos_AddressSpace_getSlot(CR_TOOLS, TOOL_IOPERM, CR_TMP1) &&
+	  coyotos_Process_setSlot(CR_SELF, coyotos_Process_cslot_ioSpace, CR_TMP1) &&
+
+	  // Copy other tool capabilities into application working registers:
 	  coyotos_AddressSpace_getSlot(CR_TOOLS, TOOL_PHYSRANGE, CR_PHYSRANGE) &&
 	  coyotos_AddressSpace_getSlot(CR_TOOLS, TOOL_LOG, CR_LOG) &&
 
@@ -849,7 +855,12 @@ initialize()
 	  alloc_gpt(CR_SPACEBANK, COYOTOS_I386_PAGE_ADDR_BITS,
 		    make_guard(0, COYOTOS_I386_PAGE_ADDR_BITS + 4), CR_TMP1) &&
 	  coyotos_AddressSpace_setSlot(CR_MYSPACE, 0xB, CR_TMP1) &&
-	  insert_physpages(CR_PHYSRANGE, CR_TMP1, CR_TMP2, 0xB0000)
+	  insert_physpages(CR_PHYSRANGE, CR_TMP1, CR_TMP2, 0xB0000) &&
+
+	  /* Set up our entry capability */
+	  coyotos_Endpoint_makeEntryCap(CR_INITEPT,
+					coyotos_driver_TextConsole_PP_Terminal,
+					CR_REPLY0)
 	  )
     exit_gracelessly(IDL_exceptCode);
 
@@ -874,9 +885,10 @@ initialize()
   while (*message)
     processInput(*message++);
 
-  return true;
+  /* Send our entry cap to our caller */
+  REPLY_create(CR_RETURN, CR_REPLY0);
 
-  return false;
+  return true;
 }
 
 int

@@ -19,18 +19,26 @@
 #
 
 default: package
-COYOTOS_SRC=../..
+COYOTOS_SRC=../../..
+CROSS_BUILD=yes
 
-DIRS=\
-    HelloWorld \
-    testAppInt \
-    testConstructor \
-    testHandler \
-    testLargeModel \
-    testVirtualCopyModel \
-    testMalloc \
-    testPhysRange \
-    testTextConsole
+CFLAGS+=-g -O
+
+INC=-I. -I$(COYOTOS_SRC)/../usr/include -I$(BUILDDIR)
+SOURCES=$(wildcard *.c)
+OBJECTS=$(patsubst %.c,$(BUILDDIR)/%.o,$(wildcard *.c))
+TARGETS=$(BUILDDIR)/testTextConsole
 
 include $(COYOTOS_SRC)/build/make/makerules.mk
+
+install all: $(TARGETS) $(BUILDDIR)/mkimage.out
+
+$(BUILDDIR)/testTextConsole: $(OBJECTS)
+	$(GCC) -small-space $(GPLUSFLAGS) $(OBJECTS) $(LIBS) $(STDLIBDIRS) -o $@
+
+# for test images
+$(BUILDDIR)/mkimage.out: $(TARGETS) testTextConsole.mki
+	$(MKIMAGE) -o $@ -t $(COYOTOS_TARGET) -I. -L$(BUILDDIR) testTextConsole
+
+-include $(BUILDDIR)/.*.m
 

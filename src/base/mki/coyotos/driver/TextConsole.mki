@@ -22,6 +22,7 @@ module coyotos.driver.TextConsole {
   import util = coyotos.Util;
   import rt = coyotos.RunTime;
   import bp = coyotos.BootProcess;
+  import ctor = coyotos.Constructor;
   import target = coyotos.TargetInfo;
   import Image = coyotos.Image;
 
@@ -47,21 +48,20 @@ module coyotos.driver.TextConsole {
   // For later.
   export enum TOOL {
     PHYSRANGE = rt.TOOL.APP0,
+    IOPERM,
     LOG
   };
 
   def bank = new Bank(PrimeBank);
+
+
   def image = Image.load_small(bank, "coyotos/driver/TextConsole");
 
-  def toolPage = new CapPage(bank);
-  toolPage[TOOL.LOG] = KernLog();	
-  toolPage[TOOL.PHYSRANGE] = Range();
+  def tools = ctor.fresh_tools(bank);
+  tools[TOOL.LOG] = KernLog();	
+  tools[TOOL.PHYSRANGE] = Range();
+  tools[TOOL.IOPERM] = IoPerm();
 
-  // For testing, hand fabricate this as a running process:
-  def tc_proc = bp.make(bank, image, NullCap(), NullCap());
-
-  print tc_proc;
-
-  tc_proc.capReg[rt.REG.TOOLS] = toolPage;
-  tc_proc.ioSpace = IoPerm();
+  export def constructor = 
+    ctor.make(bank, image, tools, NullCap());
 }
