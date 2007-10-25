@@ -56,33 +56,33 @@ extern kva_t TransientMap[];
 void
 transmap_init()
 {
-  uint32_t transmap_pages = TRANSMAP_PAGES;
-  if (!UsingPAE) {
-    /** If we are running in non-PAE mode, we only need half of the
-     * reserved transmap pages. Map the ones we need, and release the
-     * others for use in the general storage pool.
-     *
-     * We do not attempt to release the extra page frames, because
-     * transmap_init() is called before physical memory is
-     * configured. If we decide that it is worthwhile to release those
-     * pages, we will need to do it later from arch_init().
-     *
-     * At the moment, my feeling is that releasing these extra pages
-     * is a bad idea, because they sit right below the cpu0 kernel
-     * stack, and a pointer overrun could therefore be hard to detect
-     * here. If space on the target platform is really that tight, the
-     * right answer is to add the ability to compile PAE support out
-     * entirely, and then update the logic here to recognize when that
-     * has been done.
-     */
-    transmap_pages /= 2;
-  }
+  /** If we are running in non-PAE mode, we only need half of the
+   * reserved transmap pages, because the page table's mappable span
+   * is twice as large. Map only the ones we need in the mapping mode
+   * we are using.
+   *
+   * We do not attempt to release the extra page frames, because
+   * transmap_init() is called before physical memory is
+   * configured. If we decide that it is worthwhile to release those
+   * pages, we will need to do it later from arch_init().
+   *
+   * At the moment, my feeling is that releasing these extra pages
+   * is a bad idea, because they sit right below the cpu0 kernel
+   * stack, and a pointer overrun could therefore be hard to detect
+   * here. If space on the target platform is really that tight, the
+   * right answer is to add the ability to compile PAE support out
+   * entirely, and then update the logic here to recognize when that
+   * has been done.
+   */
+
+  uint32_t transmap_pages = UsingPAE ? TRANSMAP_PAGES : (TRANSMAP_PAGES/2);
+  kva_t pgtbl_span = UsingPAE ? (2*1024*1024) : (4*1024*1024);
 
   memset(TransientMap, 0, COYOTOS_PAGE_SIZE * transmap_pages);
 
   for (size_t i = 0; i < transmap_pages; i++) {
     const uint32_t offset = COYOTOS_PAGE_SIZE * i;
-    const kva_t va = TRANSMAP_WINDOW_KVA + offset;
+    const kva_t va = TRANSMAP_WINDOW_KVA + i * pgtbl_span;
     const uint32_t pa = (((uint32_t)&TransientMap) - KVA) + offset;
 
     if (UsingPAE) {
