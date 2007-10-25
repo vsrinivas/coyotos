@@ -926,9 +926,10 @@ proc_invoke_cap(void)
 	uva_t dest = get_rcv_pw(invParam.invokee, IPW_RCVPTR);
 
 	while (slen) {
-	  uva_t target_page_va = dest & ~COYOTOS_PAGE_ADDR_MASK;
+	  uva_t target_page_offset = dest & COYOTOS_PAGE_ADDR_MASK;
+	  uva_t target_page_va = dest - target_page_offset;
 	  uva_t next_target_page_start = target_page_va + COYOTOS_PAGE_SIZE;
-	  size_t count = min((next_target_page_start - target_page_va), slen);
+	  size_t count = min(next_target_page_start - dest, slen);
 
 	  FoundPage pgInfo;
 	  coyotos_Process_FC fc = 
@@ -965,7 +966,7 @@ proc_invoke_cap(void)
 	    sched_restart_transaction();
 	  }
 
-	  kpa_t dest_pa = pgInfo.pgHdr->pa;
+	  kpa_t dest_pa = pgInfo.pgHdr->pa + target_page_offset;
 	  memcpy_vtop(dest_pa, (void *) src, count);
 
 	  dest += count;
