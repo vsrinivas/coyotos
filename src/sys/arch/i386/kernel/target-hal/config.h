@@ -44,10 +44,10 @@
  * Note this assumes PAE mappings. PTE mappings can handle 1024 per
  * page, but we need to decide this statically here, so choose the
  * conservative outcome. */
-#define TRANSMAP_PAGE_CPUS (512 / TRANSMAP_ENTRIES_PER_CPU)
+#define TRANSMAP_CPUS_PER_PAGE (512 / TRANSMAP_ENTRIES_PER_CPU)
 /** @brief Number of transmap pages we require, given the selected
  * value of MAX_NCPU */
-#define TRANSMAP_PAGES  ((MAX_NCPU + TRANSMAP_PAGE_CPUS - 1) / TRANSMAP_PAGE_CPUS)
+#define TRANSMAP_PAGES  ((MAX_NCPU + TRANSMAP_CPUS_PER_PAGE - 1) / TRANSMAP_CPUS_PER_PAGE)
 
 /** @brief Whether we have a console.
  */
@@ -128,8 +128,12 @@
 /** @brief Virtual base address of transient map. MUST be a multiple of 4M */
 #define TRANSMAP_WINDOW_KVA      0xFF800000
 
-#if TRANSMAP_PAGES > 2
-#error "TRANSMAP_WINDOW_KVA requires adjustment for this many CPUs"
+/* Following check assumes PAE mode. If we are actually running in PTE
+ * mode, the transmap_init() logic will map half as many page tables,
+ * so the computation here remains correct in that case.
+ */
+#if ((0xffffffff - (TRANSMAP_NPAGES * COYOTOS_PAGE_SIZE)) + 1) < TRANSMAP_WINDOW_KVA
+#error "TRANSMAP_WINDOW_KVA and HEAP_LIMIT_VA require adjustment for this many CPUs"
 #endif
 
 #endif /* I386_HAL_CONFIG_H */
