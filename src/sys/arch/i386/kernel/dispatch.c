@@ -107,7 +107,4 @@ proc_migrate_to_current_cpu()
   Process *p = MY_CPU(current);
   if (p->mappingTableHdr == 0)
     p->mappingTableHdr = &KernMapping;
-  else
-    bug("Do not know how to load CPU-specific address space\n");
-
 }
