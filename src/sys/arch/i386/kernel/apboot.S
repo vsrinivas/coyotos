@@ -63,6 +63,7 @@ GEXT(ap_boot)
 	.code16
 
 	cli
+	xorl	%eax,%ax
 	xorl	%esp,%esp
 
 	mov	%cs, %ax	/* Recover boot segment base */
@@ -112,6 +113,7 @@ ap_boot_gdt_start:
 	.byte	0x0
 	.byte	0x9b
 	.byte	0xcf
+	.byte	0x0
 	
 	/* Entry 2 - 32-bit AP boot data. 4G, base at 0, DPL0.  */
 	.word	0xffff
@@ -119,6 +121,8 @@ ap_boot_gdt_start:
 	.byte	0x0
 	.byte	0x93
 	.byte	0xcf
+	.byte	0x0
+	
 ap_boot_gdt_end:
 
 	/* If 16-bit code can load a GDTR value that exceeds the 16 bit limit,
@@ -205,7 +209,7 @@ ap_boot_setup_stack:
 	call	EXT(cpu_getMyCPU)
 
 	/* Load my top of stack pointer */
-	movl	CPU_OFF_STACKTOP(%esp),%esp
+	movl	CPU_OFF_STACKTOP(%eax),%esp
 
 	/* Current CPU pointer is already sitting at bottom
 	 * of my proper stack. */
