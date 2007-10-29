@@ -63,7 +63,7 @@ GEXT(ap_boot)
 	.code16
 
 	cli
-	xorl	%eax,%ax
+	xorl	%eax,%eax
 	xorl	%esp,%esp
 
 	mov	%cs, %ax	/* Recover boot segment base */
@@ -76,8 +76,7 @@ GEXT(ap_boot)
 	/* Set AP boot stack at top of page */
 	movw	$COYOTOS_PAGE_SIZE,%sp
 	
-	shll	$4,%eax		# segment base to phys addr
-	movl	%ebx,%eax
+	shll	$4,%eax		/* segment base to phys addr */
 	
 	/* This code runs relocated but identity mapped. Relocate base of
 	 * temporary GDT using quasi PC-relative addressing:
