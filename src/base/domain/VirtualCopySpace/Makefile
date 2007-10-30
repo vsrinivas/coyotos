@@ -32,9 +32,9 @@ TARGETS=$(BUILDDIR)/VirtualCopySpace
 include $(COYOTOS_SRC)/build/make/makerules.mk
 
 BASE_IDL_DIR=$(PKG_SRC)/idl
-BASE_IDL_FILES=$(wildcard $(BASE_IDL_DIR)/*.idl)
+BASE_IDL_FILES=$(wildcard $(BASE_IDL_DIR)/[A-Za-z]*.idl)
 SYS_IDL_DIR=$(COYOTOS_SRC)/sys/idl
-SYS_IDL_FILES=$(wildcard $(SYS_IDL_DIR)/*.idl)
+SYS_IDL_FILES=$(wildcard $(SYS_IDL_DIR)/[A-Za-z]*.idl)
 
 SERVER_INTERFACES=\
     VirtualCopySpace \
