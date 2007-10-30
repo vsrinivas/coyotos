@@ -1,7 +1,7 @@
 package coyotos;
 
 /**
- * @brief AddressSpaceHandler
+ * @brief Address space handler.
  */
 interface SpaceHandler extends Cap {
 
