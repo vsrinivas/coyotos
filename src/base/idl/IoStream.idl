@@ -1,0 +1,46 @@
+package coyotos;
+
+/**
+ * @brief Generic bi-directional I/O stream interface.
+ *
+ * This is a first version of the I/O stream interface. It doesn't
+ * implement any I/O control operations, but it has the basic read
+ * write interface.
+ */
+interface IoStream extends Cap {
+
+  /** @brief Maximum length character buffer that can be transmitted
+      or received in a single read/write operation. */
+  typedef sequence<char, 4096> chString;
+
+  exception RequestWouldBlock;
+
+  /* @brief Internal implementation of read().
+   *
+   * Reads @p length bytes into @p chString from stream. Raises
+   * RequestWouldBlock if the request would block.
+   */
+  void doRead(unsigned long length, out chString s) 
+    raises (RequestWouldBlock);
+
+  /* @brief Internal implementation of write().
+   *
+   * Writes @p chString to stream. Raises RequestWouldBlock if the
+   * request would block. Returns the number of bytes written.
+   */
+  unsigned long doWrite(chString s) raises (RequestWouldBlock);
+
+  /** @brief Read @p length bytes into @p chString from stream.
+   *
+   * This declares a library-supplied wrapper that calls doRead()
+   * internally, hiding the details of the read blocking protocol.
+   */
+  client void read(unsigned long len, out chString s);
+
+  /** @brief Write @p chString to stream.
+   *
+   * This declares a library-supplied wrapper that calls doWrite()
+   * internally, hiding the details of the read blocking protocol.
+   */
+  client unsigned long write(out chString s);
+};
