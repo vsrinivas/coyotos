@@ -134,7 +134,7 @@ c_typecheck(GCPtr<Symbol> s)
   }
 
   if (s->cls == sc_exception && s->children.size() != 0) {
-    fprintf(stderr, "%s \"%s\" EROS exceptions should not have members\n",
+    fprintf(stderr, "%s \"%s\" Coyotos exceptions should not have members\n",
 		s->ClassName().c_str(),
 		s->QualifiedName('.').c_str());
     result = false;
