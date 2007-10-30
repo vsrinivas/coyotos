@@ -23,6 +23,12 @@ interface IoStream extends Cap {
   void doRead(unsigned long length, out chString s) 
     raises (RequestWouldBlock);
 
+  /** @brief Return the read-specific channel for this IoStream. */
+  IoStream getReadChannel();
+
+  /** @brief Return the write-specific channel for this IoStream. */
+  IoStream getWriteChannel();
+
   /* @brief Internal implementation of write().
    *
    * Writes @p chString to stream. Raises RequestWouldBlock if the
