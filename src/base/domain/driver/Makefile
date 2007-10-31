@@ -22,6 +22,7 @@ default: package
 COYOTOS_SRC=../../..
 
 DIRS=TextConsole
+#DIRS+=ps2port
 
 include $(COYOTOS_SRC)/build/make/makerules.mk
 
