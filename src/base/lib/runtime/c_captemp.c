@@ -18,44 +18,38 @@
  * Foundation, 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  */
 
-/* Simulated sbrk */
+/** @file */
 
 #include <coyotos/machine/pagesize.h>
 #include <coyotos/coytypes.h>
-#include <coyotos/syscall.h>
 
-#include "coyotos/capability_stack.h"
+#include "coyotos/captemp.h"
 
 #include <inttypes.h>
 
 static uintptr_t cur = 0;
 static uintptr_t max = COYOTOS_PAGE_SIZE;
 
-
-bool 
-capability_push(caploc_t cap)
+caploc_t
+captemp_alloc(void)
 {
-  if (cur >= max)
-    return false;  // can't push
+  if (cur >= max) {
+    *(uint32_t *)1 = 0;  /** @bug this should be a user-defined exception */
+  }
 
-  cap_copy(ADDR_CAPLOC(cur), cap);
+  caploc_t ret = ADDR_CAPLOC(cur);
   cur += COYOTOS_CAPABILITY_SIZE;
 
-  return true;
+  return ret;
 }
 
 void
-capability_pop(caploc_t cap)
+captemp_release(caploc_t cap)
 {
-  if (cur == 0)
+  uintptr_t new_cur = cur - COYOTOS_CAPABILITY_SIZE;
+
+  if (cur == 0 || cap.fld.ty != CAPLOC_TY_MEM || (cap.fld.loc << 1) != new_cur)
     *(uint32_t *)1 = 0;   /* crash */
 
-  cur -= COYOTOS_CAPABILITY_SIZE;
-  cap_copy(cap, ADDR_CAPLOC(cur));
-}
-
-bool
-capability_canPush(uint32_t n)
-{
-  return ((max - cur) / COYOTOS_CAPABILITY_SIZE) >= n;
+  cur = new_cur;
 }

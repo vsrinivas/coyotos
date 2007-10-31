@@ -30,7 +30,7 @@
 #include <idl/coyotos/Process.h>
 
 #include "coyotos/runtime.h"
-#include "coyotos/capability_stack.h"
+#include "coyotos/captemp.h"
 
 #define PAGE_ALIGN(x) ((uintptr_t)(x) & ~(uintptr_t)COYOTOS_PAGE_ADDR_MASK)
 
@@ -67,23 +67,27 @@ sbrk(intptr_t nbytes)
     uintptr_t page = PAGE_ALIGN(base - 1) + COYOTOS_PAGE_SIZE;
     uintptr_t lastPage = PAGE_ALIGN(new_heap - 1);
 
-    if (!capability_canPush(2))
-      goto fail;
+    caploc_t newpage = captemp_alloc();
+    caploc_t tmp = captemp_alloc();
 
-    capability_push(CR_NEWPAGE);
-    capability_push(CR_TMP1);
+    bool failed = false;
 
     for (; page != 0 && page <= lastPage; page += COYOTOS_PAGE_SIZE) {
-      if (!alloc_cap(coyotos_Range_obType_otPage, CR_NEWPAGE))
-	goto fail_pop;
+      if (!alloc_cap(coyotos_Range_obType_otPage, newpage)) {
+        failed = true;
+        break;
+      }
 
-      if (!insert_page(page, CR_NEWPAGE, CR_TMP1)) {
-	free_cap(CR_NEWPAGE);
-	goto fail_pop;
+      if (!insert_page(page, newpage, tmp)) {
+	free_cap(newpage);
+        failed = true;
+        break;
       }
     }
-    capability_pop(CR_TMP1);
-    capability_pop(CR_NEWPAGE);
+    captemp_release(tmp);
+    captemp_release(newpage);
+    if (failed)
+      goto fail;
   }
   heap_ptr = new_heap;
 
@@ -92,9 +96,6 @@ sbrk(intptr_t nbytes)
 
   return (caddr_t)base;
 
- fail_pop:
-  capability_pop(CR_TMP1);
-  capability_pop(CR_NEWPAGE);
  fail:
   errno = ENOMEM;
   return (caddr_t)-1;
