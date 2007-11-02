@@ -273,8 +273,9 @@ static inline void
 lapic_eoi()
 {
   /* EOI is performed by writing an arbitrary value to the lapic EOI
-   * register. */
-  lapic_write_register(LAPIC_EOI, 0x1);
+   * register, but Intel suggests that for future compatibility 0x0h
+   * should be used (Intel IA32 SDM Vol 3a)*/
+  lapic_write_register(LAPIC_EOI, 0x0);
 }
 
 /** @brief Initialize the PC motherboard legacy ISA peripheral
