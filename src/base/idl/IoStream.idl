@@ -9,9 +9,11 @@ package coyotos;
  */
 interface IoStream extends Cap {
 
+  const unsigned long bufLimit = 4096;
+
   /** @brief Maximum length character buffer that can be transmitted
       or received in a single read/write operation. */
-  typedef sequence<char, 4096> chString;
+  typedef sequence<char, bufLimit> chString;
 
   exception RequestWouldBlock;
 
