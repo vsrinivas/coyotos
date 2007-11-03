@@ -1674,11 +1674,12 @@ emit_client_stub(GCPtr<Symbol> s, INOstream& out)
 
     out.less();
     out << "}\n";
-    {
-      size_t indent = out.indent_for_macro();
-      out << "#endif /* !__KERNEL__ */\n";
-      out.indent(indent);
-    }
+  }
+
+  {
+    size_t indent = out.indent_for_macro();
+    out << "#endif /* !__KERNEL__ */\n";
+    out.indent(indent);
   }
 }
 
