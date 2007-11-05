@@ -1,0 +1,7 @@
+module dump_usage {
+    dump_usage();
+    def p = new Page(PrimeBank);
+    dump_usage();
+    def e = new Endpoint(PrimeBank);
+    dump_usage();
+}

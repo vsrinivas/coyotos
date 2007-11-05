@@ -787,4 +787,19 @@ CoyImage::Validate() const
 
 }
 
+std::ostream&
+operator<<(std::ostream& strm, const CoyImage& ci)
+{
+  strm << "{";
 
+  strm << " nPage: " << ci.vec.page.size();
+  strm << " nCapPage: " << ci.vec.capPage.size();
+  strm << " nGPT: " << ci.vec.gpt.size();
+  strm << " nEndpoint: " << ci.vec.endpt.size();
+  strm << " nProc: " << ci.vec.proc.size();
+
+  strm << "  nBank: " << ci.vec.bank.size();
+  strm << " }";
+
+  return strm;
+}

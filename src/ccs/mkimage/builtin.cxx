@@ -371,6 +371,17 @@ pf_fatal(PrimFnValue& pfv,
 }
 
 GCPtr<Value>
+pf_dump_usage(PrimFnValue& pfv,
+	      InterpState& is,
+	      CVector<GCPtr<Value> >& args)
+{
+  std::cout << *is.ci << endl;
+
+  //  std::cout << '\n';
+  return &TheUnitValue;
+}
+
+GCPtr<Value>
 pf_add(PrimFnValue& pfv,
        InterpState& is,
        CVector<GCPtr<Value> >& args)
@@ -1710,7 +1721,10 @@ getBuiltinEnv(GCPtr<CoyImage> ci)
     // UTILITY FUNCTIONS
 
     builtins->addConstant("fatal", 
-			 new PrimFnValue("fatal", 1, 0, pf_fatal));
+			 new PrimFnValue("fatal", 1, 1, pf_fatal));
+
+    builtins->addConstant("dump_usage", 
+			 new PrimFnValue("dump_usage", 0, 0, pf_dump_usage));
 
     builtins->addConstant("doprint", 
 			 new PrimFnValue("doprint", 1, 0, pf_doprint));
