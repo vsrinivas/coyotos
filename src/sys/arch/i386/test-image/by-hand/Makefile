@@ -45,8 +45,9 @@ install all: $(IMAGES)
 $(BUILDDIR)/SimpleProc.h: SimpleProc.mki | $(BUILDDIR)
 	$(MKIMAGE) -t i386 -H./$(BUILDDIR) -I. -L. $(patsubst %.mki,%,$<)
 
-$(BUILDDIR)/%.img: %.mki $(BUILDDIR)/%.exe
-	$(MKIMAGE) -t i386 -I. -L$(BUILDDIR) -o $@ $(patsubst $(BUILDDIR)/%.img,%,$@)
+$(BUILDDIR)/%.img.gz: %.mki $(BUILDDIR)/%.exe
+	$(MKIMAGE) -t i386 -I. -L$(BUILDDIR) -o $(patsubst %.gz,%,$@) $(patsubst $(BUILDDIR)/%.img.gz,%,$@)
+	gzip $(patsubst %.gz,%,$@)
 
 $(BUILDDIR)/%.exe: $(BUILDDIR)/%.o $(BUILDDIR)/SimpleProc.h
 	$(GCC) -g $(LINKOPTS) $(INC) -nostdlib -o $@ $<
@@ -54,9 +55,9 @@ $(BUILDDIR)/%.exe: $(BUILDDIR)/%.o $(BUILDDIR)/SimpleProc.h
 $(BUILDDIR)/%.exe: $(BUILDDIR)/%-data.o $(BUILDDIR)/SimpleProc.h $(BUILDDIR)/do_ipc.o
 	$(GCC) -g $(LINKOPTS) $(INC) -nostdlib -o $@ $< $(BUILDDIR)/do_ipc.o
 
-%.run: $(BUILDDIR)/%.img
+%.run: $(BUILDDIR)/%.img.gz
 	cp ../grubdisk .
-	mcopy -Do -i grubdisk $< ::mkimage.out
+	mcopy -Do -i grubdisk $< ::mkimage.out.gz
 	mcopy -Do -i grubdisk $(KERNEL) ::
 	sh ./testme.sh $(patsubst %.run,%,$@)
 
