@@ -283,4 +283,7 @@ public:
   size_t     l2cap(const capability&);
 };
 
+std::ostream&
+operator<<(std::ostream& strm, const CoyImage& ci);
+
 #endif /* LIBCOYIMAGE_COYIMAGE_HXX */
