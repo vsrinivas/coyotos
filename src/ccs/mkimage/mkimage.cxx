@@ -250,7 +250,7 @@ main(int argc, char *argv[])
 
   if (opterr) {
     std::cerr << "Usage: Try mkimage --help" << std::endl;
-    exit(0);
+    exit(1);
   }
 
   try {
