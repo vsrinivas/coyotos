@@ -28,7 +28,7 @@ CFLAGS += -g
 MKIMAGE=$(COYOTOS_SRC)/ccs/mkimage/$(BUILDDIR)/mkimage
 KERNEL=../../kernel/$(BUILDDIR)/coyotos
 
-IMAGES=$(patsubst %.mki,$(BUILDDIR)/%.img,$(filter-out SimpleProc.mki,$(wildcard *.mki)))
+IMAGES=$(patsubst %.mki,$(BUILDDIR)/%.img.gz,$(filter-out SimpleProc.mki,$(wildcard *.mki)))
 INC=-I$(COYOTOS_SRC)/sys -I$(COYOTOS_SRC)/sys/idl/$(BUILDDIR)/h -IBUILD
 LINKOPTS=-Wl,-Ttext,0x1000 -Wl,-Tdata,0x3000
 QEMU=qemu
@@ -54,6 +54,8 @@ $(BUILDDIR)/%.exe: $(BUILDDIR)/%.o $(BUILDDIR)/SimpleProc.h
 
 $(BUILDDIR)/%.exe: $(BUILDDIR)/%-data.o $(BUILDDIR)/SimpleProc.h $(BUILDDIR)/do_ipc.o
 	$(GCC) -g $(LINKOPTS) $(INC) -nostdlib -o $@ $< $(BUILDDIR)/do_ipc.o
+
+ipc.mki: $(BUILDDIR)/openrcv.exe
 
 %.run: $(BUILDDIR)/%.img.gz
 	cp ../grubdisk .
