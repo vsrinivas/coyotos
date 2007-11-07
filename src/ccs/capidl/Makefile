@@ -51,10 +51,6 @@ OBJECTS += $(BUILDDIR)/o_xmldoc.o
 OBJECTS += $(BUILDDIR)/o_html.o
 OBJECTS += $(BUILDDIR)/o_c_hdr.o
 OBJECTS += $(BUILDDIR)/o_c_hdr_depend.o
-#OBJECTS += $(BUILDDIR)/o_c_stubs.o
-#OBJECTS += $(BUILDDIR)/o_c_server.o
-#OBJECTS += $(BUILDDIR)/o_c_server_hdr.o
-#OBJECTS += $(BUILDDIR)/o_c_stub_depend.o
 OBJECTS += $(BUILDDIR)/o_capidl.o
 OBJECTS += $(BUILDDIR)/o_depend.o
 
