@@ -25,11 +25,13 @@
 
 #include <string.h>
 #include <iostream>
+#include <fstream>
 
 #include "CoyImage.hxx"
 #include <libsherpa/UExcept.hxx>
-#include <libsherpa/ofBinaryStream.hxx>
-#include <libsherpa/ifBinaryStream.hxx>
+#include <libsherpa/gzstream.hxx>
+#include <libsherpa/oBinaryStream.hxx>
+#include <libsherpa/iBinaryStream.hxx>
 
 using namespace std;
 using namespace sherpa;
@@ -116,8 +118,8 @@ CoyImage::ToFile(sherpa::Path p)
   // Before doing anything, validate that the image looks correct.
   Validate();
 
-  ofBinaryStream obs(p.c_str(), 
-		     ios_base::out|ios_base::binary|ios_base::trunc);
+  ogzstream ofs(p.c_str(), ios_base::binary|ios_base::out|ios_base::trunc);
+  oBinaryStream obs(ofs);
 
   if (target.endian == LITTLE_ENDIAN)
     obs << bs_base::LittleEndian;
@@ -243,8 +245,6 @@ CoyImage::ToFile(sherpa::Path p)
 		 (unsigned long) obs.tellp(), totalBytes));
   }
     
-  obs.close();
-
   // Truncate the allocation vector back to the correct size:
   {
     size_t delta = vec.page.size() - originalPages;

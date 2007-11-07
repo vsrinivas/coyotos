@@ -19,9 +19,10 @@
  */
 
 #include <iostream>
+#include <fstream>
 #include <iomanip>
 
-#include <libsherpa/ifBinaryStream.hxx>
+#include <libsherpa/iBinaryStream.hxx>
 #include <libsherpa/UExcept.hxx>
 #include <elf.h>
 #include <a.out.h>
@@ -141,7 +142,7 @@ ExecImage::sortByAddress()
 }
 
 void
-ExecImage::InitElf32(ifBinaryStream& ibs)
+ExecImage::InitElf32(iBinaryStream& ibs)
 {
   Elf32_Ehdr ehdr;
 
@@ -149,7 +150,9 @@ ExecImage::InitElf32(ifBinaryStream& ibs)
 
   // Use IBS to read the rest of the ELF header so we get it properly byte
   // swapped in the cross-architecture case:
-  ibs.seekg(0);
+  if (!ibs.seekg(0))
+    THROW(excpt::IoError, 
+	  format("File \"%s\" failed to seek", name.c_str()));
 
   ibs.read(EI_NIDENT, ehdr.e_ident);
 
@@ -171,7 +174,9 @@ ExecImage::InitElf32(ifBinaryStream& ibs)
   elfMachine = ehdr.e_machine;
 
   for (size_t i = 0; i < ehdr.e_phnum; i++) {
-    ibs.seekg(ehdr.e_phoff + ehdr.e_phentsize * i);
+    if (!ibs.seekg(ehdr.e_phoff + ehdr.e_phentsize * i))
+      THROW(excpt::IoError, 
+	    format("File \"%s\" failed to seek", name.c_str()));
 
     Elf32_Phdr phdr;
 
@@ -233,7 +238,7 @@ ExecImage::InitElf32(ifBinaryStream& ibs)
 }
 
 void
-ExecImage::InitElf64(ifBinaryStream& ibs)
+ExecImage::InitElf64(iBinaryStream& ibs)
 {
   Elf64_Ehdr ehdr;
 
@@ -241,7 +246,9 @@ ExecImage::InitElf64(ifBinaryStream& ibs)
 
   // Use IBS to read the rest of the ELF header so we get it properly byte
   // swapped in the cross-architecture case:
-  ibs.seekg(0);
+  if (!ibs.seekg(0))
+    THROW(excpt::IoError, 
+	  format("File \"%s\" failed to seek", name.c_str()));
 
   ibs.read(EI_NIDENT, ehdr.e_ident);
 
@@ -263,7 +270,9 @@ ExecImage::InitElf64(ifBinaryStream& ibs)
   elfMachine = ehdr.e_machine;
 
   for (size_t i = 0; i < ehdr.e_phnum; i++) {
-    ibs.seekg(ehdr.e_phoff + ehdr.e_phentsize * i);
+    if (!ibs.seekg(ehdr.e_phoff + ehdr.e_phentsize * i))
+      THROW(excpt::IoError, 
+	    format("File \"%s\" failed to seek", name.c_str()));
 
     Elf64_Phdr phdr;
 
@@ -294,6 +303,8 @@ ExecImage::InitElf64(ifBinaryStream& ibs)
 
 ExecImage::ExecImage(const std::string& imageFileName)
 {
+  name = imageFileName;
+
   Path ifPath(imageFileName);
   if (!ifPath.exists())
     THROW(excpt::BadValue, 
@@ -301,10 +312,13 @@ ExecImage::ExecImage(const std::string& imageFileName)
 
   Path::portstat_t ps = ifPath.stat();
 
-  ifBinaryStream ibs(imageFileName.c_str(), ios_base::binary | ios_base::in);
-  if (!ibs.is_open())
+  fstream ifs(imageFileName.c_str(), ios_base::binary|ios_base::in);
+
+  if (!ifs.is_open())
     THROW(excpt::NoObject, 
 	  format("File \"%s\" cannot be opened", imageFileName.c_str()));
+
+  iBinaryStream ibs(ifs);
 
   // Slurp the entire image:
   ibs.read(ps.len, image);

@@ -25,7 +25,7 @@
 #include <libsherpa/GCPtr.hxx>
 #include <libsherpa/Path.hxx>
 #include <libsherpa/ByteString.hxx>
-#include <libsherpa/ifBinaryStream.hxx>
+#include <libsherpa/iBinaryStream.hxx>
 
 /* ExecRegion types. Same as ELF, which is not by accident! */
 enum {
@@ -59,8 +59,8 @@ struct ExecRegion {
 
 /** Data structure for managing an executable image. */
 class ExecImage : public sherpa::Countable {
-  void InitElf32(sherpa::ifBinaryStream&);
-  void InitElf64(sherpa::ifBinaryStream&);
+  void InitElf32(sherpa::iBinaryStream&);
+  void InitElf64(sherpa::iBinaryStream&);
 
 public:
   std::string imageTypeName;

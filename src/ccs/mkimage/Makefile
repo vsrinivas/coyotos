@@ -39,9 +39,12 @@ CLEANLIST=y.tab.c y.tab.h y.output
 
 LIBCOYIMAGE=../libcoyimage/BUILD/libcoyimage.a
 
+# Uncomment the following for debugging:
+#LIBSHERPA=../../ccs-xenv/coytools/src/libsherpa/libsherpa.a
+
 LIBS+= $(LIBCOYIMAGE)
 LIBS+= $(LIBSHERPA)
-LIBS+= -licuuc -lstdc++
+LIBS+= -licuuc -lstdc++ -lz
 
 OBJECTS=\
 	$(BUILDDIR)/mkimage.o \
