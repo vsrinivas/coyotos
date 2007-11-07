@@ -157,7 +157,7 @@ proc_DeliverSoftNotices(Process *p)
   assert (p->state.faultCode == coyotos_Process_FC_NoFault);
 
   InvParam_t invParam = { p, p };
-  invParam.next_odw = IPW_OPCODE
+  invParam.next_odw = IPW_OPCODE;
 
   /* We were running, so we should be dirty already. */
   assert(p->hdr.dirty);
