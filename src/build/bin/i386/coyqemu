@@ -1,0 +1,111 @@
+#!/bin/bash
+# Script to run qemu, optionally with a debugger.
+
+function usage() {
+    echo "Usage:"
+    echo "   coyqemu [-g] [-s gdb_script] mkimage-file"
+    exit 1
+}
+
+# run qemu in background so that it will not receive kbd ^C as INT
+function background_cmd() {
+  "$@"&
+}
+
+USE_GDB=0
+
+while [ $# -gt 0 ]
+do
+    case $1 in
+	-g)   USE_GDB=1;
+	      shift;;
+
+	-s)   GDB_SCRIPT=$2;
+	      shift; shift;;
+
+	--)   shift; break;;
+
+	-*)   usage;;
+
+	*)    # NOTE: NO SHIFT!
+	      break;
+    esac
+done
+
+# Remaining argument, if any, should be mkimage output file.
+
+if [ $# -ne 1 ]
+then
+    usage
+fi
+
+img=$1
+img_gz=/tmp/$$.mkimage.out.gz
+
+if [ "$COYOTOS_ROOT" = "" ]
+then
+  COYOTOS_ROOT=`echo $PWD| grep '/coyotos/src' |sed 's@/coyotos/src.*$@/coyotos@'`
+fi
+
+if [ "$COYOTOS_ROOT" = "" ]
+then
+  echo Cannot find COYOTOS_ROOT
+  exit 1
+fi
+
+if [ "${GRUBIMAGE}" = "" ]
+then
+    GRUBIMAGE=${COYOTOS_ROOT}/src/sys/arch/i386/test-image/grubdisk
+fi
+
+TMPGRUBIMAGE=/tmp/$$.grubdisk
+cp ${GRUBIMAGE} ${TMPGRUBIMAGE}
+
+
+KERNEL=${COYOTOS_ROOT}/src/sys/arch/i386/kernel/BUILD/coyotos
+
+if [ ! -r ${KERNEL} ]
+then
+  echo "Cannot find kernel image ${KERNEL}"
+  exit 1
+fi
+
+if [ ! -r ${img} ]
+then
+  echo "Cannot find mkimage output file"
+  exit 1
+fi
+
+strip ${KERNEL} -o /tmp/$$.coyotos
+mcopy -Do -i ${TMPGRUBIMAGE} /tmp/$$.coyotos ::coyotos
+rm /tmp/$$.coyotos
+
+gzip -c ${img} > ${img_gz}
+mcopy -Do -i ${TMPGRUBIMAGE} ${img_gz} ::mkimage.out.gz
+rm ${img_gz}
+
+sync
+
+if [ "${GDB_SCRIPT}" = "" ]
+then
+    GDB_SCRIPT=${COYOTOS_ROOT}/src/sys/arch/i386/scripts/coyotos.gdb
+fi
+
+if [ ${USE_GDB} -eq 1 ]
+then
+
+    background_cmd qemu -s -fda ${TMPGRUBIMAGE}
+    QEMU_PID=$!
+    #echo "QEMU_PID is ${QEMU_PID}"
+    sleep 1
+
+    xterm -e gdb -x ${GDB_SCRIPT} ${KERNEL}
+
+    kill -9 ${QEMU_PID}
+
+    rm -f ${SCRIPT}
+else
+    qemu -s -fda ${TMPGRUBIMAGE}
+fi
+
+rm -f ${TMPGRUBIMAGE}
