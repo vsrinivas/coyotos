@@ -157,7 +157,7 @@ proc_DeliverSoftNotices(Process *p)
   assert (p->state.faultCode == coyotos_Process_FC_NoFault);
 
   InvParam_t invParam = { p, p };
-  invParam.next_odw = (IPW_DW0 == IPW_ICW) ? (IPW_DW0 + 1) : IPW_DW0;
+  invParam.next_odw = IPW_OPCODE
 
   /* We were running, so we should be dirty already. */
   assert(p->hdr.dirty);
@@ -240,7 +240,7 @@ proc_handle_process_fault()
   /* Do it the hard way. Deliver this fault to the process keeper. */
   InvParam_t invParam = { p, 0 };
   invParam.iCap.cap = &p->state.handler;
-  invParam.next_odw = (IPW_DW0 == IPW_ICW) ? (IPW_DW0 + 1) : IPW_DW0;
+  invParam.next_odw = IPW_OPCODE;
 
   // Sending one cap. A null cap will go out in slot zero replacing
   // the usual reply cap.
@@ -317,7 +317,7 @@ proc_deliver_memory_fault(Process *p,
 
     InvParam_t invParam = { p, 0 };
     invParam.iCap.cap = handler;
-    invParam.next_odw = (IPW_DW0 == IPW_ICW) ? (IPW_DW0 + 1) : IPW_DW0;
+    invParam.next_odw = IPW_OPCODE;
 
     // Sending two caps. A null cap will go out in slot zero replacing
     // the usual reply cap.
@@ -897,9 +897,6 @@ proc_invoke_cap(void)
 	break;
       }
       
-      if (IPW_DW0 != IPW_ICW) 
-	set_pw(invParam.invokee, IPW_DW0, get_pw(p, IPW_DW0));
-
       /* Receiver in proper state. IPC will succeed unless there is a
        * payload transfer fault during string transfer.
        */
@@ -1091,15 +1088,15 @@ proc_invoke_cap(void)
       else
 	assert(invParam.invokee == 0);
 
-      if ((IPW_DW0 == IPW_ICW) && (IPW0_LDW(ipw0) < 1)) {
+      if (IPW0_LDW(ipw0) < 1) {
 	sched_commit_point();
 	InvErrorMessage(&invParam, RC_coyotos_Cap_RequestError);
       }
       else {
 	invParam.ipw0   = ipw0;
 	invParam.sndLen = get_pw(invParam.invoker, IPW_SNDLEN);
-	invParam.next_idw = (IPW_DW0 == IPW_ICW) ? (IPW_DW0 + 1) : IPW_DW0;
-	invParam.next_odw = (IPW_DW0 == IPW_ICW) ? (IPW_DW0 + 1) : IPW_DW0;
+	invParam.next_idw = IPW_OPCODE;
+	invParam.next_odw = IPW_OPCODE;
 
 	invParam.opCode = get_iparam32(&invParam);
 
