@@ -47,8 +47,9 @@ void cap_CapBits(InvParam_t *iParam)
 
       capability c;
       cap_init(&c);
-      cap_set(&c, iParam->iCap.cap);
-      cap_rewrite_deprepared(&c);
+      cap_set(&c, iParam->srcCap[1].cap);
+      if (cap_isPrepared(&c))
+	cap_rewrite_deprepared(&c);
 
       sched_commit_point();
 
