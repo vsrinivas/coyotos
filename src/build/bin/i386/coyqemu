@@ -40,7 +40,6 @@ then
 fi
 
 img=$1
-img_gz=/tmp/$$.mkimage.out.gz
 
 if [ "$COYOTOS_ROOT" = "" ]
 then
@@ -80,9 +79,7 @@ strip ${KERNEL} -o /tmp/$$.coyotos
 mcopy -Do -i ${TMPGRUBIMAGE} /tmp/$$.coyotos ::coyotos
 rm /tmp/$$.coyotos
 
-gzip -c ${img} > ${img_gz}
-mcopy -Do -i ${TMPGRUBIMAGE} ${img_gz} ::mkimage.out.gz
-rm ${img_gz}
+mcopy -Do -i ${TMPGRUBIMAGE} ${img} ::mkimage.out
 
 sync
 
