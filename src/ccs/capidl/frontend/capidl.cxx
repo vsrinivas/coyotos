@@ -285,7 +285,6 @@ prescan_includes(GCPtr<Path> dirPath)
 
 Path outputFileName;
 Path target(".");
-Path execDir;
 
 /* Option processing: */
 #define LOPT_ENCODINGS  257   /* Show positional encodings */
@@ -295,7 +294,6 @@ struct option longopts[] = {
   /* Options that have short-form equivalents: */
   { "architecture",         1,  0, 'a' },
   { "debug",                0,  0, 'd' },
-  { "execdir",              1,  0, 'X' },
   { "headers",              1,  0, 'h' },
   { "include",              1,  0, 'I' },
   { "index"  ,              1,  0, 'n' },
@@ -325,7 +323,7 @@ main(int argc, char *argv[])
   sherpa::appName = "capidl";
 
   while ((c = getopt_long(argc, argv, 
-			  "a:tshnD:X:A:dvl:o:I:" /* "x:" */,
+			  "a:tshnD:A:dvl:o:I:" /* "x:" */,
 			  longopts, 0
 		     )) != -1) {
 
@@ -336,10 +334,6 @@ main(int argc, char *argv[])
 
     case 'D':
       target = Path(optarg).canonical();
-      break;
-
-    case 'X':
-      execDir = Path(optarg).canonical();
       break;
 
     case 'l':
@@ -406,10 +400,11 @@ main(int argc, char *argv[])
 
   if (opterr) {
     fprintf(stderr,
-	    "Usage: capidl -a target-arch -D target-dir\n"
-	    "  [-v] [-d] [-nostdinc] [-Idir] [-Ddef] "
-	    "  [-o server-file.c] [-o server-header-name.h] [-n]\n"
-	    "  -l language idl_file\n");
+	    "Usage: capidl -a target-arch -D output-dir\n"
+	    "  [-c | -s | -t | --l output-language] "
+	    "  [-v] [-d] [-nostdinc] [-Idir] "
+	    "  [-o output-file [-n]\n"
+	    "  idl_files\n");
     exit(1);
   }
 
