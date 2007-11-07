@@ -57,9 +57,9 @@ targdir-clean:
 #endif
 #
 packages: | ccs-pkg
-	$(MAKE) interfaces
-	$(MAKE) libs
-	$(MAKE) install
+	$(MAKE) $(MAKERULES) interfaces
+	$(MAKE) $(MAKERULES) libs
+	$(MAKE) $(MAKERULES) install
 
 interfaces: | ccs-pkg
 
