@@ -48,6 +48,12 @@ void cap_CapBits(InvParam_t *iParam)
       capability c;
       cap_init(&c);
       cap_set(&c, iParam->srcCap[1].cap);
+
+      /* It is tempting to call cap_deprepare() here, but that would
+	 set the hasDiskCaps field of the target object unnecessarily.
+	 Since the result of this deprepare will be discarded, this
+	 deprepare doesn't "count", so call the internal deprepare
+	 routine instead. */
       if (cap_isPrepared(&c))
 	cap_rewrite_deprepared(&c);
 
