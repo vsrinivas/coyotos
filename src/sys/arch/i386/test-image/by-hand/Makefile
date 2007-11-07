@@ -26,12 +26,12 @@ include $(COYOTOS_SRC)/build/make/makevars.mk
 CFLAGS += -g
 
 MKIMAGE=$(COYOTOS_SRC)/ccs/mkimage/$(BUILDDIR)/mkimage
-KERNEL=../../kernel/$(BUILDDIR)/coyotos
 
-IMAGES=$(patsubst %.mki,$(BUILDDIR)/%.img.gz,$(filter-out SimpleProc.mki,$(wildcard *.mki)))
+COYQEMU=$(COYOTOS_SRC)/build/bin/i386/coyqemu
+
+IMAGES=$(patsubst %.mki,$(BUILDDIR)/%.img,$(filter-out SimpleProc.mki,$(wildcard *.mki)))
 INC=-I$(COYOTOS_SRC)/sys -I$(COYOTOS_SRC)/sys/idl/$(BUILDDIR)/h -IBUILD
 LINKOPTS=-Wl,-Ttext,0x1000 -Wl,-Tdata,0x3000
-QEMU=qemu
 
 include $(COYOTOS_SRC)/build/make/makerules.mk
 
@@ -45,9 +45,8 @@ install all: $(IMAGES)
 $(BUILDDIR)/SimpleProc.h: SimpleProc.mki | $(BUILDDIR)
 	$(MKIMAGE) -t i386 -H./$(BUILDDIR) -I. -L. $(patsubst %.mki,%,$<)
 
-$(BUILDDIR)/%.img.gz: %.mki $(BUILDDIR)/%.exe
-	$(MKIMAGE) -t i386 -I. -L$(BUILDDIR) -o $(patsubst %.gz,%,$@) $(patsubst $(BUILDDIR)/%.img.gz,%,$@)
-	gzip $(patsubst %.gz,%,$@)
+$(BUILDDIR)/%.img: %.mki $(BUILDDIR)/%.exe
+	$(MKIMAGE) -t i386 -I. -L$(BUILDDIR) -o $@ $(patsubst $(BUILDDIR)/%.img,%,$@)
 
 $(BUILDDIR)/%.exe: $(BUILDDIR)/%.o $(BUILDDIR)/SimpleProc.h
 	$(GCC) -g $(LINKOPTS) $(INC) -nostdlib -o $@ $<
@@ -57,10 +56,13 @@ $(BUILDDIR)/%.exe: $(BUILDDIR)/%-data.o $(BUILDDIR)/SimpleProc.h $(BUILDDIR)/do_
 
 ipc.mki: $(BUILDDIR)/openrcv.exe
 
-%.run: $(BUILDDIR)/%.img.gz
-	cp ../grubdisk .
-	mcopy -Do -i grubdisk $< ::mkimage.out.gz
-	mcopy -Do -i grubdisk $(KERNEL) ::
-	sh ./testme.sh $(patsubst %.run,%,$@)
+# This is complicated by the fact that the .gdb file is optional.  If it
+# doesn't exist, we substitute default.gdb
+%.run: $(BUILDDIR)/%.img
+	@gdb=$(patsubst %.run,%.gdb,$@); \
+	 [ -f $$gdb ] || gdb=default.gdb; \
+	 cmd="$(COYQEMU) -g -s $$gdb $<"; \
+	 echo $$cmd; \
+	 exec $$cmd
 
 $(BUILDDIR)/ipc.img: $(BUILDDIR)/openrcv.exe
