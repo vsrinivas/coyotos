@@ -24,7 +24,6 @@
 #include <string>
 #include <iomanip>
 
-#include <libsherpa/ifBinaryStream.hxx>
 #include <libsherpa/ByteString.hxx>
 #include <libcoyimage/ExecImage.hxx>
 
