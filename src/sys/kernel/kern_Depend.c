@@ -56,6 +56,9 @@ depend_hash(GPT *gpt)
  *
  * If the entries are mergable, merges the data from @p n into @p e
  * and returns true.
+ *
+ * In order to be mergable, the l2slotSpans must match, and the
+ * implied base PTE must be identical.
  */
 static inline bool
 depend_merge(DependEntry *e, DependEntry n)
@@ -65,18 +68,19 @@ depend_merge(DependEntry *e, DependEntry n)
     return false;
 
 #if HIERARCHICAL_MAP
-  /* to be mergable, the l2slotSpans must match, and the implied base PTE
-   * must be identical.
-   */
   if (e->l2slotSpan != n.l2slotSpan ||
       (e->basePTE - (e->slotBias << e->l2slotSpan)) !=
       (n.basePTE - (n.slotBias << n.l2slotSpan)))
     return false;
   
-  if (n.slotBias < e->slotBias)
+  /* We can merge them. Take min of the respective slotBias and
+   * basePTE fields. The correlation of the magnitudes is guaranteed
+   * by the slotBias and basePTE relations. */
+  if (n.slotBias < e->slotBias) {
+    assert(n.basePTE < e->basePTE);
     e->slotBias = n.slotBias;
-  if (n.basePTE < e->basePTE)
     e->basePTE = n.basePTE;
+  }
   e->slotMask |= n.slotMask;
 #else
 #error Only Hierarchical map is implemented.

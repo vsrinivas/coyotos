@@ -63,10 +63,10 @@
  * software translation schemes */
 #define HIERARCHICAL_MAP 1
 
-/** @brief Set to the number of bits needed to reference a particular PTE in
- * an arbitrary mapping table.
+/** @brief Set to the number of bits needed to index a particular PTE
+ * in an arbitrary mapping table.
  *
- * Only referenced in HIERARCHICAL_MAP is 1.
+ * Only referenced if HIERARCHICAL_MAP is 1.
  */
 #define HIERARCHICAL_MAP_MAX_PTE_BITS 10
 

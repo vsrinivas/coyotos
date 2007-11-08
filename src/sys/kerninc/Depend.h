@@ -56,10 +56,19 @@ struct DependEntry {
    *
    *   @p basePTE + (N - @p slotBias) @<@< l2slotSpan
    *
-   * Are implicated by this depend entry.
+   * Are implicated by this depend entry. That is: each slot in this
+   * GPT potentially defines 2^l2slotSpan PTEs.
    */
-  uint32_t   slotMask : NUM_GPT_SLOTS;
+  uint32_t   slotMask : NUM_GPT_SLOTS; /* which slots have been traversed */
+  /** slotbias always gives the index of the least bit that has been
+   * set in slotMask (to date -- that bit may subsequently have been
+   * cleared). When a new depend entry is created, it may be merged in
+   * depend_merge(), in which case slotBias and bastPTE will be
+   * reduced in lockstep at the time of the merge. */
   uint32_t   slotBias : GPT_SLOT_INDEX_BITS;
+  /** l2slotSpan value is always <= HIERARHICAL_MAP_MAX_PTE_BITS.
+   * Field could therefore be log2(HIERARHICAL_MAP_MAX_PTE_BITS) bits.
+   */
   uint32_t   l2slotSpan : 6;
   uint32_t   basePTE : HIERARCHICAL_MAP_MAX_PTE_BITS;
 #else
