@@ -39,8 +39,8 @@ static inline bool valid_param_block(Process *p)
 {
   /* Maximum stack-based parameter block is 87 bytes unless we are
      using the scatter/gather engine. */
-  return (vm_valid_uva(p, p->state.fixregs.ESP) &&
-	  vm_valid_uva(p, p->state.fixregs.ESP + sizeof(InvParameterBlock_t) - 1));
+  return (vm_valid_uva(p, p->state.regs.fix.ESP) &&
+	  vm_valid_uva(p, p->state.regs.fix.ESP + sizeof(InvParameterBlock_t) - 1));
 }
 
 /* TEMPORARY: */
@@ -50,7 +50,7 @@ static inline bool valid_param_block(Process *p)
 static inline uintptr_t 
 get_stack_pw(Process *p, size_t pw)
 {
-  return ((InvParameterBlock_t *) p->state.fixregs.ECX)->pw[pw];
+  return ((InvParameterBlock_t *) p->state.regs.fix.ECX)->pw[pw];
 }
 
 /** @brief Fetch input parameter word @p pw from the appropriate
@@ -60,13 +60,13 @@ get_pw(Process *p, size_t pw)
 {
   switch (pw) {
   case 0:
-    return p->state.fixregs.EAX;
+    return p->state.regs.fix.EAX;
   case 1:
-    return p->state.fixregs.EBX;
+    return p->state.regs.fix.EBX;
   case 2:
-    return p->state.fixregs.ESI;
+    return p->state.regs.fix.ESI;
   case 3:
-    return p->state.fixregs.EDI;
+    return p->state.regs.fix.EDI;
   case IPW_RCVBOUND:
   case IPW_RCVPTR:
   case IPW_RCVCAP+0:
@@ -86,11 +86,11 @@ get_rcv_pw(Process *p, size_t pw)
 {
   switch (pw) {
   case 0:
-    return p->state.fixregs.EAX;
+    return p->state.regs.fix.EAX;
   case IPW_RCVBOUND:
-    return p->state.softregs.rcvBound;
+    return p->state.regs.soft.rcvBound;
   case IPW_RCVPTR:
-    return p->state.softregs.rcvPtr;
+    return p->state.regs.soft.rcvPtr;
   case IPW_RCVCAP+0:
   case IPW_RCVCAP+1:
   case IPW_RCVCAP+2:
@@ -108,18 +108,18 @@ get_rcv_pw(Process *p, size_t pw)
 static inline void
 save_soft_parameters(Process *p)
 {
-  InvParameterBlock_t *pb = (InvParameterBlock_t *) p->state.fixregs.ECX;
+  InvParameterBlock_t *pb = (InvParameterBlock_t *) p->state.regs.fix.ECX;
 
-  p->state.softregs.epID = pb->epID;
+  p->state.regs.soft.epID = pb->epID;
 
-  p->state.softregs.rcvBound = pb->rcvBound;
-  p->state.softregs.rcvPtr = (uint32_t) pb->rcvPtr;
+  p->state.regs.soft.rcvBound = pb->rcvBound;
+  p->state.regs.soft.rcvPtr = (uint32_t) pb->rcvPtr;
 
   /* IPW_RCVCAP0..3 */
-  p->state.softregs.cdest[0] = pb->rcvCap[0];
-  p->state.softregs.cdest[1] = pb->rcvCap[1];
-  p->state.softregs.cdest[2] = pb->rcvCap[2];
-  p->state.softregs.cdest[3] = pb->rcvCap[3];
+  p->state.regs.soft.cdest[0] = pb->rcvCap[0];
+  p->state.regs.soft.cdest[1] = pb->rcvCap[1];
+  p->state.regs.soft.cdest[2] = pb->rcvCap[2];
+  p->state.regs.soft.cdest[3] = pb->rcvCap[3];
 }
 
 /** @brief Copy received soft params back to user.
@@ -129,16 +129,16 @@ save_soft_parameters(Process *p)
 static inline void
 copyout_soft_parameters(Process *p)
 {
-  InvParameterBlock_t *pb = (InvParameterBlock_t *) p->state.fixregs.ECX;
+  InvParameterBlock_t *pb = (InvParameterBlock_t *) p->state.regs.fix.ECX;
 
-  pb->pw[4] = p->state.softregs.pw4;
-  pb->pw[5] = p->state.softregs.pw5;
-  pb->pw[6] = p->state.softregs.pw6;
-  pb->pw[7] = p->state.softregs.pw7;
+  pb->pw[4] = p->state.regs.soft.pw4;
+  pb->pw[5] = p->state.regs.soft.pw5;
+  pb->pw[6] = p->state.regs.soft.pw6;
+  pb->pw[7] = p->state.regs.soft.pw7;
 
-  pb->u.pp = p->state.softregs.protPayload;
-  pb->sndLen = p->state.softregs.sndLen;
-  pb->epID = p->state.softregs.epID;
+  pb->u.pp = p->state.regs.soft.protPayload;
+  pb->sndLen = p->state.regs.soft.sndLen;
+  pb->epID = p->state.regs.soft.epID;
 }
 
 /** @brief Store input parameter word @p i to the appropriate
@@ -149,34 +149,34 @@ set_pw(Process *p, size_t pw, uintptr_t value)
 {
   switch (pw) {
   case 0:
-    p->state.fixregs.EAX = value;
+    p->state.regs.fix.EAX = value;
     return;
   case 1:
-    p->state.fixregs.EBX = value;
+    p->state.regs.fix.EBX = value;
     return;
   case 2:
-    p->state.fixregs.ESI = value;
+    p->state.regs.fix.ESI = value;
     return;
   case 3:
-    p->state.fixregs.EDI = value;
+    p->state.regs.fix.EDI = value;
     return;
   case 4:
-    p->state.softregs.pw4 = value;
+    p->state.regs.soft.pw4 = value;
     return;
   case 5:
-    p->state.softregs.pw5 = value;
+    p->state.regs.soft.pw5 = value;
     return;
   case 6:
-    p->state.softregs.pw6 = value;
+    p->state.regs.soft.pw6 = value;
     return;
   case 7:
-    p->state.softregs.pw7 = value;
+    p->state.regs.soft.pw7 = value;
     return;
   case OPW_PP:
-    p->state.softregs.protPayload = value;
+    p->state.regs.soft.protPayload = value;
     return;
   case OPW_SNDLEN:
-    p->state.softregs.sndLen = value;
+    p->state.regs.soft.sndLen = value;
     return;
   default:
     bug("Do not yet know how to store parameter word %d\n", pw);
@@ -187,14 +187,14 @@ set_pw(Process *p, size_t pw, uintptr_t value)
 static inline void 
 set_epID(Process *p, uint64_t epID)
 {
-  p->state.softregs.epID = epID;
+  p->state.regs.soft.epID = epID;
 }
 
 /** @brief Fetch receiver epID for matching. */
 static inline uint64_t 
 get_rcv_epID(Process *p)
 {
-  return p->state.softregs.epID;
+  return p->state.regs.soft.epID;
 }
 
 static inline uintptr_t
@@ -212,7 +212,7 @@ set_icw(Process *p, uintptr_t val)
 static inline caploc_t
 get_invoke_cap(Process *p)
 {
-  InvParameterBlock_t *pb = (InvParameterBlock_t *) p->state.fixregs.ECX;
+  InvParameterBlock_t *pb = (InvParameterBlock_t *) p->state.regs.fix.ECX;
 
   return pb->u.invCap;
 }
@@ -220,7 +220,7 @@ get_invoke_cap(Process *p)
 static inline caploc_t
 get_snd_cap(Process *p, size_t cap)
 {
-  InvParameterBlock_t *pb = (InvParameterBlock_t *) p->state.fixregs.ECX;
+  InvParameterBlock_t *pb = (InvParameterBlock_t *) p->state.regs.fix.ECX;
 
   return pb->sndCap[cap];
 }
@@ -228,6 +228,6 @@ get_snd_cap(Process *p, size_t cap)
 static inline caploc_t
 get_rcv_cap(Process *p, size_t cap)
 {
-  return p->state.softregs.cdest[cap];
+  return p->state.regs.soft.cdest[cap];
 }
 #endif /* I386_HAL_SYSCALL_H */

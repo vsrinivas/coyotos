@@ -37,17 +37,17 @@ void proc_arch_initregs(uva_t pc)
 
   Process *p = MY_CPU(current);
 
-  p->state.fixregs.EIP = pc;
-  p->state.fixregs.CS  = sel_AppCode;
-  p->state.fixregs.DS  = sel_AppData;
-  p->state.fixregs.SS  = sel_AppData;
-  p->state.fixregs.ES  = sel_AppData;
-  p->state.fixregs.FS  = sel_AppTLS;
-  p->state.fixregs.FS  = sel_AppTLS;
+  p->state.regs.fix.EIP = pc;
+  p->state.regs.fix.CS  = sel_AppCode;
+  p->state.regs.fix.DS  = sel_AppData;
+  p->state.regs.fix.SS  = sel_AppData;
+  p->state.regs.fix.ES  = sel_AppData;
+  p->state.regs.fix.FS  = sel_AppTLS;
+  p->state.regs.fix.FS  = sel_AppTLS;
 
   /* Interrupts should be enabled. IOPL should be zero. CPUID on if
      hardware supports it. */
-  p->state.fixregs.EFLAGS = EFLAGS_IF | (hwFlags & EFLAGS_ID);
+  p->state.regs.fix.EFLAGS = EFLAGS_IF | (hwFlags & EFLAGS_ID);
 }
 
 void 

@@ -113,17 +113,20 @@ typedef struct i386_softregs_t {
   uint64_t        epID;		/* RCV/OUT - saved on entry */
 } i386_softregs_t;
 
-#if (COYOTOS_TARGET == COYOTOS_TARGET_i386)
-typedef i386_fixregs_t   fixregs_t;
-typedef i386_floatregs_t floatregs_t;
+typedef struct i386_regset_t {
+  i386_fixregs_t   fix;
+  i386_floatregs_t fp;
+  i386_softregs_t  soft;
+} i386_regset_t;
 
-#define COYOTOS_TARGET_HAS_SOFTREGS 1
-typedef i386_softregs_t  softregs_t;
+#if (COYOTOS_TARGET == COYOTOS_TARGET_i386)
+typedef i386_regset_t  regset_t;
+typedef i386_fixregs_t fixregs_t;
 
 #ifdef __KERNEL__
-#define FIX_PC(fix)     (fix).EIP
-#define FIX_SP(fix)     (fix).ESP
-#define FIX_FLAGS(fix)  (fix).EFLAGS
+#define FIX_PC(regs)     (regs.fix).EIP
+#define FIX_SP(regs)     (regs.fix).ESP
+#define FIX_FLAGS(regs)  (regs.fix).EFLAGS
 
 /* To mask out the privileged bits of EFLAGS, we follow the same rules
    as user-mode POPF. The description of POPF reads:

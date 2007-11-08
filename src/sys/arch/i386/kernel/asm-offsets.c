@@ -63,8 +63,8 @@ struct hw_trap_save {
 int
 main(void)
 {
-  ASMDEF(PR_OFF_FIXREGS, Process, state.fixregs);
-  ASMDEF(PR_OFF_REENTRY_SP, Process, state.fixregs.ES);
+  ASMDEF(PR_OFF_FIXREGS, Process, state.regs.fix);
+  ASMDEF(PR_OFF_REENTRY_SP, Process, state.regs.fix.ES);
 
   ASMDEF(TRAP_OFF_ERRCODE, struct hw_trap_save, error);
   ASMDEF(TRAP_OFF_EIP, struct hw_trap_save, eip);
@@ -75,22 +75,22 @@ main(void)
 
   ASMDEF(PR_OFF_ISSUES, Process, issues);
 
-  ASMDEF(PR_OFF_CS, Process, state.fixregs.CS);
-  ASMDEF(PR_OFF_DS, Process, state.fixregs.DS);
-  ASMDEF(PR_OFF_ES, Process, state.fixregs.ES);
-  ASMDEF(PR_OFF_FS, Process, state.fixregs.FS);
-  ASMDEF(PR_OFF_GS, Process, state.fixregs.GS);
-  ASMDEF(PR_OFF_SS, Process, state.fixregs.SS);
-  ASMDEF(PR_OFF_EAX, Process, state.fixregs.EAX);
-  ASMDEF(PR_OFF_EBX, Process, state.fixregs.EBX);
-  ASMDEF(PR_OFF_ECX, Process, state.fixregs.ECX);
-  ASMDEF(PR_OFF_EDX, Process, state.fixregs.EDX);
-  ASMDEF(PR_OFF_ESI, Process, state.fixregs.ESI);
-  ASMDEF(PR_OFF_EDI, Process, state.fixregs.EDI);
-  ASMDEF(PR_OFF_EBP, Process, state.fixregs.EBP);
-  ASMDEF(PR_OFF_ESP, Process, state.fixregs.ESP);
-  ASMDEF(PR_OFF_EIP, Process, state.fixregs.EIP);
-  ASMDEF(PR_OFF_EFLAGS, Process, state.fixregs.EFLAGS);
+  ASMDEF(PR_OFF_CS, Process, state.regs.fix.CS);
+  ASMDEF(PR_OFF_DS, Process, state.regs.fix.DS);
+  ASMDEF(PR_OFF_ES, Process, state.regs.fix.ES);
+  ASMDEF(PR_OFF_FS, Process, state.regs.fix.FS);
+  ASMDEF(PR_OFF_GS, Process, state.regs.fix.GS);
+  ASMDEF(PR_OFF_SS, Process, state.regs.fix.SS);
+  ASMDEF(PR_OFF_EAX, Process, state.regs.fix.EAX);
+  ASMDEF(PR_OFF_EBX, Process, state.regs.fix.EBX);
+  ASMDEF(PR_OFF_ECX, Process, state.regs.fix.ECX);
+  ASMDEF(PR_OFF_EDX, Process, state.regs.fix.EDX);
+  ASMDEF(PR_OFF_ESI, Process, state.regs.fix.ESI);
+  ASMDEF(PR_OFF_EDI, Process, state.regs.fix.EDI);
+  ASMDEF(PR_OFF_EBP, Process, state.regs.fix.EBP);
+  ASMDEF(PR_OFF_ESP, Process, state.regs.fix.ESP);
+  ASMDEF(PR_OFF_EIP, Process, state.regs.fix.EIP);
+  ASMDEF(PR_OFF_EFLAGS, Process, state.regs.fix.EFLAGS);
 
   ASMDEF(PR_OFF_ONCPU, Process, onCPU);
   ASMDEF(CPU_OFF_STACKTOP, CPU, topOfStack);
