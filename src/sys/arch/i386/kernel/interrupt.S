@@ -123,7 +123,7 @@ DEFENTRY(0x1d)
 DEFENTRY(0x1e)
 DEFENTRY(0x1f)
 	
-vecno=NUM_TRAP
+vecno=TARGET_HAL_NUM_TRAP
 	
 	/* Set up the interrupt entry stubs. Note that in contrast
 	 * to the earlier EROS code we cannot do eager interrupt

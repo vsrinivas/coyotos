@@ -140,7 +140,12 @@ void cpu_construct(cpuid_t ndx);
  */
 void cpu_wake_vectors();
 
+#if MAX_NCPU > 1
 #define CUR_CPU (current_cpu())
+#else
+#define CUR_CPU (&cpu_vec[0])
+#endif
+
 #define MY_CPU(id) CUR_CPU->id
 
 /** @brief Return the CPU structure pointer (entry in cpu vector) of

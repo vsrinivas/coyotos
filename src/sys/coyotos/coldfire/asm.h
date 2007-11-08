@@ -1,5 +1,5 @@
-#ifndef __COLDFIRE_SYSCALL_H__
-#define __COLDFIRE_SYSCALL_H__
+#ifndef __COLDFIRE_ASM_H__
+#define __COLDFIRE_ASM_H__
 /*
  * Copyright (C) 2007, The EROS Group, LLC.
  *
@@ -20,10 +20,22 @@
  * Foundation, 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  */
 
-static inline bool invoke_capability(InvParameterBlock_t *ipb)
-{
-  // #error "Implement me!"
-  return false;
-}
+/** @file
+ * @brief Assembly directive macros.
+ */
+#define ALIGN 4
 
-#endif  /* __COLDFIRE_SYSCALL_H__ */
+#ifndef __ELF__
+#error Do not know how to compile for non-ELF target.
+#endif
+
+#define EXT(x)  x
+#define LEXT(x) x## :
+#define GEXT(x) .globl EXT(x); LEXT(x)
+
+#define	ALIGNEDVAR(x,al) .globl EXT(x); .align al; LEXT(x)
+#define	VAR(x)		ALIGNEDVAR(x,4)
+#define	ENTRY(x)	.globl EXT(x); .type EXT(x),@function; LEXT(x)
+#define	GDATA(x)	.globl EXT(x); .align ALIGN; LEXT(x)
+
+#endif /* __COLDFIRE_ASM_H__ */

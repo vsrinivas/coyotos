@@ -1,11 +1,17 @@
-#ifndef I386_HAL_ATOMIC_H
-#define I386_HAL_ATOMIC_H
+#ifndef COLDFIRE_HAL_ATOMIC_H
+#define COLDFIRE_HAL_ATOMIC_H
 
 /** @file
  *
  * @brief Structure declarations for atomic words and their
  * manipulators. 
-*/
+ *
+ * This version is nearly generic for any uniprocessor. The only
+ * machine-specific code here is the OR and AND instructions in the
+ * bit set operations. These are present only to prevent the optimizer
+ * from combining those operations in some way that causes them to
+ * require multiple instructions.
+ */
 
 typedef struct {
   uint32_t  w;
@@ -15,6 +21,7 @@ typedef struct {
   void * vp;
 } TARGET_HAL_ATOMICPTR_T;
 
+
 /** @brief Atomic compare and swap.
  *
  * If current word value is @p oldval, replace with @p
@@ -23,26 +30,26 @@ typedef struct {
 static inline uint32_t 
 compare_and_swap(TARGET_HAL_ATOMIC32_T *a, uint32_t oldval, uint32_t newval)
 {
-  uint32_t result;
+  volatile uint32_t *pVal = &a->w;
 
-  __asm__ __volatile__("lock cmpxchgl %1,%2"
-		       : "=a" (result)
-		       : "r" (newval), "m" (*((uint32_t *)(a))), "0" (oldval)
-		       : "memory", "cc");
+  uint32_t result = *pVal;
+  if (result == oldval)
+    *pVal = newval;
+
   return result;
-
 }
 
 /** @brief Atomic compare and swap for pointers */
 static inline void *
 compare_and_swap_ptr(TARGET_HAL_ATOMICPTR_T *a, void *oldval, void *newval)
 {
-  void * result;
+  void * volatile *pVal = &a->vp;
 
-  __asm__ __volatile__("lock cmpxchgl %1,%2"
-		       : "=a" (result)
-		       : "r" (newval), "m" (*((uintptr_t *)(a))), "0" (oldval)
-		       : "memory", "cc");
+  void *result = *pVal;
+
+  if (result == oldval)
+    *pVal = newval;
+
   return result;
 
 }
@@ -79,7 +86,7 @@ atomic_write_ptr(TARGET_HAL_ATOMICPTR_T *a, void *vp)
 static inline void
 atomic_set_bits(TARGET_HAL_ATOMIC32_T *a, uint32_t mask)
 { 
-  __asm__ __volatile__("lock orl %[mask],%[wval]"
+  __asm__ __volatile__("or.l %[mask],%[wval]"
 		       : [wval] "+m" (*((uint32_t *)(a)))
 		       : [mask] "r" (mask)
 		       : "cc");
@@ -89,11 +96,11 @@ atomic_set_bits(TARGET_HAL_ATOMIC32_T *a, uint32_t mask)
 static inline void 
 atomic_clear_bits(TARGET_HAL_ATOMIC32_T *a, uint32_t mask)
 {
-  __asm__ __volatile__("lock andl %[mask],%[wval]"
+  __asm__ __volatile__("and.l %[mask],%[wval]"
 		       : [wval] "+m" (*((uint32_t *)(a)))
 		       : [mask] "r" (~mask)
 		       : "cc");
 }
 
 
-#endif /* I386_HAL_ATOMIC_H */
+#endif /* COLDFIRE_HAL_ATOMIC_H */

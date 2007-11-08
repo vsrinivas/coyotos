@@ -21,13 +21,22 @@
  */
 
 #include <inttypes.h>
+
 #include <target-hal/atomic.h>
 
 /** @file
  *
  * @brief Structure declarations for atomic words and their
  * manipulators. 
-*/
+ *
+ * Note that the compare_and_swap variants must NOT be used to guard
+ * interactions between interrupt-level code and kernel-level
+ * code. This is important because some targets (e.g. Coldfire) do not
+ * provide any means to implement a truly atomic compare and swap
+ * efficiently. If we find that it becomes necessary to use compare
+ * and swap for this purpose we will need to disable interrupts on
+ * those platforms.
+ */
 
 typedef TARGET_HAL_ATOMIC32_T Atomic32_t;
 typedef TARGET_HAL_ATOMICPTR_T AtomicPtr_t;

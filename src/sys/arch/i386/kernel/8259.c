@@ -189,7 +189,7 @@ i8259_init()
   /* Set up the interrupt controller chip: */
 
   outb(0x11, IO_8259_ICU1);	/* ICW1: edge triggered */
-  outb(NUM_TRAP, IO_8259_ICU1+1); /* ICW2: interrupts from 0x20 to 0x27 */
+  outb(TARGET_HAL_NUM_TRAP, IO_8259_ICU1+1); /* ICW2: interrupts from 0x20 to 0x27 */
   outb(0x04, IO_8259_ICU1+1);	/* ICW3: cascade on IRQ2 */
   outb(0x01, IO_8259_ICU1+1);	/* ICW4: 8086 mode */
 
@@ -197,7 +197,7 @@ i8259_init()
   outb(i8259_irqMask & 0xffu, IO_8259_ICU1+1);
 
   outb(0x11, IO_8259_ICU2);	/* ICW1: edge triggered */
-  outb(NUM_TRAP+8, IO_8259_ICU2+1);	/* ICW2: interrupts from 0x28 to 0x2f */
+  outb(TARGET_HAL_NUM_TRAP+8, IO_8259_ICU2+1);	/* ICW2: interrupts from 0x28 to 0x2f */
   outb(0x02, IO_8259_ICU2+1);	/* ICW3: slave ID 2  */
   outb(0x01, IO_8259_ICU2+1);	/* ICW4: 8086 mode */
 

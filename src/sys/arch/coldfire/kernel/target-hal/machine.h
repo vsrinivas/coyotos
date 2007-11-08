@@ -1,5 +1,5 @@
-#ifndef I386_HAL_MACHINE_H
-#define I386_HAL_MACHINE_H
+#ifndef COLDFIRE_HAL_MACHINE_H
+#define COLDFIRE_HAL_MACHINE_H
 /*
  * Copyright (C) 2007, The EROS Group, LLC.
  *
@@ -45,4 +45,4 @@ extern void sysctl_powerdown(void) NORETURN;
 extern void sysctl_reboot(void) NORETURN;
 
 
-#endif /* I386_HAL_MACHINE_H */
+#endif /* COLDFIRE_HAL_MACHINE_H */

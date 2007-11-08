@@ -1,5 +1,5 @@
-#ifndef I386_HAL_MACHINE_H
-#define I386_HAL_MACHINE_H
+#ifndef COLDFIRE_HAL_KERNTYPES_H
+#define COLDFIRE_HAL_KERNTYPES_H
 /*
  * Copyright (C) 2007, The EROS Group, LLC.
  *
@@ -21,28 +21,33 @@
  */
 
 /** @file
- * @brief Miscellaneous machine-specific functions.
+ * @brief Definition of kernel datatypes.
  */
 
-#include <kerninc/ccs.h>
+#include <hal/config.h>
 
-/** @brief Halt the processor without rebooting.
+/** @brief Integral type sufficient to hold a kernel-implemented
+ * physical address.
+ */
+#define TARGET_HAL_KPA_T uint32_t
+
+/** @brief Integral type sufficient to hold a count of items that will
+ * fit in physical memory.
  *
- * Implementation is architecture specific.
+ * See PhysMem.h. We need this mainly because of IA-32.
  */
-extern void sysctl_halt(void) NORETURN;
+#define TARGET_HAL_KPSIZE_T uint32_t
 
-/** @brief Power down the system if possible.
- *
- * Implementation is architecture specific.
- */
-extern void sysctl_powerdown(void) NORETURN;
+/** @brief Integral type sufficient to hold a kernel virtual address. */
+#define TARGET_HAL_KVA_T uint32_t
 
-/** @brief Perform an orderly shutdown and reboot the system if possible.
- *
- * Implementation is architecture specific.
- */
-extern void sysctl_reboot(void) NORETURN;
+/** @brief Integral type sufficient to hold a user virtual address. */
+#define TARGET_HAL_UVA_T uint32_t
 
+#if TRANSMAP_ENTRIES_PER_CPU <= 32
+#define TARGET_TRANSMETA_T uint32_t
+#else
+#define TARGET_TRANSMETA_T uint64_t
+#endif
 
-#endif /* I386_HAL_MACHINE_H */
+#endif /* COLDFIRE_HAL_KERNTYPES_H */

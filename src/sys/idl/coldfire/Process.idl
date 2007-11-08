@@ -1,0 +1,68 @@
+package coyotos.coldfire;
+
+/// @brief Operations common to all Coyotos processes.
+///
+/// This is the architecture-independent process interface. For many
+/// operations of interest the architecture dependent interface should
+/// be consulted.
+abstract interface Process extends coyotos.Process {
+  /** @brief Architecture-specific fixed-point registers layout */
+  struct fixregs {
+    array<unsigned long,8> d;
+    array<unsigned long,8> a;
+    unsigned long          pc;
+    unsigned byte          ccr;
+  };
+
+  /** @brief Architecture-specific floating point registers.
+   */ 
+  struct floatregs {
+    unsigned long               fpcr;
+    unsigned long               fpsr;
+    unsigned long               fpiar;
+    array<unsigned long long,8> fp;
+  };
+
+  /** @brief Extended multiply-accumulate unit registers. */ 
+  struct emacregs {
+    unsigned long          macsr;
+    array<unsigned long,4> acc;
+    unsigned long          accExt01;
+    unsigned long          accExt23;
+    unsigned long          mask;
+  };
+
+  /** @brief Fetch the fixed-point register set. */
+  fixregs   getFixRegs();
+
+  /** @brief Set the fixed-point register set.
+   *
+   * The overwrite of the register set area occurs atomically.
+   *
+   * A RequestError exception will be raised if the size of the
+   * provided register structure does not match the size of the
+   * register set being updated. */
+  void      setFixRegs(fixregs regs);
+
+  /** @brief Fetch the floating-point register set. */
+  floatregs getFloatRegs();
+  /** @brief Set the floating-point register set.
+   *
+   * The overwrite of the register set area occurs atomically.
+   *
+   * A RequestError exception will be raised if the size of the
+   * provided register structure does not match the size of the
+   * register set being updated. */
+  void      setFloatRegs(floatregs regs);
+
+  /** @brief Fetch the EMAC unit register set. */
+  emacregs getEmacRegs();
+  /** @brief Set the EMAC unit register set.
+   *
+   * The overwrite of the register set area occurs atomically.
+   *
+   * A RequestError exception will be raised if the size of the
+   * provided register structure does not match the size of the
+   * register set being updated. */
+  void      setEmacRegs(emacregs regs);
+};

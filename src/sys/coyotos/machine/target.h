@@ -13,7 +13,7 @@
 #if defined(__i386__)
 #define COYOTOS_ARCH COYOTOS_ARCH_i386
 #endif
-#if defined(__coldfire__)
+#if defined(__mcoldfire__)
 #define COYOTOS_ARCH COYOTOS_ARCH_coldfire
 #endif
 #if defined(__arm__)

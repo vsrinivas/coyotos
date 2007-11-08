@@ -21,6 +21,7 @@
  */
 
 #include <hal/kerntypes.h>
+#include <hal/config.h>
 #include <target-hal/cpu.h>
 
 /** @file
@@ -37,6 +38,8 @@ struct CPU;
  */
 __hal cpuid_t cpu_getMyID();
 
+#if MAX_NCPU > 1
+
 /** @brief Return pointer to CPU structure corresponding to currently
  * executing CPU.
  *
@@ -46,6 +49,8 @@ __hal cpuid_t cpu_getMyID();
  * so we need not consider writes that might proceed through aliases.
  */
 __hal static inline struct CPU *current_cpu() __attribute__((always_inline, pure));
+
+#endif
 
 
 #endif /* HAL_VM_KMAP_H */

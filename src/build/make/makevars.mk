@@ -50,26 +50,23 @@ COYOTOS_ROOT=$(firstword $(subst /coyotos/$(COYOTOS_SRCDIR), ,$(PWD)))/coyotos
 
 endif
 
-#ifeq "$(word 2 $(subst -, ,$(COYOTOS_TARGET)))",""
-#$(error COYOTOS_TARGET should now take the form ARCHITECTURE-BSP)
-#endif
-
 ifndef COYOTOS_TARGET
-COYOTOS_TARGET=i386
+COYOTOS_TARGET=i386-pc
+endif
+
+ifeq "$(word 2,$(subst -, ,$(COYOTOS_TARGET)))" ""
+$(error COYOTOS_TARGET should now take the form ARCHITECTURE-BSP)
 endif
 
 COYOTOS_ARCH=$(word 1,$(subst -, ,$(COYOTOS_TARGET)))
 ifeq "$(COYOTOS_ARCH)" "coldfire"
 COYOTOS_GCC_ARCH=m68k
+COYOTOS_GCC_TARGET_OPTS=-m5407
 else
 COYOTOS_GCC_ARCH=$(COYOTOS_ARCH)
 endif
 
-ifeq "$(word 2,$(subst -, ,$(COYOTOS_TARGET)))" ""
-COYOTOS_BSP=default
-else
 COYOTOS_BSP=$(word 2,$(subst -, ,$(COYOTOS_TARGET)))
-endif
 
 ifndef COYOTOS_ROOT
 endif

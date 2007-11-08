@@ -262,7 +262,7 @@ proc_handle_process_fault()
     /* Bad handler capability. Process ceases to execute instructions. */
     printf("Process oid=0x%016llx faults w/ no keeper (PC=0x%08p fc=%d, fi=0x%llx)\n",
 	   p->hdr.oid, 
-	   FIX_PC(p->state.regs),
+	   FIX_PC(p->state.regs.fix),
 	   p->state.faultCode, p->state.faultInfo);
 
   p->state.runState = PRS_FAULTED;

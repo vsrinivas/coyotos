@@ -124,9 +124,9 @@ typedef i386_regset_t  regset_t;
 typedef i386_fixregs_t fixregs_t;
 
 #ifdef __KERNEL__
-#define FIX_PC(regs)     (regs.fix).EIP
-#define FIX_SP(regs)     (regs.fix).ESP
-#define FIX_FLAGS(regs)  (regs.fix).EFLAGS
+#define FIX_PC(fix)     (fix).EIP
+#define FIX_SP(fix)     (fix).ESP
+#define FIX_FLAGS(fix)  (fix).EFLAGS
 
 /* To mask out the privileged bits of EFLAGS, we follow the same rules
    as user-mode POPF. The description of POPF reads:

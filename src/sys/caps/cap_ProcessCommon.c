@@ -459,7 +459,7 @@ void cap_ProcessCommon(InvParam_t *iParam)
 	set_icw(iParam->invoker, icw);
       }
 
-      FIX_PC(p->state.regs) = newPC;
+      FIX_PC(p->state.regs.fix) = newPC;
       cap_set(&p->state.addrSpace, iParam->srcCap[1].cap);
 
       if (p != iParam->invoker) {

@@ -30,7 +30,7 @@
 #define NUM_IRQ      TARGET_HAL_NUM_IRQ
 
 /** @brief Number of hardware-defined trap (exception) entries */
-#define NUM_TRAP     TARGET_HAL_NUM_TRAP
+// #define NUM_TRAP     TARGET_HAL_NUM_TRAP
 
 /** @brief Number of hardware-defined vectors */
 #define NUM_VECTOR   TARGET_HAL_NUM_VECTOR

@@ -54,7 +54,7 @@ enum Vectors {
 
   /* Vectors in the range [0x14, 0x1f] are reserved. */
 
-  vec_IRQ0 		 = NUM_TRAP,
+  vec_IRQ0 		 = TARGET_HAL_NUM_TRAP,
 
   /* Following fall within the "interrupt space" portion of the
      numbering, but must not collide with hardware interrupts. */

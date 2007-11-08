@@ -28,7 +28,7 @@
 #include <kerninc/util.h>
 #include <coyotos/syscall.h>
 #include <hal/syscall.h>
-#include <idl/coyotos/i386/Process.h>
+#include <idl/coyotos/coldfire/Process.h>
 
 extern void cap_ProcessCommon(InvParam_t* iParam);
 
@@ -52,11 +52,11 @@ void cap_Process(InvParam_t *iParam)
 
       sched_commit_point();
 
-      InvTypeMessage(iParam, IKT_coyotos_i386_Process);
+      InvTypeMessage(iParam, IKT_coyotos_coldfire_Process);
       break;
     }
 
-  case OC_coyotos_i386_Process_getFixRegs:
+  case OC_coyotos_coldfire_Process_getFixRegs:
     {
       INV_REQUIRE_ARGS(iParam, 0);
 
@@ -103,7 +103,7 @@ void cap_Process(InvParam_t *iParam)
       iParam->opw[0] = InvResult(iParam, 0);
       break;
     }
-  case OC_coyotos_i386_Process_setFixRegs:
+  case OC_coyotos_coldfire_Process_setFixRegs:
     {
       INV_REQUIRE_ARGS_S(iParam, 0, sizeof(p->state.regs.fix));
 
@@ -130,7 +130,7 @@ void cap_Process(InvParam_t *iParam)
       iParam->opw[0] = InvResult(iParam, 0);
       break;
     }
-  case OC_coyotos_i386_Process_getFloatRegs:
+  case OC_coyotos_coldfire_Process_getFloatRegs:
     {
       INV_REQUIRE_ARGS(iParam, 0);
 
@@ -177,7 +177,7 @@ void cap_Process(InvParam_t *iParam)
 
       break;
     }
-  case OC_coyotos_i386_Process_setFloatRegs:
+  case OC_coyotos_coldfire_Process_setFloatRegs:
     {
       INV_REQUIRE_ARGS_S(iParam, 0, sizeof(p->state.regs.fp));
 
@@ -190,7 +190,7 @@ void cap_Process(InvParam_t *iParam)
       void *inVA = (void *) get_pw(iParam->invokee, IPW_SNDPTR);
 
       // Make a temporary copy in case we page fault in mid-transfer.
-      i386_floatregs_t tmp_fp;
+      coldfire_floatregs_t tmp_fp;
       memcpy(&tmp_fp, inVA, sizeof(tmp_fp));
 
       obhdr_dirty(&p->hdr);

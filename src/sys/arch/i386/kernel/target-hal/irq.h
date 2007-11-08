@@ -1,7 +1,7 @@
 #ifndef I386_HAL_IRQ_H
 #define I386_HAL_IRQ_H
 /*
- * Copyright (C) 2005, The EROS Group, LLC.
+ * Copyright (C) 2007, The EROS Group, LLC.
  *
  * This file is part of the Coyotos Operating System runtime library.
  *
