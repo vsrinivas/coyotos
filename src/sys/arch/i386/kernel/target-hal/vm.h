@@ -50,11 +50,6 @@ union IA32_PAE {
 };
 typedef union IA32_PAE IA32_PAE;
 
-typedef union {
-  kpa_t    pteMode;
-  IA32_PAE paeMode;
-} TARGET_MAPROOT_T;
-
 /* IA32 has two PTE sizes in 32-bit mode. What we need to do here is
    define PTE type having the property that the machine independent
    code can declare a pointer to it, and get some degree of pointer

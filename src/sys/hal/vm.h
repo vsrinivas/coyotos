@@ -78,18 +78,6 @@ void kmap_map(kva_t va, kpa_t pa, uint32_t perms);
  */
 typedef TARGET_HAL_PTE_T pte_t;
 
-/** @brief Type to use for the root page table declaration.
- *
- * On most architectures this will be kpa_t, because the master page
- * directory pointer register on most machines holds a simple physical
- * address. Architectures having split I+D page tables, such as the
- * 88000 family, may use a structure. Similarly, architectures having
- * an awkwardly small top-level table may use a structure.
- *
- * Target-specific HAL must define TARGET_MAPROOT_T.
- */
-typedef TARGET_MAPROOT_T maproot_t;
-
 void pte_invalidate(pte_t *);
 
 /** @brief Return the physical address of the CPU-private map for the
