@@ -34,13 +34,18 @@ typedef struct coldfire_fixregs_t {
 
 /** @brief Architecture-specific floating point and SIMD registers layout.
  */ 
-typedef union coldfire_floatregs_t {
+typedef struct coldfire_floatregs_t {
   uint32_t        someday;
 } coldfire_floatregs_t;
 
+typedef struct coldfire_regset_t {
+  coldfire_fixregs_t   fix;
+  coldfire_floatregs_t fp;
+} coldfire_regset_t;
+
 #if (COYOTOS_TARGET == COYOTOS_TARGET_coldfire)
-typedef coldfire_fixregs_t   fixregs_t;
-typedef coldfire_floatregs_t floatregs_t;
+typedef coldfire_regset_t  regset_t;
+typedef coldfire_fixregs_t fixregs_t;
 #endif
 
 #endif /* COLDFIRE_REGISTERS_H */

@@ -66,9 +66,9 @@ void cap_Process(InvParam_t *iParam)
       uintptr_t outVA = get_pw(iParam->invokee, IPW_RCVPTR);
       uintptr_t curVA = outVA;
 
-      uint8_t *regs_ptr = (uint8_t *) &p->state.fixregs;
+      uint8_t *regs_ptr = (uint8_t *) &p->state.regs.fix;
 
-      size_t nBytes = min(sizeof(p->state.fixregs), rbound);
+      size_t nBytes = min(sizeof(p->state.regs.fix), rbound);
       size_t progress = 0;
 
       while (progress < nBytes) {
@@ -105,7 +105,7 @@ void cap_Process(InvParam_t *iParam)
     }
   case OC_coyotos_i386_Process_setFixRegs:
     {
-      INV_REQUIRE_ARGS_S(iParam, 0, sizeof(p->state.fixregs));
+      INV_REQUIRE_ARGS_S(iParam, 0, sizeof(p->state.regs.fix));
 
       // Input string is known to fall within a valid address rangee
       // from earlier validation, but we need to be a little defensive
@@ -124,7 +124,7 @@ void cap_Process(InvParam_t *iParam)
 
       sched_commit_point();
 
-      memcpy(&p->state.fixregs, &tmp_fix, sizeof(p->state.fixregs));
+      memcpy(&p->state.regs.fix, &tmp_fix, sizeof(p->state.regs.fix));
 
       iParam->opw[0] = InvResult(iParam, 0);
       break;
@@ -139,9 +139,9 @@ void cap_Process(InvParam_t *iParam)
       uintptr_t outVA = get_pw(iParam->invokee, IPW_RCVPTR);
       uintptr_t curVA = outVA;
 
-      uint8_t *regs_ptr = (uint8_t *) &p->state.floatregs;
+      uint8_t *regs_ptr = (uint8_t *) &p->state.regs.fp;
 
-      size_t nBytes = min(sizeof(p->state.floatregs), rbound);
+      size_t nBytes = min(sizeof(p->state.regs.fp), rbound);
       size_t progress = 0;
 
       uintptr_t opw0 = InvResult(iParam, 0);
@@ -178,7 +178,7 @@ void cap_Process(InvParam_t *iParam)
     }
   case OC_coyotos_i386_Process_setFloatRegs:
     {
-      INV_REQUIRE_ARGS_S(iParam, 0, sizeof(p->state.floatregs));
+      INV_REQUIRE_ARGS_S(iParam, 0, sizeof(p->state.regs.fp));
 
       proc_ensure_exclusive(p);
       // Input string is known to fall within a valid address rangee
@@ -189,14 +189,14 @@ void cap_Process(InvParam_t *iParam)
       void *inVA = (void *) get_pw(iParam->invokee, IPW_SNDPTR);
 
       // Make a temporary copy in case we page fault in mid-transfer.
-      floatregs_t tmp_fp;
+      i386_floatregs_t tmp_fp;
       memcpy(&tmp_fp, inVA, sizeof(tmp_fp));
 
       obhdr_dirty(&p->hdr);
 
       sched_commit_point();
 
-      memcpy(&p->state.floatregs, &tmp_fp, sizeof(p->state.floatregs));
+      memcpy(&p->state.regs.fp, &tmp_fp, sizeof(p->state.regs.fp));
 
       iParam->opw[0] = InvResult(iParam, 0);
       break;

@@ -1,7 +1,7 @@
 #ifndef __OBSTORE_PROCESS_H__
 #define __OBSTORE_PROCESS_H__
 /*
- * Copyright (C) 2006, The EROS Group, LLC.
+ * Copyright (C) 2007, The EROS Group, LLC.
  *
  * This file is part of the Coyotos Operating System.
  *
@@ -95,12 +95,7 @@ typedef struct ExProcess {
   capability        capReg[NUM_CAP_REGS]; /* Type capage.rw */
 
 #if defined(COYOTOS_TARGET)
-  fixregs_t         fixregs;
-  floatregs_t       floatregs;
-#ifdef COYOTOS_TARGET_HAS_SOFTREGS
-  softregs_t        softregs;
-#endif /* COYOTOS_TARGET_HAS_SOFTREGS */
-
+  regset_t          regs;
 #endif /* defined(COYOTOS_TARGET) */
 } ExProcess;
 

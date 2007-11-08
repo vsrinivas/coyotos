@@ -149,7 +149,7 @@ dump_savearea(fixregs_t *regs)
 void
 proc_dump_current_savearea()
 {
-  dump_savearea(&MY_CPU(current)->state.fixregs);
+  dump_savearea(&MY_CPU(current)->state.regs.fix);
 }
 
 static void
@@ -165,7 +165,7 @@ vh_BptTrap(VectorInfo *vec, Process *inProc, fixregs_t *saveArea)
 {
   assert(inProc);
   
-  inProc->state.fixregs.EIP -= 0x1;	/* correct the PC! */
+  inProc->state.regs.fix.EIP -= 0x1;	/* correct the PC! */
 
   proc_TakeFault(inProc, coyotos_Process_FC_BreakPoint, 0);
 }
@@ -316,7 +316,7 @@ vh_UserFault(VectorInfo *vec, Process *inProc, fixregs_t *saveArea)
 	    && inProc->state.ioSpace.type == ct_IOPriv) {
 	  // No need to mask out old value, since we are writing all
 	  // 1's to the field:
-	  inProc->state.fixregs.EFLAGS |= EFLAGS_IOPL3;
+	  inProc->state.regs.fix.EFLAGS |= EFLAGS_IOPL3;
 	  return;
 	}
       }
@@ -359,13 +359,13 @@ vh_SysCall(VectorInfo *vec, Process *inProc, fixregs_t *saveArea)
   /* Load the PC and SP values from their source registers first.  This
    * matches the behavior of SYSCALL/SYSENTER.
    */
-  inProc->state.fixregs.ESP = inProc->state.fixregs.ECX;
-  inProc->state.fixregs.EIP = inProc->state.fixregs.EDX;
+  inProc->state.regs.fix.ESP = inProc->state.regs.fix.ECX;
+  inProc->state.regs.fix.EIP = inProc->state.regs.fix.EDX;
 
   proc_syscall();
 
   if (atomic_read(&inProc->issues) & pi_SysCallDone)
-    inProc->state.fixregs.EIP += 2;
+    inProc->state.regs.fix.EIP += 2;
 }
 
 /** @brief Handler function for unbound interrupts. */
@@ -757,7 +757,7 @@ proc_resume(Process *p)
   assert(p == MY_CPU(current));
 
   ia32_TSS *myTSS = &tss[CUR_CPU->id];
-  myTSS->esp0 = (uint32_t) &p->state.fixregs.ES;
+  myTSS->esp0 = (uint32_t) &p->state.regs.fix.ES;
 
   asm_proc_resume(p);
 }
