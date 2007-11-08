@@ -4,20 +4,20 @@
  * @brief Automatically generated architecture identification header.
  */
 
-#define COYOTOS_TARGET_i386       1
-#define COYOTOS_TARGET_coldfire   2
-#define COYOTOS_TARGET_arm        3
+#define COYOTOS_ARCH_i386       1
+#define COYOTOS_ARCH_coldfire   2
+#define COYOTOS_ARCH_arm        3
 
 #ifndef CROSS_COMPILING
 
 #if defined(__i386__)
-#define COYOTOS_TARGET COYOTOS_TARGET_i386
+#define COYOTOS_ARCH COYOTOS_ARCH_i386
 #endif
 #if defined(__coldfire__)
-#define COYOTOS_TARGET COYOTOS_TARGET_coldfire
+#define COYOTOS_ARCH COYOTOS_ARCH_coldfire
 #endif
 #if defined(__arm__)
-#define COYOTOS_TARGET COYOTOS_TARGET_arm
+#define COYOTOS_ARCH COYOTOS_ARCH_arm
 #endif
 
 #endif /* CROSS_COMPILING */

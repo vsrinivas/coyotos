@@ -113,7 +113,7 @@ typedef struct coldfire_UPCB {
   } fpu;
 } coldfire_UPCB;
 
-#if (COYOTOS_TARGET == COYOTOS_TARGET_coldfire)
+#if (COYOTOS_ARCH == COYOTOS_ARCH_coldfire)
 
 typedef coldfire_UPCB UPCB;
 

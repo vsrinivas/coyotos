@@ -50,8 +50,25 @@ COYOTOS_ROOT=$(firstword $(subst /coyotos/$(COYOTOS_SRCDIR), ,$(PWD)))/coyotos
 
 endif
 
+#ifeq "$(word 2 $(subst -, ,$(COYOTOS_TARGET)))",""
+#$(error COYOTOS_TARGET should now take the form ARCHITECTURE-BSP)
+#endif
+
 ifndef COYOTOS_TARGET
 COYOTOS_TARGET=i386
+endif
+
+COYOTOS_ARCH=$(word 1,$(subst -, ,$(COYOTOS_TARGET)))
+ifeq "$(COYOTOS_ARCH)" "coldfire"
+COYOTOS_GCC_ARCH=m68k
+else
+COYOTOS_GCC_ARCH=$(COYOTOS_ARCH)
+endif
+
+ifeq "$(word 2,$(subst -, ,$(COYOTOS_TARGET)))" ""
+COYOTOS_BSP=default
+else
+COYOTOS_BSP=$(word 2,$(subst -, ,$(COYOTOS_TARGET)))
 endif
 
 ifndef COYOTOS_ROOT
@@ -68,6 +85,8 @@ endif
 VMWARE=$(COYOTOS_ROOT)/src/build/bin/vmdbg
 export COYOTOS_ROOT
 export COYOTOS_TARGET
+export COYOTOS_ARCH
+export COYOTOS_BSP
 export COYOTOS_XENV
 export COYOTOS_CONFIG
 
@@ -144,7 +163,9 @@ COYOTOS_HD=/dev/null
 endif
 
 CAPIDL=$(COYOTOS_ROOT)/host/bin/capidl
+RUN_CAPIDL=$(CAPIDL) -a $(COYOTOS_ARCH)
 MKIMAGE=$(COYOTOS_ROOT)/host/bin/mkimage
+RUN_MKIMAGE=$(MKIMAGE) -t $(COYOTOS_ARCH)
 
 #
 # This is where the target environment makefile gets a chance to override
@@ -255,14 +276,14 @@ endif
 
 #FIX: Need to define DOMCRT0 and DOMCRTN and DOMLINKOPT
 # ifeq "$(COYOTOS_HOSTENV)" "linux-xenv-gcc3"
-# #DOMCRT0=$(COYOTOS_ROOT)/lib/gcc-lib/$(COYOTOS_TARGET)-unknown-eros/3.3/crt1.o
-# #DOMCRTN=$(COYOTOS_ROOT)/lib/gcc-lib/$(COYOTOS_TARGET)-unknown-eros/3.3/crtn.o
+# #DOMCRT0=$(COYOTOS_ROOT)/lib/gcc-lib/$(COYOTOS_ARCH)-unknown-eros/3.3/crt1.o
+# #DOMCRTN=$(COYOTOS_ROOT)/lib/gcc-lib/$(COYOTOS_ARCH)-unknown-eros/3.3/crtn.o
 # DOMLINKOPT=-N -static -Ttext 0x0 -L$(COYOTOS_ROOT)/usr/lib
 # DOMLINK=$(GCC)
 # else
 # DOMCRT0=$(COYOTOS_ROOT)/lib/crt0.o
 # DOMCRTN=$(COYOTOS_ROOT)/lib/crtn.o
-# DOMLINKOPT=-N -Ttext 0x0 -nostdlib -static -e _start -L$(COYOTOS_ROOT)/usr/lib -L$(COYOTOS_ROOT)/usr/lib/$(COYOTOS_TARGET)
+# DOMLINKOPT=-N -Ttext 0x0 -nostdlib -static -e _start -L$(COYOTOS_ROOT)/usr/lib -L$(COYOTOS_ROOT)/usr/lib/$(COYOTOS_ARCH)
 # DOMLINK=$(COYOTOS_LD)
 # endif
 

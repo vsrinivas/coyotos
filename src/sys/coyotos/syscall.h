@@ -156,7 +156,7 @@
 
 #define COYOTOS_MAX_SNDLEN 65536
 
-#if defined(COYOTOS_TARGET)
+#if defined(COYOTOS_ARCH)
 
 #if (COYOTOS_HW_ADDRESS_BITS == 32)
 #define COYOTOS_PARAMETER_WORDS 23
@@ -164,7 +164,7 @@
 #define COYOTOS_PARAMETER_WORDS 22
 #endif
 
-#endif /* defined(COYOTOS_TARGET) */
+#endif /* defined(COYOTOS_ARCH) */
 
 #if !defined(__ASSEMBLER__)
 

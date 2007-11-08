@@ -38,7 +38,7 @@ $(BUILDDIR)/testTextConsole: $(OBJECTS)
 
 # for test images
 $(BUILDDIR)/mkimage.out: $(TARGETS) testTextConsole.mki
-	$(MKIMAGE) -o $@ -t $(COYOTOS_TARGET) -I. -L$(BUILDDIR) testTextConsole
+	$(RUN_MKIMAGE) -o $@ -I. -L$(BUILDDIR) testTextConsole
 
 -include $(BUILDDIR)/.*.m
 

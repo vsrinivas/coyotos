@@ -29,14 +29,14 @@ CFLAGS+=-g -O2
 INC=-I. -I$(BUILDDIR) -I$(COYOTOS_ROOT)/usr/include
 SOURCES=$(wildcard *.c) $(wildcard *.S)
 C_OBJECTS=$(patsubst %.c,$(BUILDDIR)/%.o,$(wildcard c_*.c))
-C_OBJECTS+=$(patsubst %.c,$(BUILDDIR)/%.o,$(notdir $(wildcard $(COYOTOS_TARGET)/c_*.c)))
-C_OBJECTS+=$(patsubst %.S,$(BUILDDIR)/%.o,$(notdir $(wildcard $(COYOTOS_TARGET)/c_*.S)))
+C_OBJECTS+=$(patsubst %.c,$(BUILDDIR)/%.o,$(notdir $(wildcard $(COYOTOS_ARCH)/c_*.c)))
+C_OBJECTS+=$(patsubst %.S,$(BUILDDIR)/%.o,$(notdir $(wildcard $(COYOTOS_ARCH)/c_*.S)))
 SMALL_OBJECTS=$(patsubst %.c,$(BUILDDIR)/%.o,$(wildcard small_*.c))
-SMALL_OBJECTS+=$(patsubst %.c,$(BUILDDIR)/%.o,$(notdir $(wildcard $(COYOTOS_TARGET)/small_*.c)))
-SMALL_OBJECTS+=$(patsubst %.S,$(BUILDDIR)/%.o,$(notdir $(wildcard $(COYOTOS_TARGET)/small_*.S)))
+SMALL_OBJECTS+=$(patsubst %.c,$(BUILDDIR)/%.o,$(notdir $(wildcard $(COYOTOS_ARCH)/small_*.c)))
+SMALL_OBJECTS+=$(patsubst %.S,$(BUILDDIR)/%.o,$(notdir $(wildcard $(COYOTOS_ARCH)/small_*.S)))
 LARGE_OBJECTS=$(patsubst %.c,$(BUILDDIR)/%.o,$(wildcard large_*.c))
-LARGE_OBJECTS+=$(patsubst %.c,$(BUILDDIR)/%.o,$(notdir $(wildcard $(COYOTOS_TARGET)/large_*.c)))
-LARGE_OBJECTS+=$(patsubst %.S,$(BUILDDIR)/%.o,$(notdir $(wildcard $(COYOTOS_TARGET)/large_*.S)))
+LARGE_OBJECTS+=$(patsubst %.c,$(BUILDDIR)/%.o,$(notdir $(wildcard $(COYOTOS_ARCH)/large_*.c)))
+LARGE_OBJECTS+=$(patsubst %.S,$(BUILDDIR)/%.o,$(notdir $(wildcard $(COYOTOS_ARCH)/large_*.S)))
 COYOTOS_OBJECTS=$(patsubst %.c,$(BUILDDIR)/%.o,$(wildcard coyotos_*.c))
 COYOTOS_OBJECTS+=$(patsubst %.S,$(BUILDDIR)/%.o,$(wildcard coyotos_*.S))
 OBJECTS=$(C_OBJECTS)
@@ -56,7 +56,7 @@ TARGETS+=$(BUILDDIR)/libcoyotos.a
 TARGETS+=$(BUILDDIR)/libcoyotos-small.a 
 TARGETS+=$(BUILDDIR)/libcoyotos-large.a 
 
-VPATH=$(COYOTOS_TARGET):.
+VPATH=$(COYOTOS_ARCH):.
 
 ENUM_MODULES=coyotos.TargetInfo
 COMMON_MKI_DIR=$(COYOTOS_ROOT)/usr/include/mki
@@ -80,10 +80,10 @@ $(RUNTIME_H): $(BUILDDIR)/coyotos.RunTime.h $(GENRUNTIME)
 	bash $(GENRUNTIME) $(RUNTIME_H) $(BUILDDIR)/coyotos.RunTime.h
 
 $(BUILDDIR)/coyotos.RunTime.h: $(RUNTIME_MKI) $(MKIMAGE)
-	$(MKIMAGE) -t $(COYOTOS_TARGET) -H $(BUILDDIR) -I $(PKG_MKIDIR) coyotos.RunTime
+	$(RUN_MKIMAGE) -H $(BUILDDIR) -I $(PKG_MKIDIR) coyotos.RunTime
 
-$(BUILDDIR)/coyotos.TargetInfo.h: $(COMMON_MKI_DIR)/coyotos/TargetInfo/$(COYOTOS_TARGET).mki $(MKIMAGE)
-	$(MKIMAGE) -t $(COYOTOS_TARGET) -H $(BUILDDIR) coyotos.TargetInfo
+$(BUILDDIR)/coyotos.TargetInfo.h: $(COMMON_MKI_DIR)/coyotos/TargetInfo/$(COYOTOS_ARCH).mki $(MKIMAGE)
+	$(RUN_MKIMAGE) -H $(BUILDDIR) coyotos.TargetInfo
 
 $(OBJECTS): $(ENUM_HDRS) $(RUNTIME_H)
 

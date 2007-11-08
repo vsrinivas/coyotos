@@ -82,10 +82,10 @@ OBJECTS=\
 	$(BUILDDIR)/kern_malloc.o \
 	$(patsubst %.c,$(BUILDDIR)/%.o,$(notdir $(wildcard ../../../caps/cap*.c)))
 
-CAPIDL=$(COYOTOS_ROOT)/host/bin/capidl
+RUN_CAPIDL=$(COYOTOS_ROOT)/host/bin/capidl
 IDL_DIR=../../../idl
 IDL_FILES=$(wildcard $(IDL_DIR)/*.idl)
-IDL_FILES+=$(wildcard $(IDL_DIR)/$(COYOTOS_TARGET)/*.idl)
+IDL_FILES+=$(wildcard $(IDL_DIR)/$(COYOTOS_ARCH)/*.idl)
 #IDL_FILES=\
 #	$(IDL_DIR)/Cap.idl \
 #	$(IDL_DIR)/Process.idl \

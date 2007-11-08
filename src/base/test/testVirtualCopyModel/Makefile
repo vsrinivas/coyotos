@@ -38,7 +38,7 @@ $(BUILDDIR)/testLargeModel: $(OBJECTS)
 
 # for test images
 $(BUILDDIR)/mkimage.out: $(TARGETS) testVirtualCopyModel.mki
-	$(MKIMAGE) -o $@ -t $(COYOTOS_TARGET) -I. -L$(BUILDDIR) testVirtualCopyModel
+	$(RUN_MKIMAGE) -o $@ -I. -L$(BUILDDIR) testVirtualCopyModel
 
 -include $(BUILDDIR)/.*.m
 

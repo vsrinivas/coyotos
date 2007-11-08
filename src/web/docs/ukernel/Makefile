@@ -47,7 +47,7 @@ spec.ltx: $(IDL:.idl=.xmli) $(XSL_IDL_OSDOC)
 spec.html: $(IDL:.idl=.xmli) $(XSL_IDL_OSDOC)
 
 #%.xmli: $(SYSIDL)/%.idl $(XSL_IDL_OSDOC)
-#	$(CAPIDL) -I $(SYSIDL) -l xml $< | $(XSLTPROC) $(LATEX_XSLTPROC_OPTS) $(XSL_IDL_OPTS) --output $@ $(XSL_IDL_OSDOC) -
+#	$(RUN_CAPIDL) -I $(SYSIDL) -l xml $< | $(XSLTPROC) $(LATEX_XSLTPROC_OPTS) $(XSL_IDL_OPTS) --output $@ $(XSL_IDL_OSDOC) -
 
 %.xmli: %.idlxml $(XSL_IDL_OSDOC)
 	$(XSLTPROC) $(OSDOC_LATEX_OPTS) $(XSL_IDL_OPTS) --output $@ $(XSL_IDL_OSDOC) $<
@@ -56,7 +56,7 @@ spec.html: $(IDL:.idl=.xmli) $(XSL_IDL_OSDOC)
 # files (at least for the moment), but the new capidl command line
 # wants to be passed the interface name.
 %.idlxml: $(SYSIDL)/%.idl
-	$(CAPIDL) -I $(SYSIDL) -l xml $< > $@ || { a=$$?; rm -f $@; exit $$a;}
+	$(RUN_CAPIDL) -I $(SYSIDL) -l xml $< > $@ || { a=$$?; rm -f $@; exit $$a;}
 
 $(IDL:.idl=.idlxml): $(CAPIDL)
 

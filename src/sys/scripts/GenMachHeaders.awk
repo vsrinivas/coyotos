@@ -54,7 +54,7 @@ END {
     printf("\n") >> fn[i];
 
     for (a = 0; a < nArch; a++) {
-      printf("#if (COYOTOS_TARGET == COYOTOS_TARGET_%s) || defined(COYOTOS_UNIVERSAL_CROSS)\n", arch[a]) > fn[i];
+      printf("#if (COYOTOS_ARCH == COYOTOS_ARCH_%s) || defined(COYOTOS_UNIVERSAL_CROSS)\n", arch[a]) > fn[i];
 
       printf("#include \"../%s/%s\"\n", arch[a], fn[i]) > fn[i];
 

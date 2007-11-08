@@ -54,8 +54,8 @@ include $(COYOTOS_SRC)/build/make/makerules.mk
 # because it reduces consequential rebuild.
 
 $(IDLHDR): $(BUILDDIR)/h/idl/$(IDLDIR)/%.h : %.idl $(CAPIDL) | $(BUILDDIR) 
-	@$(CAPIDL) -I. -D $(BUILDDIR)/h/idl -l c-header-depend -o $(BUILDDIR)/.$(subst /,.,$<.m) $<
-	$(CAPIDL) -I. -D $(BUILDDIR)/h/idl -h -a i386 $<
+	@$(RUN_CAPIDL) -I. -D $(BUILDDIR)/h/idl -l c-header-depend -o $(BUILDDIR)/.$(subst /,.,$<.m) $<
+	$(RUN_CAPIDL) -I. -D $(BUILDDIR)/h/idl -h $<
 
 interfaces: $(IDL) $(IDLHDR)
 	for idlfile in $(IDL); do\
@@ -71,19 +71,19 @@ interfaces: $(IDL) $(IDLHDR)
 # The following are testing targets:
 idl-h: $(IDLHDR)
 
-idl-stubs: $(IDL)
-	$(CAPIDL) -I. -D $(BUILDDIR)/stub -l c-stub $(IDL)
+idl-stubs: $(IDL) $(CAPIDL)
+	$(RUN_CAPIDL) -I. -D $(BUILDDIR)/stub -l c-stub $(IDL)
 
 
 #$(BUILDDIR)/.stubs.m: $(IDL) | $(BUILDDIR)
-#	@$(CAPIDL) -I. -D $(BUILDDIR) -X $(BUILDDIR) -l c-stub-depend -A $(TARGETS) $(IDL) -o $@
+#	@$(RUN_CAPIDL) -I. -D $(BUILDDIR) -X $(BUILDDIR) -l c-stub-depend -A $(TARGETS) $(IDL) -o $@
 
 libidl-sys: $(OBJECTS)
 	$(COYOTOS_AR) crv $@ $(OBJECTS)
 	$(COYOTOS_RANLIB) $@
 
-$(BUILDDIR)/libidl-sys.a: $(IDL) $(IDLHDR)
-	$(CAPIDL) -I. -D $(BUILDDIR)/stub -l c-stub $(IDL)
+$(BUILDDIR)/libidl-sys.a: $(IDL) $(IDLHDR) $(CAPIDL)
+	$(RUN_CAPIDL) -I. -D $(BUILDDIR)/stub -l c-stub $(IDL)
 	$(MAKE) libidl-sys
 
 #libs: idl-stubs

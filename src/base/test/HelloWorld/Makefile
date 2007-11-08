@@ -38,7 +38,7 @@ $(BUILDDIR)/HelloWorld: $(OBJECTS)
 
 # for test images
 $(BUILDDIR)/mkimage.out: $(TARGETS) HelloWorld.mki
-	$(MKIMAGE) -o $@ -t $(COYOTOS_TARGET) -I. -L$(BUILDDIR) HelloWorld
+	$(RUN_MKIMAGE) -o $@ -I. -L$(BUILDDIR) HelloWorld
 
 -include $(BUILDDIR)/.*.m
 

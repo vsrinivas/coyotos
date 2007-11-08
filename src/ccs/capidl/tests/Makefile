@@ -27,9 +27,9 @@ include $(COYOTOS_SRC)/build/make/makerules.mk
 
 IDL_DIR=$(COYOTOS_SRC)/sys/idl
 IDL_FILES=$(wildcard $(IDL_DIR)/*.idl)
-IDL_FILES+=$(wildcard $(IDL_DIR)/$(COYOTOS_TARGET)/*.idl)
+IDL_FILES+=$(wildcard $(IDL_DIR)/$(COYOTOS_ARCH)/*.idl)
 IDL_FILES+=$(wildcard *.idl)
-CAPIDL=../$(BUILDDIR)/capidl
+RUN_CAPIDL=../$(BUILDDIR)/capidl
 
 OBJECTS=$(patsubst %.c,$(BUILDDIR)/%.o,$(wildcard *.c))
 
@@ -43,9 +43,9 @@ test: $(OBJECTS)
 idl: .FORCE
 	make -C ..
 	rm -rf idl
-	$(CAPIDL) -D ./BUILD/hdr/idl -a i386 -h -I $(IDL_DIR) $(IDL_FILES) || ( e=$$?; rm -f $@; exit $$e )
-	$(CAPIDL) -D ./BUILD/hdr/idl -a i386 -s -I $(IDL_DIR) $(IDL_FILES) || ( e=$$?; rm -f $@; exit $$e )
-	$(CAPIDL) -a i386 -t -oBUILD/template.c -I $(IDL_DIR) $(IDL_FILES) || ( e=$$?; rm -f $@; exit $$e )
+	$(RUN_CAPIDL) -D ./BUILD/hdr/idl -a i386 -h -I $(IDL_DIR) $(IDL_FILES) || ( e=$$?; rm -f $@; exit $$e )
+	$(RUN_CAPIDL) -D ./BUILD/hdr/idl -a i386 -s -I $(IDL_DIR) $(IDL_FILES) || ( e=$$?; rm -f $@; exit $$e )
+	$(RUN_CAPIDL) -a i386 -t -oBUILD/template.c -I $(IDL_DIR) $(IDL_FILES) || ( e=$$?; rm -f $@; exit $$e )
 
 $(OBJECTS): idl
 

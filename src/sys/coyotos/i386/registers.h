@@ -119,7 +119,7 @@ typedef struct i386_regset_t {
   i386_softregs_t  soft;
 } i386_regset_t;
 
-#if (COYOTOS_TARGET == COYOTOS_TARGET_i386)
+#if (COYOTOS_ARCH == COYOTOS_ARCH_i386)
 typedef i386_regset_t  regset_t;
 typedef i386_fixregs_t fixregs_t;
 
@@ -162,6 +162,6 @@ typedef i386_fixregs_t fixregs_t;
 #define USER_FLAG_MASK  ~0x00003200u
 #endif /* __KERNEL__ */
 
-#endif /* COYOTOS_TARGET == COYOTOS_TARGET_i386 */
+#endif /* COYOTOS_ARCH == COYOTOS_ARCH_i386 */
 
 #endif /* I386_REGISTERS_H */

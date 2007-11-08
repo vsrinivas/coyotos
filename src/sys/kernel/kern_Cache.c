@@ -948,9 +948,9 @@ cache_preload_image(const char *name, kpa_t base, size_t size)
     fatal("%s: bad version (%d, expected %d)\n", name, 
 	  hdr.version, 1);
 
-  if (hdr.target != COYOTOS_TARGET)
+  if (hdr.target != COYOTOS_ARCH)
     fatal("%s: bad target arch (%d, expected %d)", name,
-	  hdr.target, COYOTOS_TARGET);
+	  hdr.target, COYOTOS_ARCH);
 
   if (hdr.pgSize != COYOTOS_PAGE_SIZE)
     fatal("%s: bad page size (0x%lx, expected 0x%lx)\n", name,

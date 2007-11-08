@@ -38,7 +38,7 @@ $(BUILDDIR)/testLargeModel: $(OBJECTS)
 
 # for test images
 $(BUILDDIR)/mkimage.out: $(TARGETS) testElfModel.mki
-	$(MKIMAGE) -o $@ -t $(COYOTOS_TARGET) -I. -L$(BUILDDIR) testElfModel
+	$(RUN_MKIMAGE) -o $@ -I. -L$(BUILDDIR) testElfModel
 
 -include $(BUILDDIR)/.*.m
 

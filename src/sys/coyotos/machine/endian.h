@@ -6,15 +6,15 @@
 
 #include "target.h"
 
-#if (COYOTOS_TARGET == COYOTOS_TARGET_i386) || defined(COYOTOS_UNIVERSAL_CROSS)
+#if (COYOTOS_ARCH == COYOTOS_ARCH_i386) || defined(COYOTOS_UNIVERSAL_CROSS)
 #include "../i386/endian.h"
 #endif
 
-#if (COYOTOS_TARGET == COYOTOS_TARGET_coldfire) || defined(COYOTOS_UNIVERSAL_CROSS)
+#if (COYOTOS_ARCH == COYOTOS_ARCH_coldfire) || defined(COYOTOS_UNIVERSAL_CROSS)
 #include "../coldfire/endian.h"
 #endif
 
-#if (COYOTOS_TARGET == COYOTOS_TARGET_arm) || defined(COYOTOS_UNIVERSAL_CROSS)
+#if (COYOTOS_ARCH == COYOTOS_ARCH_arm) || defined(COYOTOS_UNIVERSAL_CROSS)
 #include "../arm/endian.h"
 #endif
 

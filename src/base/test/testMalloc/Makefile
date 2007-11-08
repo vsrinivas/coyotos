@@ -38,7 +38,7 @@ $(BUILDDIR)/testMalloc: $(OBJECTS)
 
 # for test images
 $(BUILDDIR)/mkimage.out: $(TARGETS) testMalloc.mki
-	$(MKIMAGE) -o $@ -t $(COYOTOS_TARGET) -I. -L$(BUILDDIR) testMalloc
+	$(RUN_MKIMAGE) -o $@ -I. -L$(BUILDDIR) testMalloc
 
 -include $(BUILDDIR)/.*.m
 

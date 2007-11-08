@@ -94,9 +94,9 @@ typedef struct ExProcess {
   /** @brief Capability registers page capability. */
   capability        capReg[NUM_CAP_REGS]; /* Type capage.rw */
 
-#if defined(COYOTOS_TARGET)
+#if defined(COYOTOS_ARCH)
   regset_t          regs;
-#endif /* defined(COYOTOS_TARGET) */
+#endif /* defined(COYOTOS_ARCH) */
 } ExProcess;
 
 #define OBSTORE_EXPROCESS_COMMON_SIZE \

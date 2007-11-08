@@ -38,7 +38,7 @@ INTERFACES=coyotos.driver.TextConsole
 IF_IDL=$(patsubst %,$(IDL_DIR)/%.idl,$(subst .,/,$(INTERFACES)))
 IF_HDRS=$(patsubst %,$(BUILDDIR)/idl/%.server.h,$(subst .,/,$(INTERFACES)))
 
-ENUM_MKI=coyotos.TargetInfo.$(COYOTOS_TARGET) coyotos.driver.TextConsole
+ENUM_MKI=coyotos.TargetInfo.$(COYOTOS_ARCH) coyotos.driver.TextConsole
 ENUM_MKI_SRC=$(patsubst %,$(MKI_DIR)/%.mki,$(subst .,/,$(ENUM_MKI)))
 ENUM_HDRS=$(patsubst %,$(BUILDDIR)/%.h,$(ENUM_MKI))
 
@@ -54,10 +54,10 @@ echo:
 
 # To generate enum headers from MKI files:
 $(ENUM_HDRS): $(ENUM_MKI_SRC) $(MKIMAGE) | $(BUILDDIR)
-	$(MKIMAGE) -t $(COYOTOS_TARGET) -H $(BUILDDIR) -I $(MKI_DIR) $(ENUM_MKI)
+	$(RUN_MKIMAGE) -H $(BUILDDIR) -I $(MKI_DIR) $(ENUM_MKI)
 
 $(IF_HDRS): $(IF_IDL) $(CAPIDL)
-	$(CAPIDL) -D $(BUILDDIR)/idl -a $(COYOTOS_TARGET) -s -I $(IDL_DIR) $(IF_IDL)
+	$(RUN_CAPIDL) -D $(BUILDDIR)/idl -s -I $(IDL_DIR) $(IF_IDL)
 
 check: $(ENUM_HDRS) $(IF_HDRS)
 
@@ -72,7 +72,7 @@ install: all
 $(BUILDDIR)/TextConsole: $(OBJECTS)
 	$(GCC) -small-space $(GPLUSFLAGS) $(OBJECTS) $(LIBS) $(STDLIBDIRS) -o $@
 
-$(BUILDDIR)/mkimage.out: $(TARGETS) $(ENUM_MKI_SRC)
-	$(MKIMAGE) -o $@ -t $(COYOTOS_TARGET) -I$(MKI_DIR) -L$(BUILDDIR) coyotos.driver.TextConsole
+$(BUILDDIR)/mkimage.out: $(TARGETS) $(ENUM_MKI_SRC) $(MKIMAGE)
+	$(RUN_MKIMAGE) -o $@ -I$(MKI_DIR) -L$(BUILDDIR) coyotos.driver.TextConsole
 
 -include $(BUILDDIR)/.*.m

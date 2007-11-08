@@ -1,5 +1,5 @@
 #
-# Copyright (C) 2005, The EROS Group, LLC.
+# Copyright (C) 2007, The EROS Group, LLC.
 #
 # This file is part of the Coyotos Operating System.
 #
@@ -18,7 +18,7 @@
 # Foundation, 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 #
 
-CROSS_PREFIX=$(COYOTOS_TARGET)-unknown-coyotos-
+CROSS_PREFIX=$(COYOTOS_GCC_ARCH)-unknown-coyotos-
 
 COYOTOS_GCC=$(COYOTOS_XENV)/host/bin/$(CROSS_PREFIX)gcc
 COYOTOS_GPLUS=$(COYOTOS_XENV)/host/bin/$(CROSS_PREFIX)g++
@@ -28,7 +28,7 @@ COYOTOS_SIZE=$(COYOTOS_XENV)/host/bin/$(CROSS_PREFIX)size
 COYOTOS_OBJDUMP=$(COYOTOS_XENV)/host/bin/$(CROSS_PREFIX)objdump
 COYOTOS_RANLIB=$(COYOTOS_XENV)/host/bin/$(CROSS_PREFIX)ranlib
 
-COYOTOS_CPP=/lib/cpp -undef -nostdinc -D$(COYOTOS_TARGET)
+COYOTOS_CPP=/lib/cpp -undef -nostdinc -D$(COYOTOS_ARCH)
 COYOTOS_GCC_OPTIM=-finline-limit=3000 -fno-strict-aliasing
 COYOTOS_GCC_KERNEL_ALIGN=-falign-functions=4
 

@@ -53,7 +53,7 @@ END {
     printf("\n") >> fn[i];
 
     for (a = 0; a < nArch; a++) {
-      printf("#define COYOTOS_TARGET_%-10s %d\n", arch[a], val[a]) > fn[i];
+      printf("#define COYOTOS_ARCH_%-10s %d\n", arch[a], val[a]) > fn[i];
     }
     printf("\n") >> fn[i];
 
@@ -64,7 +64,7 @@ END {
       print "  Target " arch[a];
 
       printf("#if defined(%s)\n", test[a]) > fn[i];
-      printf("#define COYOTOS_TARGET COYOTOS_TARGET_%s\n", arch[a]) > fn[i];
+      printf("#define COYOTOS_ARCH COYOTOS_ARCH_%s\n", arch[a]) > fn[i];
       printf("#endif\n") > fn[i];
     }
 

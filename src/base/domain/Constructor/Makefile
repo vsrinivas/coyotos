@@ -28,8 +28,8 @@ INC=-I. -I$(COYOTOS_SRC)/../usr/include -I$(BUILDDIR) -I../../../sys
 SOURCES=$(wildcard *.c)
 OBJECTS=$(patsubst %.c,$(BUILDDIR)/%.o,$(wildcard *.c))
 PROTO_OBJECTS=\
-    $(patsubst $(COYOTOS_TARGET)/%.S,$(BUILDDIR)/%.o,$(wildcard $(COYOTOS_TARGET)/*.S)) \
-    $(patsubst $(COYOTOS_TARGET)/%.c,$(BUILDDIR)/%.o,$(wildcard $(COYOTOS_TARGET)/*.c))
+    $(patsubst $(COYOTOS_ARCH)/%.S,$(BUILDDIR)/%.o,$(wildcard $(COYOTOS_ARCH)/*.S)) \
+    $(patsubst $(COYOTOS_ARCH)/%.c,$(BUILDDIR)/%.o,$(wildcard $(COYOTOS_ARCH)/*.c))
 TARGETS=$(BUILDDIR)/Constructor $(BUILDDIR)/ProtoSpace
 
 include $(COYOTOS_SRC)/build/make/makerules.mk
@@ -60,11 +60,11 @@ COMMON_MKI_DIR=$(COYOTOS_ROOT)/usr/include/mki
 ENUM_HDRS=$(ENUM_MODULES:%=$(BUILDDIR)/%.h)
 
 $(BUILDDIR)/coyotos.Constructor.h: $(BASE_MKI_DIR)/coyotos/Constructor.mki $(MKIMAGE)
-	$(MKIMAGE) -t $(COYOTOS_TARGET) -H $(BUILDDIR) -I $(BASE_MKI_DIR) -I $(COMMON_MKI_DIR) coyotos.Constructor
+	$(RUN_MKIMAGE) -H $(BUILDDIR) -I $(BASE_MKI_DIR) -I $(COMMON_MKI_DIR) coyotos.Constructor
 
 $(BUILDDIR)/generated-idl: $(IDL_FILES) $(SERVER_IDL_FILES) $(CAPIDL) Makefile
 	touch $@
-	$(CAPIDL) -D $(BUILDDIR)/idl -a $(COYOTOS_TARGET) -s -I $(BASE_IDL_DIR) -I $(SYS_IDL_DIR) $(SERVER_IDL_FILES) || (e=$$?; rm -f $@; exit $$e)
+	$(RUN_CAPIDL) -D $(BUILDDIR)/idl -s -I $(BASE_IDL_DIR) -I $(SYS_IDL_DIR) $(SERVER_IDL_FILES) || (e=$$?; rm -f $@; exit $$e)
 
 $(IDL_HEADERS): $(BUILDDIR)/generated-idl
 	@true
@@ -79,11 +79,11 @@ install: all
 	$(INSTALL) -d $(COYOTOS_ROOT)/usr/domain/coyotos
 	$(INSTALL) -m 0755 $(TARGETS) $(COYOTOS_ROOT)/usr/domain/coyotos
 
-$(BUILDDIR)/%.o: $(COYOTOS_TARGET)/%.S $(MAKE_BUILDDIR)
+$(BUILDDIR)/%.o: $(COYOTOS_ARCH)/%.S $(MAKE_BUILDDIR)
 	$(ASM_DEP)
 	$(ASM_BUILD)
 
-$(BUILDDIR)/%.o: $(COYOTOS_TARGET)/%.c $(MAKE_BUILDDIR)
+$(BUILDDIR)/%.o: $(COYOTOS_ARCH)/%.c $(MAKE_BUILDDIR)
 	$(C_DEP)
 	$(C_BUILD)
 
@@ -94,8 +94,8 @@ $(BUILDDIR)/ProtoSpace: $(PROTO_OBJECTS)
 	$(LD) -Ttext 0x0 -o $@ $(PROTO_OBJECTS)
 
 # for test images
-$(BUILDDIR)/mkimage.out: install $(TARGETS) $(BASE_MKI_DIR)/coyotos/Constructor.mki
-	$(MKIMAGE) -o $@ -t $(COYOTOS_TARGET) -I $(BASE_MKI_DIR) coyotos.Constructor
+$(BUILDDIR)/mkimage.out: install $(TARGETS) $(BASE_MKI_DIR)/coyotos/Constructor.mki $(MKIMAGE)
+	$(RUN_MKIMAGE) -o $@ -I $(BASE_MKI_DIR) coyotos.Constructor
 
 -include $(BUILDDIR)/.*.m
 

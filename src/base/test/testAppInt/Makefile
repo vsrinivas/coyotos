@@ -52,8 +52,8 @@ NORMAL_IDL_FILES=\
 
 $(BUILDDIR)/generated-idl: $(IDL_FILES) $(SERVER_IDL_FILES) $(CAPIDL) Makefile
 	touch $@
-	$(CAPIDL) -D $(BUILDDIR)/idl -a $(COYOTOS_TARGET) -s -I $(IDL_DIR) $(SERVER_IDL_FILES) || (e=$$?; rm -f $@; exit $$e)
-	$(CAPIDL) -D $(BUILDDIR)/idl -a $(COYOTOS_TARGET) -I $(IDL_DIR) $(NORMAL_IDL_FILES) || (e=$$?; rm -f $@; exit $$e)
+	$(RUN_CAPIDL) -D $(BUILDDIR)/idl -s -I $(IDL_DIR) $(SERVER_IDL_FILES) || (e=$$?; rm -f $@; exit $$e)
+	$(RUN_CAPIDL) -D $(BUILDDIR)/idl -I $(IDL_DIR) $(NORMAL_IDL_FILES) || (e=$$?; rm -f $@; exit $$e)
 
 $(IDL_HEADERS): $(BUILDDIR)/generated-idl
 	@true
@@ -63,7 +63,7 @@ COMMON_MKI_DIR=$(COYOTOS_ROOT)/usr/include/mki
 ENUM_HDRS=$(ENUM_MODULES:%=$(BUILDDIR)/%.h)
 
 $(BUILDDIR)/testAppInt.h: testAppInt.mki $(MKIMAGE)
-	$(MKIMAGE) -t $(COYOTOS_TARGET) -H $(BUILDDIR) -I . -I $(COMMON_MKI_DIR) testAppInt coyotos.TargetInfo
+	$(RUN_MKIMAGE) -H $(BUILDDIR) -I . -I $(COMMON_MKI_DIR) testAppInt coyotos.TargetInfo
 
 $(OBJECTS): $(BUILDDIR)/generated-idl $(ENUM_HDRS)
 
@@ -76,8 +76,8 @@ $(BUILDDIR)/testProg: $(TESTPROG_OBJECTS)
 	$(GCC) -small-space $(GPLUSFLAGS) $(TESTPROG_OBJECTS) $(LIBS) $(STDLIBDIRS) -o $@
 
 # for test images
-$(BUILDDIR)/mkimage.out: $(TARGETS) testAppInt.mki
-	$(MKIMAGE) -o $@ -t $(COYOTOS_TARGET) -I. -L$(BUILDDIR) testAppInt
+$(BUILDDIR)/mkimage.out: $(TARGETS) testAppInt.mki $(MKIMAGE)
+	$(RUN_MKIMAGE) -o $@ -I. -L$(BUILDDIR) testAppInt
 
 -include $(BUILDDIR)/.*.m
 

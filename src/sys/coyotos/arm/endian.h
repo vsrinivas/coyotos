@@ -22,7 +22,7 @@
 
 #define BYTE_ORDER_ARM    LITTLE_ENDIAN
 
-#if (COYOTOS_TARGET == COYOTOS_TARGET_arm)
+#if (COYOTOS_ARCH == COYOTOS_ARCH_arm)
 #define BYTE_ORDER        BYTE_ORDER_ARM
 #endif
 

@@ -55,14 +55,14 @@ COMMON_MKI_DIR=$(COYOTOS_ROOT)/usr/include/mki
 ENUM_HDRS=$(ENUM_MODULES:%=$(BUILDDIR)/%.h)
 
 $(BUILDDIR)/coyotos.SpaceBank.h: $(BASE_MKI_DIR)/coyotos/SpaceBank.mki $(MKIMAGE)
-	$(MKIMAGE) -t $(COYOTOS_TARGET) -H $(BUILDDIR) -I $(BASE_MKI_DIR) -I $(COMMON_MKI_DIR) coyotos.SpaceBank
+	$(RUN_MKIMAGE) -H $(BUILDDIR) -I $(BASE_MKI_DIR) -I $(COMMON_MKI_DIR) coyotos.SpaceBank
 
-$(BUILDDIR)/coyotos.TargetInfo.h: $(COMMON_MKI_DIR)/coyotos/TargetInfo/$(COYOTOS_TARGET).mki $(MKIMAGE)
-	$(MKIMAGE) -t $(COYOTOS_TARGET) -H $(BUILDDIR) -I $(BASE_MKI_DIR) coyotos.TargetInfo
+$(BUILDDIR)/coyotos.TargetInfo.h: $(COMMON_MKI_DIR)/coyotos/TargetInfo/$(COYOTOS_ARCH).mki $(MKIMAGE)
+	$(RUN_MKIMAGE) -H $(BUILDDIR) -I $(BASE_MKI_DIR) coyotos.TargetInfo
 
 $(BUILDDIR)/generated-idl: $(IDL_FILES) $(SERVER_IDL_FILES) $(CAPIDL) Makefile
 	touch $@
-	$(CAPIDL) -D $(BUILDDIR)/idl -a $(COYOTOS_TARGET) -s -I $(BASE_IDL_DIR) -I $(SYS_IDL_DIR) $(SERVER_IDL_FILES) || (e=$$?; rm -f $@; exit $$e)
+	$(RUN_CAPIDL) -D $(BUILDDIR)/idl -s -I $(BASE_IDL_DIR) -I $(SYS_IDL_DIR) $(SERVER_IDL_FILES) || (e=$$?; rm -f $@; exit $$e)
 
 $(IDL_HEADERS): $(BUILDDIR)/generated-idl
 	@true
@@ -81,8 +81,8 @@ $(BUILDDIR)/SpaceBank: $(OBJECTS)
 	$(GCC) -small-space $(GPLUSFLAGS) $(OBJECTS) $(LIBS) $(STDLIBDIRS) -o $@
 
 # for test images
-$(BUILDDIR)/mkimage.out: install $(TARGETS) $(BASE_MKI_DIR)/coyotos/SpaceBank.mki
-	$(MKIMAGE) -o $@ -t $(COYOTOS_TARGET) -I $(BASE_MKI_DIR) coyotos.SpaceBank
+$(BUILDDIR)/mkimage.out: install $(TARGETS) $(BASE_MKI_DIR)/coyotos/SpaceBank.mki $(MKIMAGE)
+	$(RUN_MKIMAGE) -o $@ -I $(BASE_MKI_DIR) coyotos.SpaceBank
 
 -include $(BUILDDIR)/.*.m
 

@@ -23,8 +23,8 @@ COYOTOS_SRC=..
 include $(COYOTOS_SRC)/build/make/makevars.mk
 
 DIRS=coyotos idl
-DIRS+=arch/$(COYOTOS_TARGET)/test-image/by-hand
-DIRS+=arch/$(COYOTOS_TARGET)/kernel
+DIRS+=arch/$(COYOTOS_ARCH)/test-image/by-hand
+DIRS+=arch/$(COYOTOS_ARCH)/kernel
 
 include $(COYOTOS_SRC)/build/make/pkgrules.mk
 

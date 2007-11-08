@@ -36,7 +36,7 @@ COMMON_MKI_DIR=$(COYOTOS_ROOT)/usr/include/mki
 ENUM_HDRS=$(ENUM_MODULES:%=$(BUILDDIR)/%.h)
 
 $(BUILDDIR)/testConstructor.h: testConstructor.mki $(MKIMAGE)
-	$(MKIMAGE) -t $(COYOTOS_TARGET) -H $(BUILDDIR) -I . -I $(COMMON_MKI_DIR) testConstructor
+	$(RUN_MKIMAGE) -H $(BUILDDIR) -I . -I $(COMMON_MKI_DIR) testConstructor
 
 $(OBJECTS): $(ENUM_HDRS)
 
@@ -46,8 +46,8 @@ $(BUILDDIR)/testConstructor: $(OBJECTS)
 	$(GCC) -small-space $(GPLUSFLAGS) $(OBJECTS) $(LIBS) $(STDLIBDIRS) -o $@
 
 # for test images
-$(BUILDDIR)/mkimage.out: $(TARGETS) testConstructor.mki
-	$(MKIMAGE) -o $@ -t $(COYOTOS_TARGET) -I. -L$(BUILDDIR) testConstructor
+$(BUILDDIR)/mkimage.out: $(TARGETS) testConstructor.mki $(MKIMAGE)
+	$(RUN_MKIMAGE) -o $@ -I. -L$(BUILDDIR) testConstructor
 
 -include $(BUILDDIR)/.*.m
 

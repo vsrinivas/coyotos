@@ -39,7 +39,7 @@ typedef union arm_floatregs_t {
   uint32_t dummys;
 } arm_floatregs_t;
 
-#if (COYOTOS_TARGET == COYOTOS_TARGET_arm)
+#if (COYOTOS_ARCH == COYOTOS_ARCH_arm)
 typedef arm_fixregs_t   fixregs_t;
 typedef arm_floatregs_t floatregs_t;
 
@@ -82,6 +82,6 @@ typedef arm_floatregs_t floatregs_t;
 #define USER_FLAG_MASK  ~0x00003200u
 #endif /* __KERNEL__ */
 
-#endif /* COYOTOS_TARGET == COYOTOS_TARGET_arm */
+#endif /* COYOTOS_ARCH == COYOTOS_ARCH_arm */
 
 #endif /* ARM_REGISTERS_H */

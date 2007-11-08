@@ -18,22 +18,6 @@
 # Foundation, 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 #
 
-CROSS_PREFIX=$(COYOTOS_TARGET)-unknown-coyotos-
-
-COYOTOS_GCC=$(COYOTOS_XENV)/host/bin/$(CROSS_PREFIX)gcc
-COYOTOS_GPLUS=$(COYOTOS_XENV)/host/bin/$(CROSS_PREFIX)g++
-COYOTOS_LD=$(COYOTOS_XENV)/host/bin/$(CROSS_PREFIX)ld
-COYOTOS_AR=$(COYOTOS_XENV)/host/bin/$(CROSS_PREFIX)ar
-COYOTOS_SIZE=$(COYOTOS_XENV)/host/bin/$(CROSS_PREFIX)size
-COYOTOS_OBJDUMP=$(COYOTOS_XENV)/host/bin/$(CROSS_PREFIX)objdump
-COYOTOS_RANLIB=$(COYOTOS_XENV)/host/bin/$(CROSS_PREFIX)ranlib
-
-COYOTOS_CPP=/lib/cpp -undef -nostdinc -D$(COYOTOS_TARGET)
-COYOTOS_GCC_OPTIM=-finline-limit=3000 -fno-strict-aliasing
-COYOTOS_GCC_KERNEL_ALIGN=-falign-functions=4
+include env-cross.mk
 
 NATIVE_GCC_OPTIM=-Wno-long-double
-
-GAWK=gawk
-
-HOST_FD=/dev/fd0H1440

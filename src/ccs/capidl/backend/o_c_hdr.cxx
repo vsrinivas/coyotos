@@ -1589,7 +1589,7 @@ emit_client_stub(GCPtr<Symbol> s, INOstream& out)
     
     if (s->cls != sc_oneway) {
       size_t nHardReg = MAX_DATA_REG;
-      if (targetArch->archID == COYOTOS_TARGET_i386)
+      if (targetArch->archID == COYOTOS_ARCH_i386)
 	nHardReg = 4;
       emit_out_demarshall(s, out, args.out, nHardReg);
     }

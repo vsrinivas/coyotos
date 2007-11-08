@@ -119,7 +119,7 @@ typedef struct stringitem64_t {
   uint64_t  ptr;
 } stringitem64_t;
 
-#if defined(COYOTOS_TARGET)
+#if defined(COYOTOS_ARCH)
 #if (COYOTOS_HW_ADDRESS_BITS == 32)
 
 typedef caploc32_t caploc_t;
@@ -139,6 +139,6 @@ typedef stringitem64_t stringitem_t;
 #define REG_CAPLOC(t) ((caploc_t) { .fld.ty = CAPLOC_TY_REG, .fld.loc = (t) })
 #define REG_CAPREG(t) ((capreg_t) { .fld.ty = CAPLOC_TY_REG, .fld.loc = (t) })
 
-#endif /* defined(COYOTOS_TARGET) */
+#endif /* defined(COYOTOS_ARCH) */
 
 #endif  /* __COYTYPES_H__ */

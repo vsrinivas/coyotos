@@ -32,8 +32,8 @@ IDLINC=-I. -I$(COYOTOS_ROOT)/usr/include/idl
 include $(COYOTOS_SRC)/build/make/makerules.mk
 
 $(IDLHDR): $(BUILDDIR)/h/$(IDLDIR)/%.h : %.idl $(CAPIDL) | $(BUILDDIR)
-	@$(CAPIDL) $(IDLINC) -D $(BUILDDIR)/h -l c-header-depend -o $(BUILDDIR)/.$(subst /,.,$<.m) $<
-	$(CAPIDL) $(IDLINC) -D $(BUILDDIR)/h -a $(COYOTOS_TARGET) -h $<
+	@$(RUN_CAPIDL) $(IDLINC) -D $(BUILDDIR)/h -l c-header-depend -o $(BUILDDIR)/.$(subst /,.,$<.m) $<
+	$(RUN_CAPIDL) $(IDLINC) -D $(BUILDDIR)/h -h $<
 
 interfaces: $(IDLSRC) $(IDLHDR)
 	for idlfile in $(IDLSRC); do\

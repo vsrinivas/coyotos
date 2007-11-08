@@ -38,7 +38,7 @@ $(BUILDDIR)/testPhysRange: $(OBJECTS)
 
 # for test images
 $(BUILDDIR)/mkimage.out: $(TARGETS) testPhysRange.mki
-	$(MKIMAGE) -o $@ -t $(COYOTOS_TARGET) -I. -L$(BUILDDIR) testPhysRange
+	$(RUN_MKIMAGE) -o $@ -I. -L$(BUILDDIR) testPhysRange
 
 -include $(BUILDDIR)/.*.m
 

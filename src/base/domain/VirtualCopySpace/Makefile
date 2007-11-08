@@ -60,11 +60,11 @@ COMMON_MKI_DIR=$(COYOTOS_ROOT)/usr/include/mki
 ENUM_HDRS=$(ENUM_MODULES:%=$(BUILDDIR)/%.h)
 
 $(BUILDDIR)/coyotos.VirtualCopySpace.h: $(BASE_MKI_DIR)/coyotos/VirtualCopySpace.mki $(MKIMAGE)
-	$(MKIMAGE) -t $(COYOTOS_TARGET) -H $(BUILDDIR) -I $(BASE_MKI_DIR) -I $(COMMON_MKI_DIR) coyotos.VirtualCopySpace
+	$(RUN_MKIMAGE) -H $(BUILDDIR) -I $(BASE_MKI_DIR) -I $(COMMON_MKI_DIR) coyotos.VirtualCopySpace
 
 $(BUILDDIR)/generated-idl: $(IDL_FILES) $(CAPIDL) Makefile
 	touch $@
-	$(CAPIDL) -D $(BUILDDIR)/idl -a $(COYOTOS_TARGET) -s -I $(BASE_IDL_DIR) -I $(SYS_IDL_DIR) $(SERVER_IDL_FILES) || (e=$$?; rm -f $@; exit $$e)
+	$(RUN_CAPIDL) -D $(BUILDDIR)/idl -s -I $(BASE_IDL_DIR) -I $(SYS_IDL_DIR) $(SERVER_IDL_FILES) || (e=$$?; rm -f $@; exit $$e)
 
 $(IDL_HEADERS): $(BUILDDIR)/generated-idl
 	@true
@@ -79,7 +79,7 @@ install: all
 	$(INSTALL) -d $(COYOTOS_ROOT)/usr/domain/coyotos
 	$(INSTALL) -m 0755 $(TARGETS) $(COYOTOS_ROOT)/usr/domain/coyotos
 
-$(BUILDDIR)/%.o: $(COYOTOS_TARGET)/%.S $(MAKE_BUILDDIR)
+$(BUILDDIR)/%.o: $(COYOTOS_ARCH)/%.S $(MAKE_BUILDDIR)
 	$(ASM_DEP)
 	$(ASM_BUILD)
 
@@ -87,8 +87,8 @@ $(BUILDDIR)/VirtualCopySpace: $(OBJECTS)
 	$(GCC) -small-space $(GPLUSFLAGS) $(OBJECTS) $(LIBS) $(STDLIBDIRS) -o $@
 
 # for test images
-$(BUILDDIR)/mkimage.out: install $(TARGETS) $(BASE_MKI_DIR)/coyotos/VirtualCopySpace.mki
-	$(MKIMAGE) -o $@ -t $(COYOTOS_TARGET) -I $(BASE_MKI_DIR) coyotos.VirtualCopySpace
+$(BUILDDIR)/mkimage.out: install $(TARGETS) $(BASE_MKI_DIR)/coyotos/VirtualCopySpace.mki $(MKIMAGE)
+	$(RUN_MKIMAGE) -o $@ -I $(BASE_MKI_DIR) coyotos.VirtualCopySpace
 
 -include $(BUILDDIR)/.*.m
 

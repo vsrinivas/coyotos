@@ -22,7 +22,7 @@
 
 #define BYTE_ORDER_COLDFIRE   LITTLE_ENDIAN
 
-#if (COYOTOS_TARGET == COYOTOS_TARGET_coldfire)
+#if (COYOTOS_ARCH == COYOTOS_ARCH_coldfire)
 #define BYTE_ORDER            BYTE_ORDER_COLDFIRE
 #endif
 

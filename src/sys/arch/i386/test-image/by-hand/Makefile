@@ -25,7 +25,7 @@ include $(COYOTOS_SRC)/build/make/makevars.mk
 
 CFLAGS += -g
 
-MKIMAGE=$(COYOTOS_SRC)/ccs/mkimage/$(BUILDDIR)/mkimage
+RUN_MKIMAGE=$(COYOTOS_SRC)/ccs/mkimage/$(BUILDDIR)/mkimage
 
 COYQEMU=$(COYOTOS_SRC)/build/bin/i386/coyqemu
 
@@ -40,13 +40,13 @@ install all: $(IMAGES)
 .PRECIOUS: $(BUILDDIR)/%.o $(BUILDDIR)/%.exe
 
 #iplimage:
-#	$(MKIMAGE) -t i386 -I. $(IMGFILE)
+#	$(RUN_MKIMAGE) -t i386 -I. $(IMGFILE)
 
 $(BUILDDIR)/SimpleProc.h: SimpleProc.mki | $(BUILDDIR)
-	$(MKIMAGE) -t i386 -H./$(BUILDDIR) -I. -L. $(patsubst %.mki,%,$<)
+	$(RUN_MKIMAGE) -t i386 -H./$(BUILDDIR) -I. -L. $(patsubst %.mki,%,$<)
 
 $(BUILDDIR)/%.img: %.mki $(BUILDDIR)/%.exe
-	$(MKIMAGE) -t i386 -I. -L$(BUILDDIR) -o $@ $(patsubst $(BUILDDIR)/%.img,%,$@)
+	$(RUN_MKIMAGE) -t i386 -I. -L$(BUILDDIR) -o $@ $(patsubst $(BUILDDIR)/%.img,%,$@)
 
 $(BUILDDIR)/%.exe: $(BUILDDIR)/%.o $(BUILDDIR)/SimpleProc.h
 	$(GCC) -g $(LINKOPTS) $(INC) -nostdlib -o $@ $<
