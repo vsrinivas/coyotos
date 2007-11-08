@@ -22,6 +22,8 @@
 
 #include <coyotos/machine/pagesize.h>
 #include <coyotos/coytypes.h>
+#include <coyotos/runtime.h>
+#include <coyotos/syscall.h>
 
 #include "coyotos/captemp.h"
 
@@ -29,6 +31,7 @@
 
 static uintptr_t cur = 0;
 static uintptr_t max = COYOTOS_PAGE_SIZE;
+static uintptr_t inited = 0;
 
 caploc_t
 captemp_alloc(void)
@@ -38,6 +41,13 @@ captemp_alloc(void)
   }
 
   caploc_t ret = ADDR_CAPLOC(cur);
+
+  /* make sure we've got a writable slot for it */
+  if (cur >= inited) {
+    cap_copy(ret, CR_NULL);
+    inited += COYOTOS_PAGE_SIZE;
+  }
+
   cur += COYOTOS_CAPABILITY_SIZE;
 
   return ret;
