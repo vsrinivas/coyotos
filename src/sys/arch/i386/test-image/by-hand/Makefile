@@ -56,13 +56,9 @@ $(BUILDDIR)/%.exe: $(BUILDDIR)/%-data.o $(BUILDDIR)/SimpleProc.h $(BUILDDIR)/do_
 
 ipc.mki: $(BUILDDIR)/openrcv.exe
 
-# This is complicated by the fact that the .gdb file is optional.  If it
-# doesn't exist, we substitute default.gdb
+# The $(if...) here is seeing if a specialized GDB file exists. If it does not,
+# it falls back to default.gdb
 %.run: $(BUILDDIR)/%.img
-	@gdb=$(patsubst %.run,%.gdb,$@); \
-	 [ -f $$gdb ] || gdb=default.gdb; \
-	 cmd="$(COYQEMU) -g -s $$gdb $<"; \
-	 echo $$cmd; \
-	 exec $$cmd
+	$(COYQEMU) -g -s $(if $(wildcard $*.gdb),$(wildcard $*.gdb),default.gdb) $<
 
 $(BUILDDIR)/ipc.img: $(BUILDDIR)/openrcv.exe
