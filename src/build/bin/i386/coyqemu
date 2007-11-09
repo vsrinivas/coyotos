@@ -12,7 +12,14 @@ function background_cmd() {
   "$@"&
 }
 
+function cleanup() {
+    rm -f ${TMPGRUBIMAGE} /tmp/$$.GDB_SCRIPT
+}
+
+trap cleanup EXIT HUP INT QUIT TERM
+
 USE_GDB=0
+GDB_PORT=1234
 
 while [ $# -gt 0 ]
 do
@@ -21,6 +28,9 @@ do
 	      shift;;
 
 	-s)   GDB_SCRIPT=$2;
+	      shift; shift;;
+
+	-p)   GDB_PORT=$2;
 	      shift; shift;;
 
 	--)   shift; break;;
@@ -87,24 +97,26 @@ GDB_SCRIPTDIR=${COYOTOS_ROOT}/src/sys/arch/i386/scripts
 
 if [ "${GDB_SCRIPT}" = "" ]
 then
-    GDB_SCRIPT=coyotos.gdb
+    GDB_SCRIPT=${GDB_SCRIPTDIR}/coyotos.gdb
 fi
+
+sed '/target/s/localhost:1234/localhost:'"${GDB_PORT}"'/' ${GDB_SCRIPT} > /tmp/$$.GDB_SCRIPT
 
 if [ ${USE_GDB} -eq 1 ]
 then
 
-    background_cmd qemu -s -fda ${TMPGRUBIMAGE}
+    background_cmd qemu -s -p ${GDB_PORT} -fda ${TMPGRUBIMAGE}
     QEMU_PID=$!
     #echo "QEMU_PID is ${QEMU_PID}"
     sleep 1
 
-    xterm -e gdb -d ${GDB_SCRIPTDIR} -x ${GDB_SCRIPT} ${KERNEL}
+    xterm -e gdb -d ${GDB_SCRIPTDIR} -x /tmp/$$.GDB_SCRIPT ${KERNEL}
 
     kill -9 ${QEMU_PID}
 
     rm -f ${SCRIPT}
 else
-    qemu -s -fda ${TMPGRUBIMAGE}
+    qemu -fda ${TMPGRUBIMAGE}
 fi
 
-rm -f ${TMPGRUBIMAGE}
+cleanup
