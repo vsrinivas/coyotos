@@ -26,12 +26,16 @@ COYOTOS_SRC=.
 # DIRS are ordered:
 # build must be made before others. base and doc can be in either order.
 # Nothing depends on legal.
-REQUIRED_DIRS=ccs sys base
-OPTIONAL_DIRS=web tutorial
+DIRS=ccs sys base tutorial
 VAR_ADDED_DIRS=$(sort $(wildcard var.*))
-DIRS=$(REQUIRED_DIRS) $(OPTIONAL_DIRS) $(VAR_ADDED_DIRS)
-CLEANDIRS=build $(DIRS)
+DIRS+=$(VAR_ADDED_DIRS)
 
+ifeq "$(COYOTOS_ENABLE_DOCS)" "yes"
+then
+DIRS+=web
+endif
+
+CLEANDIRS=build $(DIRS)
 TARDIRS=$(DIRS)
 
 include $(COYOTOS_SRC)/build/make/pkgrules.mk

@@ -29,7 +29,7 @@ COYOTOS_OBJDUMP=$(COYOTOS_XENV)/host/bin/$(CROSS_PREFIX)objdump
 COYOTOS_RANLIB=$(COYOTOS_XENV)/host/bin/$(CROSS_PREFIX)ranlib
 
 COYOTOS_CPP=/lib/cpp -undef -nostdinc -D$(COYOTOS_ARCH)
-COYOTOS_GCC_OPTIM=-finline-limit=3000 -fno-strict-aliasing $(COYOTOS_GCC_TARGET_OPTS)
+COYOTOS_GCC_OPTIM=-finline-limit=3000 -fno-strict-aliasing $(COYOTOS_GCC_MODEL)
 COYOTOS_GCC_KERNEL_ALIGN=-falign-functions=4
 
 GAWK=gawk

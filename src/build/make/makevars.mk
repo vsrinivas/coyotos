@@ -29,6 +29,12 @@
 # generation rule and in the discovery of COYOTOS_ROOT.
 PWD=$(shell pwd)
 
+ifeq "$(wildcard $(COYOTOS_SRC)/build/make/config.mk)" ""
+$(error Please generate build/make/config.mk by running coyotos/src/configure)
+endif
+
+include $(COYOTOS_SRC)/build/make/config.mk
+
 #
 # Set up default values for these variables so that a build in an improperly
 # configured environment has a fighting chance:
@@ -50,23 +56,9 @@ COYOTOS_ROOT=$(firstword $(subst /coyotos/$(COYOTOS_SRCDIR), ,$(PWD)))/coyotos
 
 endif
 
-ifndef COYOTOS_TARGET
-COYOTOS_TARGET=i386-pc
-endif
-
 ifeq "$(word 2,$(subst -, ,$(COYOTOS_TARGET)))" ""
 $(error COYOTOS_TARGET should now take the form ARCHITECTURE-BSP)
 endif
-
-COYOTOS_ARCH=$(word 1,$(subst -, ,$(COYOTOS_TARGET)))
-ifeq "$(COYOTOS_ARCH)" "coldfire"
-COYOTOS_GCC_ARCH=m68k
-COYOTOS_GCC_TARGET_OPTS=-m5407
-else
-COYOTOS_GCC_ARCH=$(COYOTOS_ARCH)
-endif
-
-COYOTOS_BSP=$(word 2,$(subst -, ,$(COYOTOS_TARGET)))
 
 ifndef COYOTOS_ROOT
 endif
@@ -75,17 +67,9 @@ ifneq "" "$(findstring /coyotos/host/bin,$(wildcard /coyotos/host/bin*))"
 COYOTOS_XENV=/coyotos
 endif
 endif
-#ifndef COYOTOS_CONFIG
-#COYOTOS_CONFIG=DEFAULT
-#endif
 
 VMWARE=$(COYOTOS_ROOT)/src/build/bin/vmdbg
 export COYOTOS_ROOT
-export COYOTOS_TARGET
-export COYOTOS_ARCH
-export COYOTOS_BSP
-export COYOTOS_XENV
-export COYOTOS_CONFIG
 
 DIRSYNC=$(COYOTOS_SRC)/build/bin/dirsync
 INSTALL=$(COYOTOS_SRC)/build/bin/coyinstall

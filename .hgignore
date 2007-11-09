@@ -67,3 +67,5 @@ mkimage.out
 grubdisk
 
 src/ccs/mkimage/AST.[ch]xx
+
+src/build/make/config.mk
