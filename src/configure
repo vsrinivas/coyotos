@@ -256,6 +256,8 @@ then
     (set -x; make -C ${COYOTOS_SRC} distclean > /dev/null 2>&1)
 fi
 
+exit 0
+
 ############################
 # Local Variables:
 # mode:shell-script
