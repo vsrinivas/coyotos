@@ -982,7 +982,7 @@ emit_in_param(GCPtr<Symbol> s, INOstream& out)
 #if 0
 	<< "size_t _nWords = _nBytes/sizeof(uintptr_t);\n"
 	<< "/* Avoid trailing data leak */\n"
-	<< "params.in._indirect[_params.in._sndLen + _nWords - 1] = 0;\n"
+	<< "_params.in._indirect[_params.in._sndLen + _nWords - 1] = 0;\n"
 #endif
 	<< "\n"
 	<< "__builtin_memcpy(&_params.in._indirect[_params.in._sndLen], "
@@ -1082,8 +1082,8 @@ emit_out_marshall(GCPtr<Symbol> s, INOstream& out, UniParams& args)
   }
   else if (args.indirectBytes) {
     out << "_params.out._rcvBound = sizeof(_params.out) - " 
-	<< "offsetof(__typeof__(_params.out)__, _indirect);\n";
-    out << "_params.out._rcvPtr = &params.out.indirect;\n"
+	<< "offsetof(__typeof__(_params.out), _indirect);\n";
+    out << "_params.out._rcvPtr = &_params.out._indirect;\n"
 	<< ";\n";
   }
   else
