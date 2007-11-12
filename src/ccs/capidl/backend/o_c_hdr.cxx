@@ -1071,23 +1071,40 @@ emit_out_marshall(GCPtr<Symbol> s, INOstream& out, UniParams& args)
   for (size_t i = 0; i < args.caps.size(); i++)
     emit_out_param(args.caps[i], out);
 
-  if (args.strings.size())
-    out << "_params.out._rcvBound = sizeof(_INV_" 
-	<< s->QualifiedName('_')
-	<< ") - offsetof(_INV_"
-	<< s->QualifiedName('_')
-	<< ", out."
+  if (args.strings.size()) {
+    out << "_params.out._rcvBound = sizeof(_params.out) - "
+	<< "offsetof(__typeof__(_params.out), "
 	<< args.strings[0]->name
 	<< ");\n";
-  else if (args.indirectBytes)
-    out << "_params.out._rcvBound = sizeof(_INV_" 
-	<< s->QualifiedName('_')
-	<< ") - offsetof(_INV_"
-	<< s->QualifiedName('_')
-	<< ", out._indirect"
-	<< ");\n";
+    out << "_params.out._rcvPtr = &_params.out."
+	<< args.strings[0]->name
+	<< ";\n";
+  }
+  else if (args.indirectBytes) {
+    out << "_params.out._rcvBound = sizeof(_params.out) - " 
+	<< "offsetof(__typeof__(_params.out)__, _indirect);\n";
+    out << "_params.out._rcvPtr = &params.out.indirect;\n"
+	<< ";\n";
+  }
   else
     out << "_params.out._rcvBound = 0;\n";
+  out << "\n";
+
+  if (args.strings.size() || args.indirectBytes) {
+    out << "{\n";
+    out.more();
+    out << "size_t _IDL_i;\n"
+	<< "/* Probe incoming string region on stack to ensure validity */\n"
+	<< "for (_IDL_i = 0; _IDL_i < _params.out._rcvBound; _IDL_i+= COYOTOS_PAGE_SIZE)\n";
+    {
+      out.more();
+      out << "((char *)_params.out._rcvPtr)[_IDL_i] &= 0xff;\n";
+      out.less();
+    }
+    out << "((char *)_params.out._rcvPtr)[_params.out._rcvBound - 1] &= 0xff;\n";
+    out.less();
+    out << "}\n";
+  }
   out << "\n";
 }
 
