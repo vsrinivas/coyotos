@@ -1129,10 +1129,11 @@ emit_out_demarshall_result(GCPtr<Symbol> s, INOstream& out)
     out << "/* Indirect Component: */\n";
     out << "{\n";
     out.more();
-    out << s->name
-	<< "->data = (typeof("
-	<< s->name
-	<< "->data)) &_params.out._indirect[_outIndirNdx];\n";
+    out << "/* Caller responsibility to allocate indirect rcv buffer */\n"
+	<< "__builtin_memcpy("
+	<< s->name << "->data, "
+	<< " &_params.out._indirect[_outIndirNdx], "
+	<< s->name << "->len);\n";
     out << s->name
 	<< "->max = " << bound << ";\n";
     out << "size_t _nBytes = sizeof("
