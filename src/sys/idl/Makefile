@@ -35,7 +35,9 @@ IDL+=$(wildcard */[A-Za-z]*.idl)
 IDLPKG=coyotos
 IDLDIR=$(subst .,/,$(IDLPKG))
 HDR_NAMES=$(patsubst %.idl,%.h,$(IDL))
+HDR_NAMES+=$(patsubst %.idl,%.server.h,$(IDL))
 IDLHDR=$(patsubst %.idl,$(BUILDDIR)/h/idl/$(IDLDIR)/%.h,$(IDL))
+IDLSHDR=$(patsubst %.idl,$(BUILDDIR)/h/idl/$(IDLDIR)/%.server.h,$(IDL))
 IDLDEPS=$(patsubst %.idl,$(BUILDDIR)/.$(subst /,.,%.m),$(IDL))
 
 # This is moderately sleazy. The following matches all of the stub
@@ -57,7 +59,11 @@ $(IDLHDR): $(BUILDDIR)/h/idl/$(IDLDIR)/%.h : %.idl $(CAPIDL) | $(BUILDDIR)
 	@$(RUN_CAPIDL) -I. -D $(BUILDDIR)/h/idl -l c-header-depend -o $(BUILDDIR)/.$(subst /,.,$<.m) $<
 	$(RUN_CAPIDL) -I. -D $(BUILDDIR)/h/idl -h $<
 
-interfaces: $(IDL) $(IDLHDR)
+$(IDLSHDR): $(BUILDDIR)/h/idl/$(IDLDIR)/%.server.h : %.idl $(CAPIDL) | $(BUILDDIR) 
+	@$(RUN_CAPIDL) -I. -D $(BUILDDIR)/h/idl -l c-server-header-depend -o $(BUILDDIR)/.$(subst /,.,$<.m) $<
+	$(RUN_CAPIDL) -I. -D $(BUILDDIR)/h/idl -s $<
+
+interfaces: $(IDL) $(IDLHDR) $(IDLSHDR)
 	for idlfile in $(IDL); do\
 		$(INSTALL) -d $(COYOTOS_ROOT)/usr/include/idl/$(IDLDIR)/`dirname $$idlfile`; \
 		$(INSTALL) -m 0644 $$idlfile $(COYOTOS_ROOT)/usr/include/idl/$(IDLDIR)/`dirname $$idlfile`; \
@@ -69,7 +75,7 @@ interfaces: $(IDL) $(IDLHDR)
 
 
 # The following are testing targets:
-idl-h: $(IDLHDR)
+idl-h: $(IDLHDR) $(IDLSHDR)
 
 idl-stubs: $(IDL) $(CAPIDL)
 	$(RUN_CAPIDL) -I. -D $(BUILDDIR)/stub -l c-stub $(IDL)

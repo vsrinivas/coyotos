@@ -26,7 +26,9 @@ IDLSRC+=$(wildcard */[A-Za-z]*.idl)
 IDLPKG=coyotos
 IDLDIR=$(subst ".","/",$(IDLPKG))
 IDLHDR=$(patsubst %.idl,$(BUILDDIR)/h/$(IDLDIR)/%.h,$(IDLSRC))
+IDLSHDR=$(patsubst %.idl,$(BUILDDIR)/h/$(IDLDIR)/%.server.h,$(IDLSRC))
 HDR_NAMES=$(patsubst %.idl,%.h,$(IDLSRC))
+HDR_NAMES+=$(patsubst %.idl,%.server.h,$(IDLSRC))
 IDLINC=-I. -I$(COYOTOS_ROOT)/usr/include/idl
 
 include $(COYOTOS_SRC)/build/make/makerules.mk
@@ -35,7 +37,11 @@ $(IDLHDR): $(BUILDDIR)/h/$(IDLDIR)/%.h : %.idl $(CAPIDL) | $(BUILDDIR)
 	@$(RUN_CAPIDL) $(IDLINC) -D $(BUILDDIR)/h -l c-header-depend -o $(BUILDDIR)/.$(subst /,.,$<.m) $<
 	$(RUN_CAPIDL) $(IDLINC) -D $(BUILDDIR)/h -h $<
 
-interfaces: $(IDLSRC) $(IDLHDR)
+$(IDLSHDR): $(BUILDDIR)/h/$(IDLDIR)/%.server.h : %.idl $(CAPIDL) | $(BUILDDIR)
+	@$(RUN_CAPIDL) $(IDLINC) -D $(BUILDDIR)/h -l c-server-header-depend -o $(BUILDDIR)/.$(subst /,.,$<.m) $<
+	$(RUN_CAPIDL) $(IDLINC) -D $(BUILDDIR)/h -s $<
+
+interfaces: $(IDLSRC) $(IDLHDR) $(IDLSHDR)
 	for idlfile in $(IDLSRC); do\
 		$(INSTALL) -d $(COYOTOS_ROOT)/usr/include/idl/$(IDLDIR)/`dirname $$idlfile`; \
 		$(INSTALL) -m 0644 $$idlfile $(COYOTOS_ROOT)/usr/include/idl/$(IDLDIR)/`dirname $$idlfile`; \
