@@ -1723,7 +1723,7 @@ emit_server_if_union(GCPtr<Symbol> s, INOstream& out)
   }
 
   out << "InvParameterBlock_t _pb;\n";
-  out << "InvExceptionParameterBlock_t except;\n";
+  out << "InvExceptionParameterBlock_t _except;\n";
   out.less();
   out << "} _IDL_IFUNION_" << s->QualifiedName('_') << ";\n";
   out << "\n";
@@ -1780,10 +1780,11 @@ emit_server_if_dispatch_proc(GCPtr<Symbol> s, INOstream& out)
       out.more();
       out << "{\n";
       out.more();
-      out << "_params->except.icw =\n"
-	  << "  IPW0_MAKE_LDW((sizeof(_params->except)/sizeof(uintptr_t))-1)\n"
-	  << "  |IPW0_EX|IPW0_SP\n;"
-	  << "_params->except.exceptionCode = RC_coyotos_Cap_UnknownRequest;\n"
+      out << "_params->_except.icw =\n"
+	  << "  IPW0_MAKE_LDW((sizeof(_params->_except)/sizeof(uintptr_t))-1)\n"
+	  << "  |IPW0_EX|IPW0_SP;\n"
+	  << "_params->_except.exceptionCode = RC_coyotos_Cap_UnknownRequest;\n"
+	  << "_params->_pb.sndLen = 0;\n"
 	  << "break;\n";
       out.less();
       out << "}\n";
@@ -2242,6 +2243,7 @@ emit_server_op_demarshall_proc(GCPtr<Symbol> s, ArgInfo& args, INOstream& out)
 	    << "IPW0_MAKE_LDW((sizeof(_params->except)/sizeof(uintptr_t))-1) "
 	    << "| IPW0_EX;\n"
 	    << "_params->except.exceptionCode = _result;\n"
+	    << "_params->pb.sndLen = 0;\n"
 	    << "return;\n";
 	out.less();
       }
