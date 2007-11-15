@@ -2241,7 +2241,7 @@ emit_server_op_demarshall_proc(GCPtr<Symbol> s, ArgInfo& args, INOstream& out)
 	emit_cleanup_call(s, args, out);
 	out << "_params->except.icw = "
 	    << "IPW0_MAKE_LDW((sizeof(_params->except)/sizeof(uintptr_t))-1) "
-	    << "| IPW0_EX;\n"
+	    << "|IPW0_EX|IP0_SP;\n"
 	    << "_params->except.exceptionCode = _result;\n"
 	    << "_params->pb.sndLen = 0;\n"
 	    << "return;\n";
