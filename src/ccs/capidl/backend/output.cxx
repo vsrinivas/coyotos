@@ -37,6 +37,7 @@ extern void output_c_client_hdr(GCPtr<Symbol> );
 extern void output_c_server_hdr(GCPtr<Symbol> );
 //extern void output_new_c_hdr(GCPtr<Symbol> );
 extern void output_c_hdr_depend(GCPtr<Symbol> , BackEndFn);
+extern void output_c_server_hdr_depend(GCPtr<Symbol> , BackEndFn);
 //extern void output_c_stubs(GCPtr<Symbol> );
 //extern void output_c_stub_depend(GCPtr<Symbol> , BackEndFn);
 extern void output_capidl(GCPtr<Symbol> );
@@ -61,6 +62,8 @@ BackEnd back_ends[] = {
   { "new-c-header",  c_typecheck, 0,         output_c_client_hdr,  0  },
   { "c-header-depend", 
                  0,           0,             0,  output_c_hdr_depend  },
+  { "c-server-header-depend", 
+                 0,           0,             0,  output_c_server_hdr_depend  },
   //  { "c-stub",    c_typecheck, rewrite_for_c, output_c_stubs,       0  },
   //  { "c-stub-depend", 
   //                 0,           0,             0,  output_c_stub_depend  },

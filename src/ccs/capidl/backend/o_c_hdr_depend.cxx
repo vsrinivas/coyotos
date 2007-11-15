@@ -44,7 +44,7 @@ using namespace sherpa;
 #include "backend.hxx"
 
 static void
-symdump(GCPtr<Symbol> s, std::ostream& out, int indent)
+symdump(GCPtr<Symbol> s, std::ostream& out, int indent, const std::string& suffix)
 {
   do_indent(out, indent);
 
@@ -65,7 +65,7 @@ symdump(GCPtr<Symbol> s, std::ostream& out, int indent)
 
       {
 	std::string sqn = s->QualifiedName('/');
-	fileName = target + (Path(sqn) << ".h");
+	fileName = target + (Path(sqn) << suffix);
       }
 
       out << fileName << ": " /* << *uocFileName */;
@@ -80,7 +80,7 @@ symdump(GCPtr<Symbol> s, std::ostream& out, int indent)
       out << "\n";
 
       for(size_t i = 0; i < s->children.size(); i++)
-	symdump(s->children[i], out, indent);
+	symdump(s->children[i], out, indent, suffix);
 
       break;
     }
@@ -88,7 +88,7 @@ symdump(GCPtr<Symbol> s, std::ostream& out, int indent)
   case sc_scope:
     {
       for(size_t i = 0; i < s->children.size(); i++)
-	symdump(s->children[i], out, indent);
+	symdump(s->children[i], out, indent, suffix);
 
       break;
     }
@@ -117,7 +117,7 @@ void
 output_c_hdr_depend(GCPtr<Symbol> universalScope, BackEndFn fn)
 {
   if (outputFileName.isEmpty() || outputFileName.asString() == "-") {
-    symdump(universalScope, std::cout, 0);
+    symdump(universalScope, std::cout, 0, ".h");
   }
   else {
     std::ofstream out(outputFileName.c_str(),
@@ -128,7 +128,28 @@ output_c_hdr_depend(GCPtr<Symbol> universalScope, BackEndFn fn)
       exit(1);
     }
 
-    symdump(universalScope, out, 0);
+    symdump(universalScope, out, 0, ".h");
+
+    out.close();
+  }
+}
+
+void 
+output_c_server_hdr_depend(GCPtr<Symbol> universalScope, BackEndFn fn)
+{
+  if (outputFileName.isEmpty() || outputFileName.asString() == "-") {
+    symdump(universalScope, std::cout, 0, ".server.h");
+  }
+  else {
+    std::ofstream out(outputFileName.c_str(),
+		      std::ios_base::out|std::ios_base::trunc);
+    if (!out.is_open()) {
+      fprintf(stderr, "Couldn't open output file \"%s\" -- %s\n",
+	      outputFileName.c_str(), strerror(errno));
+      exit(1);
+    }
+
+    symdump(universalScope, out, 0, ".server.h");
 
     out.close();
   }
