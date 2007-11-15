@@ -27,18 +27,18 @@ CFLAGS+=-g -O
 INC=-I. -I$(COYOTOS_SRC)/../usr/include -I$(BUILDDIR)
 SOURCES=$(wildcard *.c)
 OBJECTS=$(patsubst %.c,$(BUILDDIR)/%.o,$(wildcard *.c))
-TARGETS=$(BUILDDIR)/testCaptemp
+TARGETS=$(BUILDDIR)/testUnknownRequest
 
 include $(COYOTOS_SRC)/build/make/makerules.mk
 
 install all: $(TARGETS) $(BUILDDIR)/mkimage.out
 
-$(BUILDDIR)/testCaptemp: $(OBJECTS)
+$(BUILDDIR)/testUnknownRequest: $(OBJECTS)
 	$(GCC) $(GPLUSFLAGS) $(OBJECTS) $(LIBS) $(STDLIBDIRS) -o $@
 
 # for test images
-$(BUILDDIR)/mkimage.out: $(TARGETS) testCaptemp.mki
-	$(RUN_MKIMAGE) -o $@ -I. -L$(BUILDDIR) testCaptemp
+$(BUILDDIR)/mkimage.out: $(TARGETS) testUnknownRequest.mki
+	$(RUN_MKIMAGE) -o $@ -I. -L$(BUILDDIR) testUnknownRequest
 
 -include $(BUILDDIR)/.*.m
 
