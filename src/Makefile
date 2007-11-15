@@ -23,6 +23,8 @@ default: world
 
 COYOTOS_SRC=.
 
+include $(COYOTOS_SRC)/build/make/makevars.mk
+
 # DIRS are ordered:
 # build must be made before others. base and doc can be in either order.
 # Nothing depends on legal.
