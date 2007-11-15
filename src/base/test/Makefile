@@ -31,6 +31,7 @@ DIRS=\
     testMalloc \
     testPhysRange \
     testTextConsole \
+    testUnknownRequest \
     testVirtualCopyModel 
 
 include $(COYOTOS_SRC)/build/make/makerules.mk
