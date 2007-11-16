@@ -21,7 +21,7 @@
 #include <idl/coyotos/Constructor.h>
 #include <idl/coyotos/Process.h>
 #include <idl/coyotos/SpaceBank.h>
-#include <idl/coyotos/driver/TextConsole.h>
+#include <idl/coyotos/IoStream.h>
 #include <coyotos/runtime.h>
 #include <coyotos/kprintf.h>
 #include <string.h>
@@ -46,6 +46,14 @@
 int
 main(int argc, char *argv[])
 {
+  coyotos_Cap_AllegedType at = 0;
+  uint32_t len;
+
+  char buf[coyotos_IoStream_bufLimit];
+  coyotos_IoStream_chString s = { coyotos_IoStream_bufLimit, 0, buf };
+
+  memset(buf, 0, coyotos_IoStream_bufLimit);
+
   CHECK (coyotos_Process_getSlot(CR_SELF, coyotos_Process_cslot_schedule,
 				 CR_SCHED));
 
@@ -54,22 +62,27 @@ main(int argc, char *argv[])
 
   CHECK (coyotos_Constructor_create(CR_CTOR, CR_SUBBANK, CR_SCHED, CR_RUNTIME, CR_YIELD));
 
-  kprintf(CR_LOG, "Construction completed.\n");	\
+  CHECK(coyotos_Cap_getType(CR_YIELD, &at));
+  CHECK((at == IKT_coyotos_IoStream));
 
-  CHECK(coyotos_driver_TextConsole_putChar(CR_YIELD, 'Z'));
-  CHECK(coyotos_driver_TextConsole_putChar(CR_YIELD, '\n'));
-  CHECK(coyotos_driver_TextConsole_putChar(CR_YIELD, 'A'));
-  CHECK(coyotos_driver_TextConsole_putChar(CR_YIELD, '\n'));
+  CHECK(coyotos_IoStream_read(CR_YIELD, coyotos_IoStream_bufLimit, &s));
+  CHECK(s.len == coyotos_IoStream_bufLimit);
+  {
+    size_t i;
+    for (i = 0; i < coyotos_IoStream_bufLimit; i++)
+      CHECK(s.data[i] == 0);
+  }
 
-  coyotos_driver_TextConsole_chString s;
-  s.data = "Never mind but furthermore the plea is self defense.\n";
-  s.len = strlen(s.data);
-  s.max = s.len;
+  CHECK(coyotos_IoStream_read(CR_YIELD, coyotos_IoStream_bufLimit+1, &s) 
+	== false);
+  CHECK(__IDL_Env->errCode == RC_coyotos_Cap_RequestError);
 
-  CHECK(coyotos_driver_TextConsole_putCharSequence(CR_YIELD, s));
 
-  CHECK(coyotos_driver_TextConsole_putChar(CR_YIELD, 'B'));
-  CHECK(coyotos_driver_TextConsole_putChar(CR_YIELD, '\n'));
+  s.len = 4096;
+  CHECK(coyotos_IoStream_write(CR_YIELD, s, &len));
+  CHECK(len == coyotos_IoStream_bufLimit);
+
+  kprintf(CR_LOG, "PASS\n");
 
   for(;;) ;
   return 0;

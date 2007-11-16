@@ -411,7 +411,8 @@ main(int argc, char *argv[])
   be = resolve_backend(lang);
 
   if (be == 0) {
-    fprintf(stderr, "capidl: Output language is not recognized.\n");
+    fprintf(stderr, "capidl: Output language \"%s\" is not recognized.\n",
+            lang.c_str());
     exit(1);
   }
 

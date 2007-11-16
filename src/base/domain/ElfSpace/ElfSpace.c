@@ -19,7 +19,7 @@
  */
 
 /** @file
- * @brief Elf Process Handler
+ * @brief Address space handler for ELF binary image.
  */
 
 /* Based on template for processing the following interfaces:

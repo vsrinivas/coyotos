@@ -58,10 +58,11 @@ package:
 
 endif
 
-pristine:
-	$(MAKE) -C $(COYOTOS_ROOT)/src -k clean
-	$(MAKE) -C $(COYOTOS_ROOT)/src targdir-clean
+pristine: distclean
 	$(MAKE) -C $(COYOTOS_ROOT)/src world
+
+distclean:
+	$(MAKE) -C $(COYOTOS_ROOT)/src -k targdir-clean clean
 
 ######################################################################
 #

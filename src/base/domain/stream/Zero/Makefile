@@ -19,26 +19,39 @@
 #
 
 default: package
-COYOTOS_SRC=../../..
+COYOTOS_SRC=../../../..
 CROSS_BUILD=yes
 
 CFLAGS+=-g -O
 
-INC=-I. -I$(COYOTOS_SRC)/../usr/include -I$(BUILDDIR)
+INC=-I. -I$(COYOTOS_SRC)/../usr/include -I$(BUILDDIR) -I../../../sys
 SOURCES=$(wildcard *.c)
 OBJECTS=$(patsubst %.c,$(BUILDDIR)/%.o,$(wildcard *.c))
-TARGETS=$(BUILDDIR)/testCaptemp
+TARGETS=$(BUILDDIR)/Zero
 
 include $(COYOTOS_SRC)/build/make/makerules.mk
 
-install all: $(TARGETS) $(BUILDDIR)/mkimage.out
+ENUM_MODULES=coyotos.stream.Zero coyotos.TargetInfo
+BASE_MKI_DIR=$(PKG_SRC)/mki
+COMMON_MKI_DIR=$(COYOTOS_ROOT)/usr/include/mki
+ENUM_HDRS=$(ENUM_MODULES:%=$(BUILDDIR)/%.h)
 
-$(BUILDDIR)/testCaptemp: $(OBJECTS)
+$(BUILDDIR)/coyotos.stream.Zero.h: $(BASE_MKI_DIR)/coyotos/stream/Zero.mki $(MKIMAGE)
+	$(RUN_MKIMAGE) -H $(BUILDDIR) -I $(BASE_MKI_DIR) -I $(COMMON_MKI_DIR) coyotos.stream.Zero
+
+$(BUILDDIR)/coyotos.TargetInfo.h: $(wildcard $(COMMON_MKI_DIR)/coyotos/*/*.mki) $(MKIMAGE)
+	$(RUN_MKIMAGE) -H $(BUILDDIR) -I $(BASE_MKI_DIR) -I $(COMMON_MKI_DIR) coyotos.TargetInfo
+
+$(OBJECTS): $(ENUM_HDRS)
+
+install all: $(TARGETS)
+
+install: all
+	$(INSTALL) -d $(COYOTOS_ROOT)/usr/domain/coyotos/stream
+	$(INSTALL) -m 0755 $(TARGETS) $(COYOTOS_ROOT)/usr/domain/coyotos/stream
+
+$(BUILDDIR)/Zero: $(OBJECTS)
 	$(GCC) $(GPLUSFLAGS) $(OBJECTS) $(LIBS) $(STDLIBDIRS) -o $@
-
-# for test images
-$(BUILDDIR)/mkimage.out: $(TARGETS) testCaptemp.mki
-	$(RUN_MKIMAGE) -o $@ -I. -L$(BUILDDIR) testCaptemp
 
 -include $(BUILDDIR)/.*.m
 

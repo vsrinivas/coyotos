@@ -146,7 +146,15 @@ gcc_model() {
     esac
 }
 
+OPTION_TARGET_GIVEN=0
 option_target() {
+    if [ ${OPTION_TARGET_GIVEN} -eq 1 ]
+    then
+        echo "Target given multiple times"
+        usage
+    fi
+    OPTION_TARGET_GIVEN=1
+
     if ! target_well_formed $1
     then
 	usage
@@ -214,8 +222,16 @@ do
 	--help)
 	    usage;;
 
-	*)
+	-*)
 	    usage;;
+
+	*)
+            if [ $# -ne 1 ]
+            then
+                usage
+            fi
+            option_target $1;
+            shift;;
     esac
 done
 

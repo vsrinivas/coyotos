@@ -280,6 +280,7 @@ main(int argc, char *argv[])
 	      << ": "
 	      << ex.msg
 	      << std::endl;
+    exit(1);
   }
 
   exit(0);

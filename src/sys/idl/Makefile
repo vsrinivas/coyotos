@@ -35,13 +35,15 @@ IDL+=$(wildcard */[A-Za-z]*.idl)
 IDLPKG=coyotos
 IDLDIR=$(subst .,/,$(IDLPKG))
 HDR_NAMES=$(patsubst %.idl,%.h,$(IDL))
-IDLHDR=$(patsubst %.idl,$(BUILDDIR)/h/idl/$(IDLDIR)/%.h,$(IDL))
+HDR_NAMES+=$(patsubst %.idl,%.server.h,$(IDL))
+IDLHDR=$(patsubst %.idl,$(BUILDDIR)/idl/$(IDLDIR)/%.h,$(IDL))
+IDLSHDR=$(patsubst %.idl,$(BUILDDIR)/idl/$(IDLDIR)/%.server.h,$(IDL))
 IDLDEPS=$(patsubst %.idl,$(BUILDDIR)/.$(subst /,.,%.m),$(IDL))
 
 # This is moderately sleazy. The following matches all of the stub
 # source files, but only if they have been generated already. We will
 # need to invoke this makefile recursively to make use of this.
-INC=-I$(BUILDDIR)/h -I$(COYOTOS_ROOT)/usr/include
+INC=-I$(BUILDDIR) -I$(COYOTOS_ROOT)/usr/include
 IDLSTUBS=$(wildcard $(BUILDDIR)/stub/*.c)
 OBJECTS=$(patsubst %.c,$(BUILDDIR)/%.o,$(notdir $(IDLSTUBS)))
 VPATH=$(BUILDDIR)/stub
@@ -53,23 +55,26 @@ include $(COYOTOS_SRC)/build/make/makerules.mk
 # unable to describe multiple targets! It's probably better this way,
 # because it reduces consequential rebuild.
 
-$(IDLHDR): $(BUILDDIR)/h/idl/$(IDLDIR)/%.h : %.idl $(CAPIDL) | $(BUILDDIR) 
-	@$(RUN_CAPIDL) -I. -D $(BUILDDIR)/h/idl -l c-header-depend -o $(BUILDDIR)/.$(subst /,.,$<.m) $<
-	$(RUN_CAPIDL) -I. -D $(BUILDDIR)/h/idl -h $<
+$(IDLHDR): $(BUILDDIR)/idl/$(IDLDIR)/%.h : %.idl $(CAPIDL) | $(BUILDDIR) 
+	@$(RUN_CAPIDL) -I. -D $(BUILDDIR)/idl -l c-header-depend -o $(BUILDDIR)/.$(subst /,.,$<.m) $<
+	$(RUN_CAPIDL) -I. -D $(BUILDDIR)/idl -h $<
 
-interfaces: $(IDL) $(IDLHDR)
+$(IDLSHDR): $(BUILDDIR)/idl/$(IDLDIR)/%.server.h : %.idl $(CAPIDL) | $(BUILDDIR) 
+	@$(RUN_CAPIDL) -I. -D $(BUILDDIR)/idl -l c-server-header-depend -o $(BUILDDIR)/.$(subst /,.,$<.m) $<
+	$(RUN_CAPIDL) -I. -D $(BUILDDIR)/idl -s $<
+
+interfaces: $(IDL) $(IDLHDR) $(IDLSHDR)
 	for idlfile in $(IDL); do\
 		$(INSTALL) -d $(COYOTOS_ROOT)/usr/include/idl/$(IDLDIR)/`dirname $$idlfile`; \
 		$(INSTALL) -m 0644 $$idlfile $(COYOTOS_ROOT)/usr/include/idl/$(IDLDIR)/`dirname $$idlfile`; \
 	done
 	for hdr in $(HDR_NAMES); do\
 		$(INSTALL) -d $(COYOTOS_ROOT)/usr/include/idl/$(IDLDIR)/`dirname $$hdr`; \
-		$(INSTALL) -m 0644 $(BUILDDIR)/h/idl/$(IDLDIR)/$$hdr $(COYOTOS_ROOT)/usr/include/idl/$(IDLDIR)/`dirname $$hdr`; \
+		$(INSTALL) -m 0644 $(BUILDDIR)/idl/$(IDLDIR)/$$hdr $(COYOTOS_ROOT)/usr/include/idl/$(IDLDIR)/`dirname $$hdr`; \
 	done
 
-
 # The following are testing targets:
-idl-h: $(IDLHDR)
+idl-h: $(IDLHDR) $(IDLSHDR)
 
 idl-stubs: $(IDL) $(CAPIDL)
 	$(RUN_CAPIDL) -I. -D $(BUILDDIR)/stub -l c-stub $(IDL)

@@ -1128,6 +1128,12 @@ emit_out_demarshall_result(GCPtr<Symbol> s, INOstream& out)
 	<< s->name
 	<< "[0]) * " << bound << ");\n";
   }
+  else if (argBaseType->IsSequenceType()) {
+    out << s->name
+	<< "->len = _params.out."
+	<< s->name
+	<< ".len;\n";
+  }
   else {
     out << "*"
 	<< s->name
@@ -1621,10 +1627,9 @@ emit_client_stub(GCPtr<Symbol> s, INOstream& out)
   }
 
 
-  if (declOnly)
-    out << "extern bool\n";
-  else
-    out << "static inline bool\n";
+  /* This used to be extern when the method was declared "declOnly",
+     but the wrapper should be emitted and inlined regardless. */
+  out << "static inline bool\n";
 
   out << "" << s->QualifiedName('_')
       << "(caploc_t _invCap";
@@ -1672,9 +1677,12 @@ emit_client_stub(GCPtr<Symbol> s, INOstream& out)
     out.less();
   }
 
-  if (declOnly) {
-    out << ";\n";
-  } else {
+  /* This used to be omitted if the entry point was declared "declonly",
+   * but there is no reason to require two distinct implementation
+   * functions when all this wrapper does is supply the default IDL
+   * environment.
+   */
+  {
     out << "{\n";
     out.more();
     out << "return IDL_ENV_" << s->QualifiedName('_') 
@@ -1723,7 +1731,7 @@ emit_server_if_union(GCPtr<Symbol> s, INOstream& out)
   }
 
   out << "InvParameterBlock_t _pb;\n";
-  out << "InvExceptionParameterBlock_t except;\n";
+  out << "InvExceptionParameterBlock_t _except;\n";
   out.less();
   out << "} _IDL_IFUNION_" << s->QualifiedName('_') << ";\n";
   out << "\n";
@@ -1780,10 +1788,11 @@ emit_server_if_dispatch_proc(GCPtr<Symbol> s, INOstream& out)
       out.more();
       out << "{\n";
       out.more();
-      out << "_params->except.icw =\n"
-	  << "  IPW0_MAKE_LDW((sizeof(_params->except)/sizeof(uintptr_t))-1)\n"
-	  << "  |IPW0_EX|IPW0_SP\n;"
-	  << "_params->except.exceptionCode = RC_coyotos_Cap_UnknownRequest;\n"
+      out << "_params->_except.icw =\n"
+	  << "  IPW0_MAKE_LDW((sizeof(_params->_except)/sizeof(uintptr_t))-1)\n"
+	  << "  |IPW0_EX|IPW0_SP;\n"
+	  << "_params->_except.exceptionCode = RC_coyotos_Cap_UnknownRequest;\n"
+	  << "_params->_pb.sndLen = 0;\n"
 	  << "break;\n";
       out.less();
       out << "}\n";
@@ -2052,8 +2061,13 @@ emit_server_op_handler_call(GCPtr<Symbol> s, ArgInfo& args, INOstream& out)
 }
 
 static void
-emit_cleanup_decl(const std::string& nm, GCPtr<Symbol> s, ArgInfo& args, INOstream& out)
+emit_cleanup_decl(const std::string& nm,
+		  GCPtr<Symbol> s, ArgInfo& args, INOstream& out,
+		  bool mainDecl)
 {
+  if (mainDecl)
+    out << "IDL_SERVER_CLEANUP_PREDECL ";
+
   out << "void " << nm << "(\n";
   {
     out.more();
@@ -2173,9 +2187,10 @@ emit_server_op_demarshall_proc(GCPtr<Symbol> s, ArgInfo& args, INOstream& out)
   emit_server_handler_decl("HANDLE_"+s->QualifiedName('_'),
 			   s, args, out, true);
   out << ";\n";
+  out << "\n";
   if (args.out.indirectBytes) {
     emit_cleanup_decl("CLEANUP_"+s->QualifiedName('_'),
-		      s, args, out);
+		      s, args, out, true);
     out << ";\n";
   }
   out << "\n";
@@ -2196,7 +2211,7 @@ emit_server_op_demarshall_proc(GCPtr<Symbol> s, ArgInfo& args, INOstream& out)
     emit_server_handler_decl("(*_handler)", s, args, out, false);
     if (args.out.indirectBytes) {
       out << ",\n";
-      emit_cleanup_decl("(*_cleanup)", s, args, out);
+      emit_cleanup_decl("(*_cleanup)", s, args, out, false);
     }
 
     out << ")\n";
@@ -2240,8 +2255,9 @@ emit_server_op_demarshall_proc(GCPtr<Symbol> s, ArgInfo& args, INOstream& out)
 	emit_cleanup_call(s, args, out);
 	out << "_params->except.icw = "
 	    << "IPW0_MAKE_LDW((sizeof(_params->except)/sizeof(uintptr_t))-1) "
-	    << "| IPW0_EX;\n"
+	    << "|IPW0_EX|IPW0_SP;\n"
 	    << "_params->except.exceptionCode = _result;\n"
+	    << "_params->pb.sndLen = 0;\n"
 	    << "return;\n";
 	out.less();
       }
@@ -3054,6 +3070,10 @@ output_c_server_hdr(GCPtr<Symbol> s)
   out << "#ifndef IDL_SERVER_HANDLER_PREDECL\n";
   out << "#define IDL_SERVER_HANDLER_PREDECL\n";
   out << "#endif /* IDL_SERVER_HANDLER_PREDECL */\n";
+
+  out << "#ifndef IDL_SERVER_CLEANUP_PREDECL\n";
+  out << "#define IDL_SERVER_CLEANUP_PREDECL\n";
+  out << "#endif /* IDL_SERVER_CLEANUP_PREDECL */\n";
   out << "\n";
 
   server_header_symdump(s, out);
@@ -3191,11 +3211,19 @@ output_c_template(GCPtr<Symbol> globalScope, BackEndFn fn)
   out.less();
   out << " */\n";
 
-  out << "\n";
-  out << "#include <coyotos/capidl.h>\n";
-  out << "#include <coyotos/syscall.h>\n";
-  out << "#include <coyotos/runtime.h>\n";
-  out << "\n";
+  out << "\n"
+      << "#include <coyotos/capidl.h>\n"
+      << "#include <coyotos/syscall.h>\n"
+      << "#include <coyotos/runtime.h>\n"
+      << "#include <coyotos/reply_create.h>\n"
+      << "\n"
+      << "#include <idl/coyotos/SpaceBank.h>\n"
+      << "#include <idl/coyotos/Endpoint.h>\n"
+      << "#include <idl/coyotos/AddressSpace.h>\n"
+      << "\n"
+      << "/* Utility quasi-syntax */\n"
+      << "#define unless(x) if (!(x))\n"
+      << "\n";
 
   server_template_symdump(globalScope, out, emit_active_if_includes);
   out << "\n";
@@ -3313,6 +3341,61 @@ output_c_template(GCPtr<Symbol> globalScope, BackEndFn fn)
   out << "}\n";
   out.less();
   out << "}\n";
+  out.less();
+  out << "}\n";
+  out << "\n";
+  out << "static inline bool\n"
+      << "exit_gracelessly(errcode_t errCode)\n"
+      << "{\n";
+  out.more();
+  out << "return\n"
+      << "  coyotos_SpaceBank_destroyBankAndReturn(CR_SPACEBANK,\n"
+      << "                                         CR_RETURN,\n"
+      << "                                         errCode);\n";
+  out.less();
+  out << "}\n"
+      << "\n"
+      << "bool\n"
+      << "initialize()\n"
+      << "{\n";
+  out.more();
+  out << "unless(\n";
+  {
+    out.indent(7);
+    out << "/* Set up our entry capability */\n"
+	<< "coyotos_Endpoint_makeEntryCap(CR_INITEPT,\n";
+    out.indent(30);
+    out << "1 /* Insert your PP value here */,\n"
+	<< "CR_REPLY0)\n";
+    out.indent(-30);
+    out << ")";
+    out.indent(-7);
+    out.more();
+    out << "exit_gracelessly(IDL_exceptCode);\n";
+    out.less();
+  }
+  out << "\n"
+      << "/* Send our entry cap to our caller */\n"
+      << "REPLY_create(CR_RETURN, CR_REPLY0);\n"
+      << "\n"
+      << "return true;\n";
+  out.less();
+  out << "}\n"
+      << "\n"
+      << "int\n"
+      << "main(int argc, char *argv[])\n"
+      << "{\n";
+  out.more();
+  out << "struct IDL_SERVER_Environment ise;\n"
+      << "\n"
+      << "if (!initialize())\n";
+  out.more();
+  out << "return 0;\n";
+  out.less();
+  out << "\n";
+  out << "ProcessRequests(&ise);\n"
+      << "\n"
+      << "return 0;\n";
   out.less();
   out << "}\n";
   // server_template_symdump(s, out);
