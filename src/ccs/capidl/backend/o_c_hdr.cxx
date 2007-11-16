@@ -1128,6 +1128,12 @@ emit_out_demarshall_result(GCPtr<Symbol> s, INOstream& out)
 	<< s->name
 	<< "[0]) * " << bound << ");\n";
   }
+  else if (argBaseType->IsSequenceType()) {
+    out << s->name
+	<< "->len = _params.out."
+	<< s->name
+	<< ".len;\n";
+  }
   else {
     out << "*"
 	<< s->name
