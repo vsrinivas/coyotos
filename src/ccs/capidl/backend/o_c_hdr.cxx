@@ -3199,11 +3199,19 @@ output_c_template(GCPtr<Symbol> globalScope, BackEndFn fn)
   out.less();
   out << " */\n";
 
-  out << "\n";
-  out << "#include <coyotos/capidl.h>\n";
-  out << "#include <coyotos/syscall.h>\n";
-  out << "#include <coyotos/runtime.h>\n";
-  out << "\n";
+  out << "\n"
+      << "#include <coyotos/capidl.h>\n"
+      << "#include <coyotos/syscall.h>\n"
+      << "#include <coyotos/runtime.h>\n"
+      << "#include <coyotos/reply_create.h>\n"
+      << "\n"
+      << "#include <idl/coyotos/SpaceBank.h>\n"
+      << "#include <idl/coyotos/Endpoint.h>\n"
+      << "#include <idl/coyotos/AddressSpace.h>\n"
+      << "\n"
+      << "/* Utility quasi-syntax */\n"
+      << "#define unless(x) if (!(x))\n"
+      << "\n";
 
   server_template_symdump(globalScope, out, emit_active_if_includes);
   out << "\n";
@@ -3321,6 +3329,61 @@ output_c_template(GCPtr<Symbol> globalScope, BackEndFn fn)
   out << "}\n";
   out.less();
   out << "}\n";
+  out.less();
+  out << "}\n";
+  out << "\n";
+  out << "static inline bool\n"
+      << "exit_gracelessly(errcode_t errCode)\n"
+      << "{\n";
+  out.more();
+  out << "return\n"
+      << "  coyotos_SpaceBank_destroyBankAndReturn(CR_SPACEBANK,\n"
+      << "                                         CR_RETURN,\n"
+      << "                                         errCode);\n";
+  out.less();
+  out << "}\n"
+      << "\n"
+      << "bool\n"
+      << "initialize()\n"
+      << "{\n";
+  out.more();
+  out << "unless(\n";
+  {
+    out.indent(7);
+    out << "/* Set up our entry capability */\n"
+	<< "coyotos_Endpoint_makeEntryCap(CR_INITEPT,\n";
+    out.indent(30);
+    out << "1 /* Insert your PP value here */,\n"
+	<< "CR_REPLY0)\n";
+    out.indent(-30);
+    out << ")";
+    out.indent(-7);
+    out.more();
+    out << "exit_gracelessly(IDL_exceptCode);\n";
+    out.less();
+  }
+  out << "\n"
+      << "/* Send our entry cap to our caller */\n"
+      << "REPLY_create(CR_RETURN, CR_REPLY0);\n"
+      << "\n"
+      << "return true;\n";
+  out.less();
+  out << "}\n"
+      << "\n"
+      << "int\n"
+      << "main(int argc, char *argc[])\n"
+      << "{\n";
+  out.more();
+  out << "struct IDL_SERVER_Environment ise;\n"
+      << "\n"
+      << "if (!initialize())\n";
+  out.more();
+  out << "return 0;\n";
+  out.less();
+  out << "\n";
+  out << "ProcessRequests(&ise);\n"
+      << "\n"
+      << "return 0;\n";
   out.less();
   out << "}\n";
   // server_template_symdump(s, out);
