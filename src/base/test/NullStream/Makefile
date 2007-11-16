@@ -19,21 +19,26 @@
 #
 
 default: package
-COYOTOS_SRC=../..
+COYOTOS_SRC=../../..
+CROSS_BUILD=yes
 
-DIRS= HelloWorld
-DIRS+= testAppInt
-DIRS+= testCaptemp
-DIRS+= testConstructor
-DIRS+= testHandler
-DIRS+= testLargeModel
-DIRS+= testMalloc
-DIRS+= testPhysRange
-DIRS+= testTextConsole
-DIRS+= testTextConsole
-DIRS+= testUnknownRequest
-DIRS+= testVirtualCopyModel 
-DIRS+= NullStream
+CFLAGS+=-g -O
+
+INC=-I. -I$(COYOTOS_SRC)/../usr/include -I$(BUILDDIR)
+SOURCES=$(wildcard *.c)
+OBJECTS=$(patsubst %.c,$(BUILDDIR)/%.o,$(wildcard *.c))
+TARGETS=$(BUILDDIR)/NullStream
 
 include $(COYOTOS_SRC)/build/make/makerules.mk
+
+install all: $(TARGETS) $(BUILDDIR)/mkimage.out
+
+$(BUILDDIR)/NullStream: $(OBJECTS)
+	$(GCC) $(GPLUSFLAGS) $(OBJECTS) $(LIBS) $(STDLIBDIRS) -o $@
+
+# for test images
+$(BUILDDIR)/mkimage.out: $(TARGETS) NullStream.mki
+	$(RUN_MKIMAGE) -o $@ -I. -L$(BUILDDIR) NullStream
+
+-include $(BUILDDIR)/.*.m
 

@@ -19,21 +19,10 @@
 #
 
 default: package
-COYOTOS_SRC=../..
+COYOTOS_SRC=../../..
 
-DIRS= HelloWorld
-DIRS+= testAppInt
-DIRS+= testCaptemp
-DIRS+= testConstructor
-DIRS+= testHandler
-DIRS+= testLargeModel
-DIRS+= testMalloc
-DIRS+= testPhysRange
-DIRS+= testTextConsole
-DIRS+= testTextConsole
-DIRS+= testUnknownRequest
-DIRS+= testVirtualCopyModel 
-DIRS+= NullStream
+DIRS=Null
+#DIRS+=ps2port
 
 include $(COYOTOS_SRC)/build/make/makerules.mk
 
