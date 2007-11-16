@@ -36,9 +36,9 @@
 
 #define FAIL (void)(*(uint32_t *)0 = __LINE__)
 
-#define CHECK(expr) \
-  do {		    \
-    if (!expr)	    \
+#define CHECK(expr)							\
+  do {									\
+    if (!(expr))							\
       kprintf(CR_LOG, "%s:%d: FAIL %s\n", __FILE__, __LINE__, #expr);	\
   } while (0)
 
