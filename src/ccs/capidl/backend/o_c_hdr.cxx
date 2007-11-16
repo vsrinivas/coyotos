@@ -2059,8 +2059,13 @@ emit_server_op_handler_call(GCPtr<Symbol> s, ArgInfo& args, INOstream& out)
 }
 
 static void
-emit_cleanup_decl(const std::string& nm, GCPtr<Symbol> s, ArgInfo& args, INOstream& out)
+emit_cleanup_decl(const std::string& nm,
+		  GCPtr<Symbol> s, ArgInfo& args, INOstream& out,
+		  bool mainDecl)
 {
+  if (mainDecl)
+    out << "IDL_SERVER_CLEANUP_PREDECL ";
+
   out << "void " << nm << "(\n";
   {
     out.more();
@@ -2180,9 +2185,10 @@ emit_server_op_demarshall_proc(GCPtr<Symbol> s, ArgInfo& args, INOstream& out)
   emit_server_handler_decl("HANDLE_"+s->QualifiedName('_'),
 			   s, args, out, true);
   out << ";\n";
+  out << "\n";
   if (args.out.indirectBytes) {
     emit_cleanup_decl("CLEANUP_"+s->QualifiedName('_'),
-		      s, args, out);
+		      s, args, out, true);
     out << ";\n";
   }
   out << "\n";
@@ -2203,7 +2209,7 @@ emit_server_op_demarshall_proc(GCPtr<Symbol> s, ArgInfo& args, INOstream& out)
     emit_server_handler_decl("(*_handler)", s, args, out, false);
     if (args.out.indirectBytes) {
       out << ",\n";
-      emit_cleanup_decl("(*_cleanup)", s, args, out);
+      emit_cleanup_decl("(*_cleanup)", s, args, out, false);
     }
 
     out << ")\n";
@@ -3062,6 +3068,10 @@ output_c_server_hdr(GCPtr<Symbol> s)
   out << "#ifndef IDL_SERVER_HANDLER_PREDECL\n";
   out << "#define IDL_SERVER_HANDLER_PREDECL\n";
   out << "#endif /* IDL_SERVER_HANDLER_PREDECL */\n";
+
+  out << "#ifndef IDL_SERVER_CLEANUP_PREDECL\n";
+  out << "#define IDL_SERVER_CLEANUP_PREDECL\n";
+  out << "#endif /* IDL_SERVER_CLEANUP_PREDECL */\n";
   out << "\n";
 
   server_header_symdump(s, out);
