@@ -1627,10 +1627,9 @@ emit_client_stub(GCPtr<Symbol> s, INOstream& out)
   }
 
 
-  if (declOnly)
-    out << "extern bool\n";
-  else
-    out << "static inline bool\n";
+  /* This used to be extern when the method was declared "declOnly",
+     but the wrapper should be emitted and inlined regardless. */
+  out << "static inline bool\n";
 
   out << "" << s->QualifiedName('_')
       << "(caploc_t _invCap";
@@ -1678,9 +1677,12 @@ emit_client_stub(GCPtr<Symbol> s, INOstream& out)
     out.less();
   }
 
-  if (declOnly) {
-    out << ";\n";
-  } else {
+  /* This used to be omitted if the entry point was declared "declonly",
+   * but there is no reason to require two distinct implementation
+   * functions when all this wrapper does is supply the default IDL
+   * environment.
+   */
+  {
     out << "{\n";
     out.more();
     out << "return IDL_ENV_" << s->QualifiedName('_') 
