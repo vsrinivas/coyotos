@@ -3371,7 +3371,7 @@ output_c_template(GCPtr<Symbol> globalScope, BackEndFn fn)
   out << "}\n"
       << "\n"
       << "int\n"
-      << "main(int argc, char *argc[])\n"
+      << "main(int argc, char *argv[])\n"
       << "{\n";
   out.more();
   out << "struct IDL_SERVER_Environment ise;\n"
