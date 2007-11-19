@@ -22,7 +22,7 @@ default: package
 COYOTOS_SRC=../../..
 
 DIRS=Null
-DIRS=Zero
+DIRS+=Zero
 
 include $(COYOTOS_SRC)/build/make/makerules.mk
 
