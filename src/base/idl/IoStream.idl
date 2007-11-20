@@ -50,5 +50,5 @@ interface IoStream extends Cap {
    * This declares a library-supplied wrapper that calls doWrite()
    * internally, hiding the details of the read blocking protocol.
    */
-  client unsigned long write(out chString s);
+  client unsigned long write(chString s);
 };

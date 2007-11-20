@@ -30,7 +30,7 @@ RUN_MKIMAGE=$(COYOTOS_SRC)/ccs/mkimage/$(BUILDDIR)/mkimage
 COYQEMU=$(COYOTOS_SRC)/build/bin/i386/coyqemu
 
 IMAGES=$(patsubst %.mki,$(BUILDDIR)/%.img,$(filter-out SimpleProc.mki,$(wildcard *.mki)))
-INC=-I$(COYOTOS_SRC)/sys -I$(COYOTOS_SRC)/sys/idl/$(BUILDDIR)/h -IBUILD
+INC=-I$(COYOTOS_SRC)/sys -I$(COYOTOS_SRC)/sys/idl/$(BUILDDIR) -IBUILD
 LINKOPTS=-Wl,-Ttext,0x1000 -Wl,-Tdata,0x3000
 
 include $(COYOTOS_SRC)/build/make/makerules.mk

@@ -23,6 +23,8 @@ default: world
 
 COYOTOS_SRC=.
 
+include $(COYOTOS_SRC)/build/make/makevars.mk
+
 # DIRS are ordered:
 # build must be made before others. base and doc can be in either order.
 # Nothing depends on legal.
@@ -45,8 +47,6 @@ OPT_HGTREES=coyotos/src/ccs-xenv coyotos/src/tutorial
 VAR_HGTREES=$(patsubst %,coyotos/src/%,$(VAR_ADDED_DIRS))
 ALL_HGTREES=$(HGTREES) $(OPT_HGTREES) $(VAR_HGTREES)
 HG_TREETOP=$(COYOTOS_ROOT)/..
-
-distclean: targdir-clean clean
 
 targdir-clean:
 	-rm -rf $(COYOTOS_ROOT)/include $(COYOTOS_ROOT)/lib

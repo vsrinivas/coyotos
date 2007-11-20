@@ -25,7 +25,9 @@ DIRS=Constructor
 DIRS+=ElfSpace
 DIRS+=SpaceBank
 DIRS+=VirtualCopySpace
+
 DIRS+=driver
+DIRS+=stream
 
 include $(COYOTOS_SRC)/build/make/makerules.mk
 

@@ -24,7 +24,7 @@ CROSS_BUILD=yes
 COYOTOS_SRC=../../../..
 DIRS=
 
-INC=-I$(COYOTOS_SRC)/../usr/include -I../../.. -I. -I$(BUILDDIR)
+INC=-I../../../idl/BUILD -I../../.. -I. -I$(BUILDDIR)
 DEF=-D__KERNEL__ # -DNDEBUG -DHAVE_HUI=0
 DEF+= -DBRING_UP
 DEF+= -DEVT_TRACE
@@ -81,20 +81,6 @@ OBJECTS=\
 	$(BUILDDIR)/kern_Interval.o \
 	$(BUILDDIR)/kern_malloc.o \
 	$(patsubst %.c,$(BUILDDIR)/%.o,$(notdir $(wildcard ../../../caps/cap*.c)))
-
-RUN_CAPIDL=$(COYOTOS_ROOT)/host/bin/capidl
-IDL_DIR=../../../idl
-IDL_FILES=$(wildcard $(IDL_DIR)/*.idl)
-IDL_FILES+=$(wildcard $(IDL_DIR)/$(COYOTOS_ARCH)/*.idl)
-#IDL_FILES=\
-#	$(IDL_DIR)/Cap.idl \
-#	$(IDL_DIR)/Process.idl \
-#	$(IDL_DIR)/i386/Process.idl \
-#	$(IDL_DIR)/Range.idl \
-#	$(IDL_DIR)/Memory.idl \
-#	$(IDL_DIR)/AddressSpace.idl \
-#	$(IDL_DIR)/Window.idl \
-#	$(IDL_DIR)/LocalWindow.idl
 
 VPATH=../../../kernel:../../../caps:.
 

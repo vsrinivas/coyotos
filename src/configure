@@ -57,7 +57,7 @@ usage () {
       echo "     docs       [default: not built]"
       echo "     tests      [default: not built]"
       echo
-      echo "  e.g.: ./configure i386-unknown-coyotos"
+      echo "  e.g.: ./configure --target=i386-unknown-coyotos"
       echo
       echo "  Once run, the script can be re-run with selected options to change"
       echo "  your choices."
