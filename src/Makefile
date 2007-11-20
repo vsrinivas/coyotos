@@ -31,7 +31,6 @@ VAR_ADDED_DIRS=$(sort $(wildcard var.*))
 DIRS+=$(VAR_ADDED_DIRS)
 
 ifeq "$(COYOTOS_ENABLE_DOCS)" "yes"
-then
 DIRS+=web
 endif
 
