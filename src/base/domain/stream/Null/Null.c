@@ -18,6 +18,8 @@
 #include <idl/coyotos/IoStream.server.h>
 #include <coyotos.stream.Null.h>
 
+bool isClosed = false;
+
 /* Utility quasi-syntax */
 #define unless(x) if (!(x))
 
@@ -46,6 +48,9 @@ HANDLE_coyotos_IoStream_doRead(
   coyotos_IoStream_chString *s,
   struct IDL_SERVER_Environment *_env)
 {
+  if (isClosed)
+    return RC_coyotos_IoStream_Closed;
+
   if (length > coyotos_IoStream_bufLimit)
     return RC_coyotos_Cap_RequestError;
 
@@ -68,6 +73,9 @@ HANDLE_coyotos_IoStream_doWrite(
   uint32_t *_retVal,
   struct IDL_SERVER_Environment *_env)
 {
+  if (isClosed)
+    return RC_coyotos_IoStream_Closed;
+
   *_retVal = s.len;
 
   /* All writes to NULL are accepted and ignored. */
@@ -97,6 +105,18 @@ HANDLE_coyotos_IoStream_getWriteChannel(
      common channel here. */
 
   cap_copy(_retVal, CR_MYENTRY);
+  return RC_coyotos_Cap_OK;
+}
+
+IDL_SERVER_HANDLER_PREDECL uint64_t 
+HANDLE_coyotos_IoStream_close(
+  struct IDL_SERVER_Environment *_env)
+{
+  if (isClosed)
+    return RC_coyotos_IoStream_Closed;
+
+  isClosed = true;
+
   return RC_coyotos_Cap_OK;
 }
 

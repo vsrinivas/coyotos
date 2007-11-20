@@ -16,6 +16,7 @@ interface IoStream extends Cap {
   typedef sequence<char, bufLimit> chString;
 
   exception RequestWouldBlock;
+  exception Closed;
 
   /* @brief Internal implementation of read().
    *
@@ -51,4 +52,6 @@ interface IoStream extends Cap {
    * internally, hiding the details of the read blocking protocol.
    */
   client unsigned long write(chString s);
+
+  void close();
 };
