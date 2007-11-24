@@ -342,8 +342,12 @@ obhdr_dirty(ObjectHeader *hdr)
 static void
 process_invalidate(Process *p)
 {
-  /** @bug  XXX need invalidation logic */
-  bug("Implement process_invalidate\n");
+  proc_ensure_exclusive(p);
+
+  /* Perform invalidations as if each slot were being overwritten. */
+  cap_handlerBeingOverwritten(&p->state.handler);
+  rm_whack_process(p);
+  atomic_set_bits(&p->issues, pi_Schedule);
 }
 
 void
