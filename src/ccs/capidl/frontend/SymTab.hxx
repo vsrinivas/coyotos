@@ -260,7 +260,7 @@ public:
   {
     GCPtr<Symbol> sym = this;
 
-    while (sym->cls == sc_symRef)
+    while (sym && sym->cls == sc_symRef)
       sym = sym->value;
 
     return sym;
