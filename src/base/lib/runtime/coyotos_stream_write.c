@@ -38,12 +38,12 @@ IDL_ENV_coyotos_IoStream_write(caploc_t _invCap,
     return false;
 
   /* We were asked to block. */
-  _invCap = captemp_alloc();
+  _tmpCap = captemp_alloc();
     
-  result = IDL_ENV_coyotos_IoStream_getWriteChannel(_invCap, _invCap, _env);
+  result = IDL_ENV_coyotos_IoStream_getWriteChannel(_invCap, _tmpCap, _env);
   if (!result) goto release;
 
-  result = IDL_ENV_coyotos_IoStream_doWrite(_invCap, s, len, _env);
+  result = IDL_ENV_coyotos_IoStream_doWrite(_tmpCap, s, len, _env);
 
  release:
   captemp_release(_invCap);
