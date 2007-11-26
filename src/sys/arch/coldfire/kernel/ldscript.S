@@ -61,26 +61,9 @@ SECTIONS
   __esyscallpg = .;
 
   . = ALIGN(COYOTOS_PAGE_SIZE);
-  __begin_maps = .;
 
-  /* Kernel master page directory and page table. This page directory
-   * is used when no per-process mapping structure is appropriate.
-   */
-  KernPageDir = .;
-  . = . + COYOTOS_PAGE_SIZE;
-
-  /* Kernel Page Table for first 2M (PAE) or 4M (Legacy) */
-  . = ALIGN(COYOTOS_PAGE_SIZE);
-  KernPageTable = .;
-  . = . + COYOTOS_PAGE_SIZE;
-
-
-  /* Page tables for the transient mapping region. In PAE mode, each
-   * mapping page holds 512 entries, so each table can support up to
-   * (512/TRANSMAP_ENTRIES_PER_CPU) CPUs. */
-  TransientMap = .;
-   . += COYOTOS_PAGE_SIZE * TRANSMAP_PAGES;
-  __end_maps = .;
+  /* NO MAPPING TABLES ARE PRE-RESERVED, because this machine is
+     soft-translated. */
 
   /* Note that we are already aligned to page size here, but just in case: */
   . = ALIGN(KSTACK_SIZE);

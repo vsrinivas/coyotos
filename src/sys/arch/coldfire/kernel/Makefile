@@ -36,8 +36,7 @@ OBJECTS=\
 	$(BUILDDIR)/boot.o \
 	$(BUILDDIR)/cap_Process.o \
 	$(BUILDDIR)/transmap.o \
-	$(BUILDDIR)/kern_main.o \
-	$(BUILDDIR)/kern_ctype.o \
+	$(BUILDDIR)/hwmap.o \
 	$(BUILDDIR)/kern_string.o \
 	$(BUILDDIR)/kern_pstring.o \
 	$(BUILDDIR)/kern_printf.o \
@@ -71,7 +70,6 @@ OBJECTS=\
 #	$(BUILDDIR)/dispatch.o \
 #	$(BUILDDIR)/Object.o \
 #	$(BUILDDIR)/sysctl.o \
-#	$(BUILDDIR)/hwmap.o \
 #
 
 

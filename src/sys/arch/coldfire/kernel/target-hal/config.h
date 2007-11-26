@@ -30,7 +30,7 @@
 #endif
 
 #if MAX_NCPU > 1
-#error "This kernel implementation does not support more than 32 CPUs"
+#error "This kernel implementation does not support more than one CPU"
 #endif
 
 /* Note that spacing is significant in the TRANSMAP_xxx macros. These
@@ -39,15 +39,6 @@
 
 /** @brief Number of transmap entries reserved for each CPU. */
 #define TRANSMAP_ENTRIES_PER_CPU 64
-/** @brief Number of CPUS supported by a single transmap page.
- *
- * Note this assumes PAE mappings. PTE mappings can handle 1024 per
- * page, but we need to decide this statically here, so choose the
- * conservative outcome. */
-#define TRANSMAP_CPUS_PER_PAGE (512 / TRANSMAP_ENTRIES_PER_CPU)
-/** @brief Number of transmap pages we require, given the selected
- * value of MAX_NCPU */
-#define TRANSMAP_PAGES  ((MAX_NCPU + TRANSMAP_CPUS_PER_PAGE - 1) / TRANSMAP_CPUS_PER_PAGE)
 
 /** @brief Whether we have a console.
  */

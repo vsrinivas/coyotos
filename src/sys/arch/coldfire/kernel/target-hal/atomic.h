@@ -11,6 +11,11 @@
  * bit set operations. These are present only to prevent the optimizer
  * from combining those operations in some way that causes them to
  * require multiple instructions.
+ *
+ * @note The only atomic operation supplied on Coldfire is TAS (test
+ * and set). If necessary we can use this for atomicity between
+ * interrupt and non-interrupt code by implementing a global atomic
+ * byte somewhere.
  */
 
 typedef struct {
