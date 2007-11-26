@@ -37,14 +37,14 @@ IDL_ENV_coyotos_IoStream_read(caploc_t _invCap, uint32_t len,
     return false;
 
   /* We were asked to block. */
-  _tmpCap = captemp_alloc();
+  caploc_t tmpCap = captemp_alloc();
     
-  result = IDL_ENV_coyotos_IoStream_getReadChannel(_invCap, _tmpCap, _env);
+  result = IDL_ENV_coyotos_IoStream_getReadChannel(_invCap, tmpCap, _env);
   if (!result) goto release;
 
-  result = IDL_ENV_coyotos_IoStream_doRead(_tmpCap, len, s, _env);
+  result = IDL_ENV_coyotos_IoStream_doRead(tmpCap, len, s, _env);
 
  release:
-  captemp_release(_tmpCap);
+  captemp_release(tmpCap);
   return result;
 }
