@@ -547,6 +547,7 @@ do_pageFault(Process *base, uintptr_t addr_arg,
     curmap = newmap;
   }
 
+  /** @bug Why is this necessary? */
   local_tlb_flushva(addr_arg);
 
   return;

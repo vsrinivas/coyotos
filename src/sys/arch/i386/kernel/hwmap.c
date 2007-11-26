@@ -75,6 +75,19 @@ local_tlb_flushva(kva_t va)
 		 );
 }
 
+/* Following are placeholder implementations */
+void
+global_tlb_flush()
+{
+  local_tlb_flush();
+}
+
+void
+global_tlb_flushva(kva_t va)
+{
+  local_tlb_flush();
+}
+
 static void
 reserve_pgtbls(void)
 {
@@ -403,7 +416,7 @@ depend_entry_invalidate_impl(const DependEntry *entry, int slot)
   }
 
   /* Now that all of the entries are invalidated, flush the TLB */
-  local_tlb_flush();
+  global_tlb_flush();
 
   /** @bug need to cross-call other CPUs to have them flush their TLBs.
    * Also, do we want to delay doing this until all of the Depend entries
@@ -451,7 +464,7 @@ rm_whack_pte(struct Mapping *map,  size_t slot)
   }
 
   /* Now that all of the entries are invalidated, flush the TLB */
-  local_tlb_flush();
+  global_tlb_flush();
 
   /** @bug need to cross-call other CPUs to have them flush their TLBs.
    * Also, do we want to delay doing this until all of the revmap entries

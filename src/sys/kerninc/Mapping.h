@@ -53,8 +53,7 @@ typedef struct Mapping {
    */
   Link     ageLink;
 
-#if HIERARCHICAL_MAP
-  /** @brief Next page table on same product chain. 
+  /** @brief Next mapping structure on same product chain. 
    *
    * If chains get long, we may need to consider an alternative
    * linkage structure to facilitate removal. */
@@ -63,6 +62,7 @@ typedef struct Mapping {
   /** @brief Pointer to the object that produced this page table. */
   MemHeader *producer;
 
+#if HIERARCHICAL_MAP
   /** @brief Physical address of this page table */
   kpa_t     pa;
 
@@ -88,6 +88,12 @@ typedef struct Mapping {
 #error non-Hierarchical map not implemented
 #endif /* HIERARCHICAL_MAP */
 } Mapping;
+
+/** @brief Flush the TLB on all processors */
+__hal void global_tlb_flush();
+
+/** @brief Flush @p va from the TLB on all processors */
+__hal void global_tlb_flushva(kva_t va);
 
 __hal extern Mapping KernMapping;
 
