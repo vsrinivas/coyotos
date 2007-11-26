@@ -67,7 +67,7 @@ depend_merge(DependEntry *e, DependEntry n)
       e->map != n.map)
     return false;
 
-#if HIERARCHICAL_MAP
+#if MAPPING_INDEX_BITS
   if (e->l2slotSpan != n.l2slotSpan ||
       (e->basePTE - (e->slotBias << e->l2slotSpan)) !=
       (n.basePTE - (n.slotBias << n.l2slotSpan)))
@@ -82,9 +82,8 @@ depend_merge(DependEntry *e, DependEntry n)
     e->basePTE = n.basePTE;
   }
   e->slotMask |= n.slotMask;
-#else
-#error Only Hierarchical map is implemented.
 #endif
+
   return true;
 }
 
@@ -155,14 +154,11 @@ depend_invalidate(GPT *gpt)
 void
 depend_invalidate_slot(GPT *gpt, size_t slot)
 {
+#if MAPPING_INDEX_BITS
   DependBucket *b = depend_hash(gpt);
   SpinHoldInfo hi = spinlock_grab(&b->lock);
   Depend *cur;
-#if HIERARCHICAL_MAP
   size_t mask = 1u << slot;
-#else
-#error non-hierachical maps are not implemented
-#endif
 
   for (cur = b->list; cur; cur = cur->next) {
     for (size_t i = 0; i < ENTRIES_PER_DEPEND; i++) {
@@ -182,4 +178,5 @@ depend_invalidate_slot(GPT *gpt, size_t slot)
     }
   }
   spinlock_release(hi);
+#endif
 }

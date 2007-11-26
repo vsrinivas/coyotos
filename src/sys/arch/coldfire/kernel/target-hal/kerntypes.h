@@ -50,4 +50,7 @@
 #define TARGET_TRANSMETA_T uint64_t
 #endif
 
+/** @brief Type of a target address space ID, if supported. */
+#define TARGET_ASID_T      uint16_t
+
 #endif /* COLDFIRE_HAL_KERNTYPES_H */

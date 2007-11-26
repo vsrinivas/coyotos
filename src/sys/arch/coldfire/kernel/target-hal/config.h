@@ -57,11 +57,15 @@
  */
 #define PHYSMEM_NREGION 64
 
-/** @brief Set to 1 if target uses a hierarchical mapping scheme.
+/** @brief Set to the number of bits needed to index a particular PTE
+ * in an arbitrary mapping table.
  *
- * Should be zero for hashed mapping schemes or non-hierarchical
- * software translation schemes */
-#define HIERARCHICAL_MAP 0
+ * This should be the width, in bits, of the index into the @em widest
+ * page table on the current architecture.
+ *
+ * Coldfire is currently soft-translated, so this should be zero.
+ */
+#define MAPPING_INDEX_BITS 0
 
 /** @brief Alignment value used for cache aligned data structures.
  *

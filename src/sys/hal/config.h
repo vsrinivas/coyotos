@@ -47,14 +47,6 @@
 #define HAVE_CONSOLE 0
 #endif
 
-#ifndef HIERARCHICAL_MAP
-/** @brief Set to 1 if target uses a hierarchical mapping scheme.
- *
- * Should be zero for hashed mapping schemes or non-hierarchical
- * software translation schemes */
-#define HIERARCHICAL_MAP 0
-#endif
-
 #ifndef PHYSMEM_NREGIONS
 /** @brief Number of physical memory region descriptors to allocate.
  * This is a reasonable, but probably not excessive, default.

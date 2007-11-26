@@ -57,18 +57,20 @@
  */
 #define PHYSMEM_NREGION 512
 
-/** @brief Set to 1 if target uses a hierarchical mapping scheme.
- *
- * Should be zero for hashed mapping schemes or non-hierarchical
- * software translation schemes */
-#define HIERARCHICAL_MAP 1
-
 /** @brief Set to the number of bits needed to index a particular PTE
  * in an arbitrary mapping table.
  *
- * Only referenced if HIERARCHICAL_MAP is 1.
+ * This should be the width, in bits, of the index into the @em widest
+ * page table on the current architecture.
  */
-#define HIERARCHICAL_MAP_MAX_PTE_BITS 10
+#define MAPPING_INDEX_BITS 10
+
+/** @brief Size of a field that can hold a value @lt;=
+ * MAPPING_INDEX_BITS 
+ *
+ * Not referenced if MAPPING_INDEX_BITS is 0
+ */
+#define L2_MAPPING_INDEX_BITS 4
 
 /** @brief Alignment value used for cache aligned data structures.
  *

@@ -62,7 +62,7 @@ typedef struct Mapping {
   /** @brief Pointer to the object that produced this page table. */
   MemHeader *producer;
 
-#if HIERARCHICAL_MAP
+#if MAPPING_INDEX_BITS
   /** @brief Physical address of this page table */
   kpa_t     pa;
 
@@ -85,8 +85,8 @@ typedef struct Mapping {
 
   size_t userSlots;  /**< @brief Number of leading user-mode slots */
 #else
-#error non-Hierarchical map not implemented
-#endif /* HIERARCHICAL_MAP */
+  asid_t asid;
+#endif /* MAPPING_INDEX_BITS */
 } Mapping;
 
 /** @brief Flush the TLB on all processors */

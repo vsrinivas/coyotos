@@ -58,4 +58,8 @@ typedef TARGET_HAL_UVA_T uva_t;
 /** @brief Integral type sufficient to hold transmap meta-map entries. */
 typedef TARGET_TRANSMETA_T transmeta_t;
 
+#ifdef TARGET_ASID_T
+typedef TARGET_ASID_T asid_t;
+#endif
+
 #endif /* HAL_KERNTYPES_H */
