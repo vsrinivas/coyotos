@@ -77,7 +77,8 @@ void cap_Endpoint(InvParam_t *iParam)
 
       sched_commit_point();
 
-      if(iParam->srcCap[1].cap->type != ct_Process) {
+      if ((iParam->srcCap[1].cap->type != ct_Process) &&
+	  (iParam->srcCap[1].cap->type != ct_Null)) {
 	InvErrorMessage(iParam, RC_coyotos_Cap_RequestError);
 	return;
       }

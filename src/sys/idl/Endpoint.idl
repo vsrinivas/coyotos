@@ -10,7 +10,7 @@ interface Endpoint extends Cap {
   /// @brief Set the recipient process @p p.
   ///
   /// Raised the RequestError exception if the inserted capability is
-  /// not a process capability.
+  /// not a Process capability or a Null capability.
   void setRecipient(coyotos.Process p);
 
   /// @brief Enable protected payload matching.
