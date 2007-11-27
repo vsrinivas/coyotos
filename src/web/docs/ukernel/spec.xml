@@ -3053,8 +3053,7 @@ C := gpt-&gt;cap[<em>u</em>]</literallayout>
 		<p>
 		  The invokee process is destroyed as an effect of the
 		  invoked method. In this case, the reply proceeds as
-		  if via an endpoint that contains a Null capability,
-		  and is discarded.
+		  if via an endpoint that contains a Null capability.
 		</p>
 	      </li>
 <!-- 	      <li> -->
