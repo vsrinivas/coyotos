@@ -233,6 +233,18 @@ DocComment::parseText()
     char c = com[cur];
     enum input_type newType;
 
+    if (c == '>') {
+      throw ParseFailureException(locOf(cur),
+				  "Bare '>' in XML input. Perhaps &gt;?");
+    }
+
+    // If FIRST character is '<', this means that parseAhead failed to
+    // find a legal element start/end. It is likely that this is a
+    // bare '<'.
+    if (c == '<' && (cur == comPos))
+      throw ParseFailureException(locOf(cur),
+				  "Invalid element or bare '<' in XML input. Perhaps &lt;?");
+
     if (c == '<' || c == '>' || c == '@')
       break;
 
@@ -453,14 +465,50 @@ DocComment::parseAhead() const
     }
     ret.type = (closeTag) ? la_close : la_open;
 
-    // for close tags, we include the '>' in our parse.
-    if (closeTag) {
-      if (pos >= com.length() || com[pos] != '>') {
-	throw ParseFailureException(locOf(comPos), "improper close tag");
+    pos = skipWhiteSpace(pos);
+    size_t endOfTag = pos;
+
+      // No attributes on close tag
+    if (!closeTag) {
+      for(;;) {
+	std::string attrName, attrValue;
+
+	pos = skipWhiteSpace(pos);
+
+	if (com[pos] == '/' || com[pos] == '>')
+	  break;
+
+	if (!parseGetAttribute(pos, pos, attrName, attrValue))
+	  break;
       }
-      pos++;
     }
-    ret.offset = pos;
+	   
+    pos = skipWhiteSpace(pos);
+
+    if (com[pos] != '/' && com[pos] != '>') {
+      ret.type = la_other;
+      return ret;
+    }
+
+    if (closeTag && com[pos] == '/') {
+      ret.type = la_other;
+      return ret;
+    }
+
+    if (com[pos] == '/') {
+      pos = skipWhiteSpace(pos+1);
+      if (pos >= com.length() || com[pos] != '>') {
+	ret.type = la_other;
+	return ret;
+      }
+    }
+      
+    if (com[pos] != '>') {
+      ret.type = la_other;
+      return ret;
+    }
+
+    ret.offset = closeTag ? (pos + 1) : endOfTag;
     ret.info = findElementByTag(ret.tag);
     if (ret.info == NULL)
       throw ParseFailureException(locOf(comPos),
@@ -499,6 +547,51 @@ DocComment::parseAhead() const
     ret.offset = comPos;
     return ret;
   }
+}
+
+bool 
+DocComment::parseGetAttribute(size_t pos,
+			      size_t &pos_out, std::string &name_out,
+			      std::string& attValue) const
+{
+  pos_out = pos;
+  size_t curPos;
+
+  attValue.clear();
+
+  if (!parseGetEntityName(pos, curPos, name_out))
+    return false;
+
+  // parseGetName eats trailing whitespace, so no need to do so here.
+
+  if (pos >= com.length() || com[pos] != '=')
+    return false;
+
+  pos = skipWhiteSpace(pos+1);
+  size_t endPos = pos;
+
+  if (com[endPos] == '"' || com[endPos] == '\'') {
+    char lookFor = com[endPos++];
+    while (endPos < com.length() && com[endPos] != lookFor)
+      endPos++;
+    if (endPos >= com.length())
+      return false;
+    endPos++;
+
+    attValue = com.substr(pos, endPos - pos);
+    pos_out = endPos;
+  }
+  else {
+    while (endPos < com.length() && validNameChar(com[endPos], false, true))
+      endPos++;
+    if (endPos >= com.length())
+      return false;
+
+    attValue = '"' + com.substr(pos, endPos - pos) + '"';
+    pos_out = endPos;
+  }
+
+  return true;
 }
 
 bool

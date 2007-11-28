@@ -87,7 +87,9 @@ private:
   size_t processBegOfLine(size_t) const;
   size_t skipWhiteSpace(size_t) const;
   bool parseGetName(size_t, enum name_type, size_t &, std::string &) const;
-  bool parseGetEntityName(size_t, size_t &, std::string &) const;
+  bool parseGetEntityName(size_t, size_t &, std::string &nm) const;
+  bool parseGetAttribute(size_t, size_t &, 
+			 std::string & nm, std::string& value) const;
   struct lookAhead parseAhead() const;
 
   void updateComPos(size_t);
