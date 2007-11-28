@@ -3,7 +3,6 @@
 
 #include <stdbool.h>
 #include <hal/kerntypes.h>
-#include <kerninc/set.h>
 #include <kerninc/ccs.h>
 
 union IA32_PTE {
@@ -96,32 +95,6 @@ static inline bool vm_valid_uva(struct Process *p, uva_t uva)
   return ((uva >= 0) && (uva < KVA));
 }
 
-
-#if 0
-static inline bool
-pte_is(TARGET_HAL_PTE_T *pte, unsigned flg)
-{
-  return WSET_IS(pte->value, flg);
-}
-
-static inline bool
-pte_isnot(TARGET_HAL_PTE_T *pte, unsigned flg)
-{
-  return WSET_ISNOT(pte->value, flg);
-}
-
-static inline void
-pte_set(TARGET_HAL_PTE_T *pte, unsigned flg)
-{
-  WSET_SET(pte->value, flg);
-}
-
-static inline void
-pte_clr(TARGET_HAL_PTE_T *pte, unsigned flg)
-{
-  WSET_CLR(pte->value, flg);
-}
-#endif
 
 static inline void
 local_tlb_flush()

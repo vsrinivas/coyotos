@@ -3,7 +3,6 @@
 
 #include <stdbool.h>
 #include <hal/kerntypes.h>
-#include <kerninc/set.h>
 
 /** @brief Coldfire PTE data structure.
  *
@@ -129,30 +128,16 @@ static inline bool vm_valid_uva(struct Process *p, uva_t uva)
 }
 
 
-#if 0
-static inline bool
-pte_is(TARGET_HAL_PTE_T *pte, unsigned flg)
+void
+local_tlb_flush()
 {
-  return WSET_IS(pte->value, flg);
+  GNU_INLINE_ASM("mov pflush #0,#4");
 }
 
-static inline bool
-pte_isnot(TARGET_HAL_PTE_T *pte, unsigned flg)
+void
+local_tlb_flushva(kva_t va)
 {
-  return WSET_ISNOT(pte->value, flg);
+  GNU_INLINE_ASM("mov pflush #0,#4");
 }
-
-static inline void
-pte_set(TARGET_HAL_PTE_T *pte, unsigned flg)
-{
-  WSET_SET(pte->value, flg);
-}
-
-static inline void
-pte_clr(TARGET_HAL_PTE_T *pte, unsigned flg)
-{
-  WSET_CLR(pte->value, flg);
-}
-#endif
 
 #endif /* COLDFIRE_HAL_VM_H */
