@@ -1,5 +1,5 @@
-#ifndef __I386_HW_MAP_H__
-#define __I386_HW_MAP_H__
+#ifndef __I386_HWMAP_H__
+#define __I386_HWMAP_H__
 /*
  * Copyright (C) 2007, The EROS Group, LLC.
  *
@@ -90,9 +90,6 @@ typedef struct PDPT {
 
 extern PDPT KernPDPT;
 
-void local_tlb_flush();
-void local_tlb_flushva(kva_t va);
-
 /** @brief Re-establish the kernel mapping for the least 4M (PAE: 2M)
  * of physical memory. */
 void hwmap_enable_low_map();
@@ -121,4 +118,4 @@ struct Mapping *pgtbl_get(struct MemHeader *hdr, size_t level,
 void do_pageFault(Process *base, uintptr_t addr, 
 		  bool wantWrite, bool wantExec, bool wantCap);
 
-#endif /* __I386_HW_MAP_H__ */
+#endif /* __I386_HWMAP_H__ */

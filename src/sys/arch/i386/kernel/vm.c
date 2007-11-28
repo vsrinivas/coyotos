@@ -31,6 +31,7 @@
 #include <kerninc/string.h>
 #include <kerninc/PhysMem.h>
 #include <kerninc/printf.h>
+#include <kerninc/event.h>
 #include "IA32/PTE.h"
 #include "hwmap.h"
 
@@ -242,4 +243,31 @@ kmap_map(kva_t va, kpa_t pa, uint32_t perms)
     printf("kmap: Mapped va=0x%08x to pa=0x%016x\n", va, pa);
 }
 
+/// @brief Load the specified mapping onto the CPU.
+///
+/// This does not need to grab locks. If the mapping loaded is
+/// KernMap, then no lock is needed. Any other mapping could be
+/// whacked only through the RevMap, and that RevMap entry will be
+/// marked REVMAP_TARGET_MAP_PROC, so any attempt to whack via that
+/// root would attempt to grab our process lock and fail.
+void
+vm_switch_curcpu_to_map(Mapping *map)
+{
+  assert(map);
+  assert(mutex_isheld(&MY_CPU(current)->hdr.lock));
+
+
+  LOG_EVENT(ety_MapSwitch, MY_CPU(curMap), map, 0);
+
+  if (map == MY_CPU(curMap))
+    return;
+
+  MY_CPU(curMap) = map;
+
+  GNU_INLINE_ASM("mov %0,%%cr3"
+		 : /* No output */
+		 : "r" (map->pa));
+
+  transmap_advise_tlb_flush();
+}
 

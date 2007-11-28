@@ -34,7 +34,6 @@
 #include <kerninc/util.h>
 #include <kerninc/AgeList.h>
 #include <kerninc/pstring.h>
-#include <kerninc/event.h>
 #include "hwmap.h"
 #include "kva.h"
 
@@ -55,26 +54,6 @@ Mapping KernMapping;
 bool UsingPAE = false;
 bool NXSupported = false;
 
-void
-local_tlb_flush()
-{
-  GNU_INLINE_ASM("mov %%cr3,%%eax\n"
-		 "mov %%eax,%%cr3\n"
-		 : /* No outputs */
-		 : /* No inputs */
-		 : "ax");
-}
-
-void
-local_tlb_flushva(kva_t va)
-{
-  GNU_INLINE_ASM("invlpg %0\n"
-		 : /* no output */
-		 : "m" (*(char *)va)
-		 : "memory"
-		 );
-}
-
 /* Following are placeholder implementations */
 void
 global_tlb_flush()
@@ -83,10 +62,23 @@ global_tlb_flush()
 }
 
 void
-global_tlb_flushva(kva_t va)
+hwmap_enable_low_map()
 {
-  local_tlb_flush();
+  if (UsingPAE)
+    KernPDPT.entry[0] = KernPDPT.entry[3];
+  else
+    KernPageDir[0] = KernPageDir[768];
 }
+
+void
+hwmap_disable_low_map()
+{
+  if (UsingPAE)
+    PTE_CLEAR(KernPDPT.entry[0]);
+  else
+    PTE_CLEAR(KernPageDir[0]);
+}
+
 
 static void
 reserve_pgtbls(void)
@@ -168,44 +160,6 @@ pagetable_init(void)
   CUR_CPU->curMap = &KernMapping;
 }
 
-void
-hwmap_enable_low_map()
-{
-  if (UsingPAE)
-    KernPDPT.entry[0] = KernPDPT.entry[3];
-  else
-    KernPageDir[0] = KernPageDir[768];
-}
-
-void
-hwmap_disable_low_map()
-{
-  if (UsingPAE)
-    PTE_CLEAR(KernPDPT.entry[0]);
-  else
-    PTE_CLEAR(KernPageDir[0]);
-}
-
-
-/// @bug Need to grab locks here!
-void
-vm_switch_curcpu_to_map(Mapping *map)
-{
-  assert(map);
-
-  LOG_EVENT(ety_MapSwitch, CUR_CPU->curMap, map, 0);
-
-  if (map == CUR_CPU->curMap)
-    return;
-
-  CUR_CPU->curMap = map;
-
-  GNU_INLINE_ASM("mov %0,%%cr3"
-		 : /* No output */
-		 : "r" (map->pa));
-  transmap_advise_tlb_flush();
-}
-
 /** @brief Make the mapping @p m undiscoverable by removing it from
  * its product chain. 
  *
@@ -213,7 +167,7 @@ vm_switch_curcpu_to_map(Mapping *map)
  * file to stick it in.
  */
 static void
-product_recall(Mapping *m)
+mapping_make_unreachable(Mapping *m)
 {
   /* Producer chains are guarded by the mappingListLock. Okay to
      fiddle them here. */
@@ -231,7 +185,7 @@ product_recall(Mapping *m)
 }
 
 static Mapping *
-alloc_mapping_table(size_t level)
+pgtable_alloc(size_t level)
 {
   assert(spinlock_isheld(&mappingListLock));
 
@@ -245,7 +199,7 @@ alloc_mapping_table(size_t level)
 
     if (pt->producer) {
       /* Make this page table undiscoverable. */
-      product_recall(pt);
+      mapping_make_unreachable(pt);
 
       rm_whack_mapping(pt);
     }
@@ -302,7 +256,7 @@ pgtbl_get(MemHeader *hdr, size_t level,
     }
   }
   
-  Mapping *nMap = alloc_mapping_table(level);
+  Mapping *nMap = pgtable_alloc(level);
 
   nMap->level = level;
   nMap->match = guard;
@@ -338,7 +292,7 @@ memhdr_destroy_products(MemHeader *hdr)
 
   while ((pt = hdr->products) != NULL) {
     /* Make this page table undiscoverable. */
-    product_recall(pt);
+    mapping_make_unreachable(pt);
 
     rm_whack_mapping(pt);
 
@@ -354,9 +308,11 @@ memhdr_destroy_products(MemHeader *hdr)
   spinlock_release(shi);
 }
 
-static void
-depend_entry_invalidate_impl(const DependEntry *entry, int slot)
+void
+depend_entry_invalidate(const DependEntry *entry, int slot)
 {
+  assert ((slot == -1) || (slot >= 0 && slot < NUM_GPT_SLOTS));
+
   Mapping *map = entry->map;
   size_t mask = entry->slotMask;
 
@@ -422,19 +378,6 @@ depend_entry_invalidate_impl(const DependEntry *entry, int slot)
    * Also, do we want to delay doing this until all of the Depend entries
    * are gone?
    */
-}
-
-void
-depend_entry_invalidate(const DependEntry *entry)
-{
-  depend_entry_invalidate_impl(entry, -1);
-}
-
-void
-depend_entry_invalidate_slot(const DependEntry *entry, size_t slot)
-{
-  assert (slot >= 0 && slot < NUM_GPT_SLOTS);
-  depend_entry_invalidate_impl(entry, slot);
 }
 
 void

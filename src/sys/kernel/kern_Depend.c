@@ -141,7 +141,7 @@ depend_invalidate(GPT *gpt)
   for (cur = b->list; cur; cur = cur->next) {
     for (size_t i = 0; i < ENTRIES_PER_DEPEND; i++) {
       if (cur->ents[i].gpt == gpt) {
-	depend_entry_invalidate(&cur->ents[i]);
+	depend_entry_invalidate(&cur->ents[i], DEPEND_INVALIDATE_ALL);
 	cur->ents[i].gpt = 0;
 	assert(cur->nvalid > 0);
 	cur->nvalid--;
@@ -166,7 +166,7 @@ depend_invalidate_slot(GPT *gpt, size_t slot)
 	if (!(cur->ents[i].slotMask & mask))
 	  continue;
 
-	depend_entry_invalidate_slot(&cur->ents[i], slot);
+	depend_entry_invalidate(&cur->ents[i], slot);
 	cur->ents[i].slotMask &= ~mask;
 
 	if (cur->ents[i].slotMask == 0) {

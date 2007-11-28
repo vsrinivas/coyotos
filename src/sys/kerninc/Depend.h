@@ -187,16 +187,13 @@ void depend_invalidate(struct GPT *gpt);
  */
 void depend_invalidate_slot(struct GPT *gpt, size_t slot);
 
+#define DEPEND_INVALIDATE_ALL -1
 /**
  * @brief HAL function to invalidate all Mapping entries associated with
- * a DependEntry.
+ * a particular @p slot in a DependEntry.
+ *
+ * If @p slot is DEPEND_INVALIDATE_ALL, all slots are invalidated.
  */
-__hal void depend_entry_invalidate(const DependEntry *entry);
-
-/**
- * @brief HAL function to invalidate all Mapping entries associated with
- * a particular slot in a DependEntry.
- */
-__hal void depend_entry_invalidate_slot(const DependEntry *entry, size_t slot);
+__hal void depend_entry_invalidate(const DependEntry *entry, int slot);
 
 #endif /* __KERNINC_DEPEND_H__ */

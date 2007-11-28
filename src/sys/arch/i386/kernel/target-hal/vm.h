@@ -4,6 +4,7 @@
 #include <stdbool.h>
 #include <hal/kerntypes.h>
 #include <kerninc/set.h>
+#include <kerninc/ccs.h>
 
 union IA32_PTE {
   struct {
@@ -121,5 +122,25 @@ pte_clr(TARGET_HAL_PTE_T *pte, unsigned flg)
   WSET_CLR(pte->value, flg);
 }
 #endif
+
+static inline void
+local_tlb_flush()
+{
+  GNU_INLINE_ASM("mov %%cr3,%%eax\n"
+		 "mov %%eax,%%cr3\n"
+		 : /* No outputs */
+		 : /* No inputs */
+		 : "ax");
+}
+
+static inline void
+local_tlb_flushva(kva_t va)
+{
+  GNU_INLINE_ASM("invlpg %0\n"
+		 : /* no output */
+		 : "m" (*(char *)va)
+		 : "memory"
+		 );
+}
 
 #endif /* I386_HAL_VM_H */

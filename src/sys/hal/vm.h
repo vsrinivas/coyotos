@@ -94,4 +94,9 @@ void vm_switch_curcpu_to_map(struct Mapping *map);
  */
 struct Process;
 static inline bool vm_valid_uva(struct Process *p, kva_t uva);
+
+static inline void local_tlb_flush();
+
+static inline void local_tlb_flushva(kva_t va);
+
 #endif /* HAL_VM_KMAP_H */
