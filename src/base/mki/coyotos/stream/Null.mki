@@ -29,7 +29,7 @@ module coyotos.stream.Null {
   };
 
   export capreg APP {
-    Log,
+    Log = rt.REG.APP0,
     MyEntry
   };
 
