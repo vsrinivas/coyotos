@@ -142,6 +142,14 @@ DocComment::DocComment()
   validateElements();
 }
 
+sherpa::LexLoc 
+DocComment::locOf(size_t pos) const
+{
+  sherpa::LexLoc ll = comStart;
+  ll.updateWith(com.substr(0, pos));
+  return ll;
+}
+
 void
 DocComment::updateComPos(size_t newPos) 
 {
@@ -151,7 +159,6 @@ DocComment::updateComPos(size_t newPos)
   DEBUG("updateComPos: " << comPos << " -> " << newPos);
 
   if (comPos != newPos) {
-    comHere.updateWith(com.substr(comPos, newPos-comPos));
     comPosReal = newPos;
     comAtBegOfLine = false;
   }
@@ -282,23 +289,23 @@ DocComment::parseText()
   DomNode *ret;
   std::string text = com.substr(comPos, cur - comPos);
   if (type == typeWS)
-    ret = new WhiteSpaceDomNode(comHere, text);
+    ret = new WhiteSpaceDomNode(locOf(comPos), text);
   else
-    ret = new TextDomNode(comHere, text);
+    ret = new TextDomNode(locOf(comPos), text);
 
   DEBUG(((type == typeWS)? "WS " : "text ") << 
 	comPos << "-" << cur << ": \"" << text << "\"");
 	
   if (ret == NULL)
-    throw ParseFailureException(comHere, "out of memory");
+    throw ParseFailureException(locOf(comPos), "out of memory");
 
   // for mixed identifiers, wrap them in an appropriate Elem node.
   if (type == typeIdentifier && possibleMixCase &&
       (sawInnerCapital || sawInnerDot)) {
     std::string tag = (sawInnerDot) ? "capdoc:idlident" : "capdoc:mixident";
-    DomNode *ret2 = new ElemDomNode(comHere, tag);
+    DomNode *ret2 = new ElemDomNode(locOf(comPos), tag);
     if (ret == NULL) {
-      throw ParseFailureException(comHere, "out of memory");
+      throw ParseFailureException(locOf(comPos), "out of memory");
     }
     ret2->addChild(ret);
     ret = ret2;
@@ -439,7 +446,7 @@ DocComment::parseAhead() const
       pos++;
     }
     if (!parseGetEntityName(pos + 1, pos, ret.tag)) {
-      throw ParseFailureException(comHere,
+      throw ParseFailureException(locOf(comPos),
 				  "unrecognized character in @ tag");
       ret.eof = true;
       return ret;
@@ -449,14 +456,14 @@ DocComment::parseAhead() const
     // for close tags, we include the '>' in our parse.
     if (closeTag) {
       if (pos >= com.length() || com[pos] != '>') {
-	throw ParseFailureException(comHere, "improper close tag");
+	throw ParseFailureException(locOf(comPos), "improper close tag");
       }
       pos++;
     }
     ret.offset = pos;
     ret.info = findElementByTag(ret.tag);
     if (ret.info == NULL)
-      throw ParseFailureException(comHere,
+      throw ParseFailureException(locOf(comPos),
 				  "unrecognized tag <" + ret.tag + "...");   
       
     return ret;
@@ -464,12 +471,12 @@ DocComment::parseAhead() const
   case '@': {
     std::string name;
     if (comPos + 1 >= com.length())
-      throw ParseFailureException(comHere, "missing @ tag name");
+      throw ParseFailureException(locOf(comPos), "missing @ tag name");
 
     if (!parseGetName(comPos + 1, DoxygenName, ret.offset, name)) {
       const char *newname;
       if ((newname = doxygen_special_char(com[comPos+1])) == NULL) {
-	throw ParseFailureException(comHere,
+	throw ParseFailureException(locOf(comPos),
 				    "unrecognized character in @ tag");
       }
 
@@ -482,7 +489,7 @@ DocComment::parseAhead() const
     ret.tag = "doxygen:" + name;
     ret.info = findElementByTag(ret.tag);
     if (ret.info == NULL)
-      throw ParseFailureException(comHere,
+      throw ParseFailureException(locOf(comPos),
 				  "unrecognized doxygen tag @" + name);   
     return ret;
   }
@@ -508,12 +515,12 @@ DocComment::parseDocAttributes(DomNode *elem)
       return true;
 
     if (!parseGetName(comPos, XmlName, pos, attName))
-      throw ParseFailureException(comHere,
+      throw ParseFailureException(locOf(comPos),
 				  "invalid character in attributes of <" +
 				  elem->name + "...");
 
     if (pos >= com.length() || com[pos] != '=')
-      throw ParseFailureException(comHere,
+      throw ParseFailureException(locOf(comPos),
 				  "missing '=' in attributes of  <" +
 				  elem->name + "...");
 
@@ -545,16 +552,16 @@ DocComment::parseDocAttributes(DomNode *elem)
     if (needQuotes)
       attValue = '"' + attValue + '"';
 
-    DomNode *newNode = new AttrDomNode(comHere, attName, attValue);
+    DomNode *newNode = new AttrDomNode(locOf(comPos), attName, attValue);
     if (newNode == NULL)
-      throw ParseFailureException(comHere, "out of memory");
+      throw ParseFailureException(locOf(comPos), "out of memory");
 
     elem->addAttr(newNode);
 
     pos = skipWhiteSpace(pos);
     updateComPos(pos);
   }
-  throw ParseFailureException(comHere, std::string(
+  throw ParseFailureException(locOf(comPos), std::string(
 			      "Reached end of comment processing ") +
 			      "attributes of  <" + elem->name + "...");
 }
@@ -562,7 +569,7 @@ DocComment::parseDocAttributes(DomNode *elem)
 DomNode *
 DocComment::parseDocNode(struct DocComment::lookAhead la)
 {
-  DomNode *newNode = new ElemDomNode(comHere, la.tag);
+  DomNode *newNode = new ElemDomNode(locOf(comPos), la.tag);
   bool hasBody = true;
   bool autoPar = false;
 
@@ -581,7 +588,7 @@ DocComment::parseDocNode(struct DocComment::lookAhead la)
       updateComPos(comPos + 1);
     }
     if (comPos >= com.length() || com[comPos] != '>')
-      throw ParseFailureException(comHere, "missing '>' in <" + la.tag +
+      throw ParseFailureException(locOf(comPos), "missing '>' in <" + la.tag +
 				  " ...");
 
     updateComPos(comPos + 1);
@@ -593,11 +600,11 @@ DocComment::parseDocNode(struct DocComment::lookAhead la)
       if (strchr(" \t\r\n", com[pos]) != NULL)
 	break;
     if (pos == com.length())
-      throw ParseFailureException(comHere, "@ tag requires argument");
+      throw ParseFailureException(locOf(comPos), "@ tag requires argument");
 
-    DomNode *arg = new TextDomNode(comHere, com.substr(comPos, pos - comPos));
+    DomNode *arg = new TextDomNode(locOf(comPos), com.substr(comPos, pos - comPos));
     if (arg == NULL)
-      throw ParseFailureException(comHere, "out of memory");
+      throw ParseFailureException(locOf(comPos), "out of memory");
 
     updateComPos(pos);
     newNode->addChild(arg);
@@ -660,7 +667,7 @@ DocComment::parseDocMain(DomNode *current, bool autoPar, bool isRoot)
 	return;                  // proper close
       }
       if (isRoot) {
-	throw ParseFailureException(comHere,
+	throw ParseFailureException(locOf(comPos),
 				    "</"+la.tag+"> doesn't match anything");
       }
       return;
@@ -697,9 +704,9 @@ DocComment::parseDocMain(DomNode *current, bool autoPar, bool isRoot)
       if (autoPar)
 	newNode = parseAutoPar();
       else {
-	newNode = new TextDomNode(comHere, la.tag);
+	newNode = new TextDomNode(locOf(comPos), la.tag);
 	if (newNode == NULL)
-	  throw ParseFailureException(comHere, "out of memory");
+	  throw ParseFailureException(locOf(comPos), "out of memory");
 	updateComPos(la.offset);
       }
       current->addChild(newNode);
@@ -766,7 +773,7 @@ DocComment::ProcessComment(LexLoc cHere, std::string c, enum commentType type)
   comType = type;
   com = c;
   comPosReal = 0;
-  comHere = cHere;
+  comStart = cHere;
 
   size_t pos = skipWhiteSpace(processBegOfLine(0));
   if (pos > 1)

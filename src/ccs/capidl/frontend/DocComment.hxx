@@ -74,13 +74,15 @@ private:
   std::string com;
   const size_t &comPos;
   size_t comPosReal;
-  sherpa::LexLoc comHere;
+  sherpa::LexLoc comStart;
   bool comAtBegOfLine;
 
   enum name_type {
     XmlName,
     DoxygenName
   };
+
+  sherpa::LexLoc locOf(size_t pos) const;
 
   size_t processBegOfLine(size_t) const;
   size_t skipWhiteSpace(size_t) const;
