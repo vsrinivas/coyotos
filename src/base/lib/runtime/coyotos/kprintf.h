@@ -24,9 +24,21 @@
 /** @file 
  * @brief Kernel Log printf routine */
 
+#include <stdarg.h>
+#include <coyotos/capidl.h>
 #include <coyotos/coytypes.h>
 
-/** @brief log to a KernLog capability. */
-void kprintf(caploc_t kernlog, const char *format, ...);
+/** @brief Write pre-digested printf string to a KernLog
+    capability. */
+bool IDL_ENV_kvprintf(IDL_Environment *_env, caploc_t kernlog,
+		      const char *fmt, va_list ap);
+
+/** @brief Write string to a KernLog capability using specified IDL
+ * environment. */
+bool IDL_ENV_kprintf(IDL_Environment *_env, caploc_t kernlog,
+		     const char *fmt, ...);
+
+/** @brief Write string to a KernLog capability. */
+bool kprintf(caploc_t kernlog, const char *fmt, ...);
 
 #endif /* __COYOTOS_REPLY_CONSTRUCTOR_H__ */
