@@ -37,6 +37,11 @@ OBJECTS=\
 	$(BUILDDIR)/cap_Process.o \
 	$(BUILDDIR)/transmap.o \
 	$(BUILDDIR)/hwmap.o \
+	$(BUILDDIR)/sysctl.o \
+	$(BUILDDIR)/console.o \
+	$(BUILDDIR)/interrupt.o \
+	$(BUILDDIR)/cpu.o \
+	$(BUILDDIR)/vm.o \
 	$(BUILDDIR)/kern_string.o \
 	$(BUILDDIR)/kern_pstring.o \
 	$(BUILDDIR)/kern_printf.o \
@@ -65,11 +70,9 @@ OBJECTS=\
 #	$(BUILDDIR)/PageFault.o \
 #	$(BUILDDIR)/HardClock.o \
 #	$(BUILDDIR)/init.o \
-#	$(BUILDDIR)/cpu.o \
 #	$(BUILDDIR)/vm.o \
 #	$(BUILDDIR)/dispatch.o \
 #	$(BUILDDIR)/Object.o \
-#	$(BUILDDIR)/sysctl.o \
 #
 
 
@@ -105,8 +108,7 @@ $(BUILDDIR)/ldscript: ldscript.S target-hal/config.h $(MAKE_BUILDDIR)
 $(BUILDDIR)/asm-offsets.s: asm-offsets.c $(MAKE_BUILDDIR)
 	$(GCC) $(GCCFLAGS) $(GCCWARN) -S $< -o $@
 
-$(BUILDDIR)/interrupt.o: $(BUILDDIR)/asm-offsets.h
-$(BUILDDIR)/apboot.o: $(BUILDDIR)/asm-offsets.h
+#$(BUILDDIR)/interrupt.o: $(BUILDDIR)/asm-offsets.h
 
 $(BUILDDIR)/asm-offsets.h: $(BUILDDIR)/asm-offsets.s
 	@echo "/* This file is public domain." > $@

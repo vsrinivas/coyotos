@@ -206,7 +206,8 @@ rm_whack_mapping(struct Mapping *m)
   spinlock_release(shi);
 }
 
-void rm_whack_page(struct Page *pg)
+void 
+rm_whack_page(struct Page *pg)
 {
   RevMapBucket *b = rm_hash_page(pg);
 

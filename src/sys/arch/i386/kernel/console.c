@@ -133,7 +133,7 @@ ShowCursorAt(uint32_t pos)
   outb((cursAddr & 0xFFu), 0x3D5);
 }
 
-extern void console_putc(char c)
+void console_putc(char c)
 {
   if (!console_live)
     return;
@@ -198,14 +198,14 @@ extern void console_putc(char c)
  * first user mode instruction, and that further attempts to put
  * output on the console should be ignored.
  */
-extern void 
+void 
 console_detach()
 {
   console_live = false;
 }
 
 #ifdef BRING_UP
-extern void
+void
 console_shrink()
 {
   uint16_t *newScreen = (uint16_t *) PTOKV(0xb8000, uint16_t *);

@@ -25,6 +25,7 @@
 #include <stddef.h>
 #include <kerninc/assert.h>
 #include <kerninc/printf.h>
+#include <kerninc/Depend.h>
 #include <kerninc/Mapping.h>
 #include <kerninc/event.h>
 #include <hal/transmap.h>
@@ -66,18 +67,24 @@ hwmap_disable_low_map()
 }
 #endif
 
-/// @bug Need to grab locks here!
 void
-vm_switch_curcpu_to_map(Mapping *map)
+depend_entry_invalidate(const DependEntry *entry, int slot)
 {
-  assert(map);
+  global_tlb_flush();
+}
 
-  LOG_EVENT(ety_MapSwitch, CUR_CPU->curMap, map, 0);
+void
+rm_whack_pte(struct Mapping *map,  size_t slot)
+{
+  global_tlb_flush();
+}
 
-  if (map == CUR_CPU->curMap)
-    return;
-
-  CUR_CPU->curMap = map;
-
-  transmap_advise_tlb_flush();
+void
+rm_whack_process(Process *proc)
+{
+  HoldInfo hi = mutex_grab(&proc->hdr.lock);
+  proc->mappingTableHdr = 0;
+  if (proc == MY_CPU(current))
+    vm_switch_curcpu_to_map(&KernMapping);
+  mutex_release(hi);
 }
