@@ -140,7 +140,7 @@ local_tlb_flush()
 {
   /* There is no easy way to flush the TLB without flushing shared
    * entries, which is a nuisance. */
-  hwreg_write(COLDFIRE_MMUOR, 0x1u << 7);
+  hwreg_write(COLDFIRE_MMUOR, COLDFIRE_MMUOR_CNL);
 }
 
 static inline void

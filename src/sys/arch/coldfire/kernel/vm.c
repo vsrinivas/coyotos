@@ -57,8 +57,14 @@ kmap_map(kva_t va, kpa_t pa, uint32_t perms)
 void
 vm_switch_curcpu_to_map(Mapping *map)
 {
+  extern Mapping KernMapping;
+
   assert(map);
-  // assert(mutex_isheld(&MY_CPU(current)->hdr.lock));
+  assert((map == &KernMapping) ||
+	 (MY_CPU(current) &&
+	  map == MY_CPU(current)->mappingTableHdr &&
+	  mutex_isheld(&MY_CPU(current)->hdr.lock)));
+  // assert();
 
   LOG_EVENT(ety_MapSwitch, MY_CPU(curMap), map, 0);
 

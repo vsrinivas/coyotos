@@ -25,6 +25,7 @@
  */
 
 #include <stdint.h>
+#include <coyotos/coytypes.h>
 #include <kerninc/Link.h>
 #include <kerninc/ObjectHeader.h>
 #include <kerninc/mutex.h>
@@ -62,14 +63,11 @@ typedef struct Mapping {
   /** @brief Pointer to the object that produced this page table. */
   MemHeader *producer;
 
-#if MAPPING_INDEX_BITS
-  /** @brief Physical address of this page table */
-  kpa_t     pa;
-
   /** @brief Virtual address bits that must match in order for this
    * table to be appropriate for use.
    */
   coyaddr_t    match;
+
   /** @brief Virtual address bits that are significant for matching
    * purposes in order for this table to be appropriate for use.
    */
@@ -80,12 +78,18 @@ typedef struct Mapping {
    */
   uint8_t restr;
 
+#if MAPPING_INDEX_BITS
   /** @brief Level of page table */
   uint8_t level;
 
   size_t userSlots;  /**< @brief Number of leading user-mode slots */
-#else
+
+  /** @brief Physical address of this page table */
+  kpa_t     pa;
+#else /* MAPPING_INDEX_BITS */
+
   asid_t asid;
+
 #endif /* MAPPING_INDEX_BITS */
 } Mapping;
 

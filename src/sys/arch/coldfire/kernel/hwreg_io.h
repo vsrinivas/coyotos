@@ -38,7 +38,24 @@
 /* Reserved: 0x0c */
 #define COLDFIRE_MMUAR  (COLDFIRE_MMUBAR + 0x10)
 #define COLDFIRE_MMUTR  (COLDFIRE_MMUBAR + 0x14)
+/*  MMUTR:
+ *  31            10 9   2  1  0
+ * +----------------+-----+--+--+
+ * |  VA            |ASID |SG| V|
+ * +----------------+-----+--+--+
+ */
 #define COLDFIRE_MMUDR  (COLDFIRE_MMUBAR + 0x18)
+
+/* Bits the specify MMU operations. MC5485RM Section 5.5.3.4. */
+#define COLDFIRE_MMUOR_STLB  0x100   /**< Search TLB  */
+#define COLDFIRE_MMUOR_CA    0x080   /**< Clear all entries */
+#define COLDFIRE_MMUOR_CNL   0x040   /**< Clear non-locked entries */
+#define COLDFIRE_MMUOR_CAS   0x020 /**< Clear non-locked matching ASID */
+#define COLDFIRE_MMUOR_ITLB  0x010 /**< ITLB operation */
+#define COLDFIRE_MMUOR_ADR   0x008 /**< TLB address select */
+#define COLDFIRE_MMUOR_RW    0x004 /**< Read or write operation */
+#define COLDFIRE_MMUOR_ACC   0x002 /**< MMU TLB Access */
+#define COLDFIRE_MMUOR_UAA   0x001 /**< Update allocation address */
 
 #ifndef __ASSEMBLER__
 

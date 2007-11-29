@@ -27,12 +27,23 @@
 #include <kerninc/printf.h>
 #include <kerninc/Depend.h>
 #include <kerninc/Mapping.h>
+#include <kerninc/RevMap.h>
 #include <kerninc/event.h>
+#include <kerninc/AgeList.h>
 #include <hal/transmap.h>
 
 #include "hwmap.h"
 
+/* This lock is not strictly required, but is preserved for
+ * parallelism with other architectures, and also because somebody may
+ * do a coldfire multiprocessor someday.
+ */
+spinlock_t mappingListLock;
+
 Mapping KernMapping;
+Mapping UserMapping[256];	/* One per user ASID. Entry 0 is never used */
+
+AgeList MappingAgeList = { { &MappingAgeList.list, &MappingAgeList.list, } } ;
 
 /* Following are placeholder implementations */
 void
@@ -45,6 +56,125 @@ void
 global_tlb_flushva(kva_t va)
 {
   local_tlb_flush();
+}
+
+static inline void
+tlb_flush_asid(uint8_t asid)
+{
+  /* There is no easy way to flush the TLB without flushing shared
+   * entries, which is a nuisance. */
+  hwreg_write(COLDFIRE_MMUTR, (asid << 2));
+  hwreg_write(COLDFIRE_MMUOR, COLDFIRE_MMUOR_CAS);
+}
+
+
+void
+pagetable_init(void)
+{
+  printf("Initializing mappings\n");
+
+  link_init(&KernMapping.ageLink);
+  KernMapping.asid = 0;
+  MY_CPU(curMap) = &KernMapping;
+
+  for (size_t i = 1; i < 256; i++) {
+    link_init(&UserMapping[i].ageLink);
+    UserMapping[i].asid = i;
+    agelist_addBack(&MappingAgeList, &UserMapping[i]);
+  }
+}
+
+/** @brief Make the mapping @p m undiscoverable by removing it from
+ * its product chain. 
+ *
+ * @bug This should be generic code, but it isn't obvious what source
+ * file to stick it in.
+ */
+static void
+mapping_make_unreachable(Mapping *m)
+{
+  /* Producer chains are guarded by the mappingListLock. Okay to
+     fiddle them here. */
+
+  MemHeader *hdr = m->producer;
+  Mapping **mPtr = &hdr->products;
+
+  while (*mPtr != m)
+    mPtr = &((*mPtr)->nextProduct);
+
+  /* We really *should* actually be *on* the product list: */
+  assert(*mPtr == m);
+
+  *mPtr = m->nextProduct;
+}
+
+static Mapping *
+mapping_alloc()
+{
+  assert(spinlock_isheld(&mappingListLock));
+
+  Mapping *map;
+  for(;;) {
+    map = agelist_oldest(&MappingAgeList);
+
+    if (map->producer) {
+      /* Make this page table undiscoverable. */
+      mapping_make_unreachable(map);
+
+      rm_whack_mapping(map);
+    }
+
+    break;
+  }
+
+  assert(map);
+
+  /* There is no need to re-initialize the mapping table, since we
+     don't presently HAVE an explicit mapping table, but we do need to
+     flush the corresponding ASID from the TLB */
+
+  tlb_flush_asid(map->asid);
+
+  /* Newly allocated, so move to front. */
+  agelist_remove(&MappingAgeList, map);
+  agelist_addFront(&MappingAgeList, map);
+
+  return map;
+}
+
+Mapping *
+mapping_get(MemHeader *hdr,
+	    coyaddr_t guard, coyaddr_t mask, size_t restr)
+{
+  SpinHoldInfo shi = spinlock_grab(&mappingListLock);
+
+  for (Mapping *cur = hdr->products;
+       cur != NULL;
+       cur = cur->nextProduct) {
+    if (cur->match == guard &&
+	cur->mask == mask &&
+	cur->restr == restr) {
+
+      agelist_remove(&MappingAgeList, cur);
+      agelist_addFront(&MappingAgeList, cur);
+
+      spinlock_release(shi);
+      return cur;
+    }
+  }
+  
+  Mapping *nMap = mapping_alloc();
+
+  nMap->match = guard;
+  nMap->mask = mask;
+  nMap->restr = restr;
+
+  nMap->producer = hdr;
+  nMap->nextProduct = hdr->products;
+  hdr->products = nMap;
+
+  spinlock_release(shi);
+  return nMap;
 }
 
 #if 0
