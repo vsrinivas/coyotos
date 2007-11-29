@@ -88,13 +88,13 @@ xmlPrintDocComment(const DocComment *dc, INOstream& out)
 
   if (dc->HasBriefDoc()) {
     out << "<capdoc:brief>";
-    dc->GetBriefDoc()->emitHtml(out.ostrm);
+    dc->GetBriefDoc()->emitXML(out.ostrm);
     out << "</capdoc:brief>\n";
   }
 
   if (dc->HasFullDoc()) {
     out << "<capdoc:full>";
-    dc->GetFullDoc()->emitHtml(out.ostrm);
+    dc->GetFullDoc()->emitXML(out.ostrm);
     out << "</capdoc:full>\n";
   }
 
