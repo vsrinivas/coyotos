@@ -67,8 +67,8 @@ interface Range extends Cap raises(RangeErr, NotMounted, IoErr) {
   /// Rescinds the passed capability if it is the ``full powered''
   /// variant of this capability type. That is: a read-write page,
   /// cappage, or gpt capability, a process capability, an endpoint
-  /// capability, or a rcvqueue capability, but not a sender's
-  /// capability or any reduced form of page/cappage capability.
+  /// capability, or a rcvqueue capability, but not an enty capability
+  /// or any reduced form of page/cappage capability.
   void rescind(Cap c);
 
   /// @brief Report next populated subrange.

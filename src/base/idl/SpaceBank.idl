@@ -90,10 +90,13 @@ interface SpaceBank extends Cap {
   ///
   /// Releases @p count objects, returning them to the free storage
   /// pool. If the passed capabilities are not owned by this space
-  /// bank, the cap.RequestError exception is raised.
+  /// bank, the cap.RequestError exception is raised. The passed
+  /// capabilities must additionally satisfy the constraints of
+  /// coyotos.Range.rescind.
   ///
-  /// @bug What happens if some, but not all, objects are owned by the
-  /// bank needs to be defined.
+  /// If @em any of the passed capabilities fail to meet these
+  /// requirements, the operation fails with a cap.RequestError
+  /// exception with no action taken.
   ///
   /// Raises NoAccess if the capability has the noFree restriction.
   void free(unsigned long count, Cap c1, Cap c2, Cap c3);
