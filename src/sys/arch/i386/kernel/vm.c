@@ -254,8 +254,7 @@ void
 vm_switch_curcpu_to_map(Mapping *map)
 {
   assert(map);
-  assert(mutex_isheld(&MY_CPU(current)->hdr.lock));
-
+  //  assert(mutex_isheld(&MY_CPU(current)->hdr.lock));
 
   LOG_EVENT(ety_MapSwitch, MY_CPU(curMap), map, 0);
 

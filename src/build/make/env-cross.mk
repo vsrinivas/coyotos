@@ -31,6 +31,7 @@ COYOTOS_RANLIB=$(COYOTOS_XENV)/host/bin/$(CROSS_PREFIX)ranlib
 COYOTOS_CPP=/lib/cpp -undef -nostdinc -D$(COYOTOS_ARCH)
 COYOTOS_GCC_OPTIM=-finline-limit=3000 -fno-strict-aliasing $(COYOTOS_GCC_MODEL)
 COYOTOS_GCC_KERNEL_ALIGN=-falign-functions=4
+COYOTOS_ASM_OPTIONS=$(COYOTOS_GCC_MODEL)
 
 GAWK=gawk
 

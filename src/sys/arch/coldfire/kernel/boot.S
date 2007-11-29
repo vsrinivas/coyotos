@@ -420,12 +420,6 @@ fail_message:
 	
 #endif
 	
-ENTRY(halt)
-ENTRY(sysctl_halt)
-1:	cli
-	hlt
-	jmp 1b
-
 #if HAVE_CONSOLE
 	.data
 message_no_pae:
@@ -438,5 +432,13 @@ message_no_cpuid_op1:
 	.asciz "Coyotos does not support this CPU (need CPUID op 0x1)"
 #endif	
 
-
 #endif
+	
+ENTRY(halt)
+ENTRY(sysctl_halt)
+	/* Disable interrupts: */
+	movew	%sr,%d0
+	oril	#0x700,%d0
+	movew	%d0,%sr
+1:	halt
+	jmp 1b

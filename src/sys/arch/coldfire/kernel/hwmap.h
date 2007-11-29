@@ -1,5 +1,5 @@
-#ifndef __COLDFIRE_HW_MAP_H__
-#define __COLDFIRE_HW_MAP_H__
+#ifndef __COLDFIRE_HWMAP_H__
+#define __COLDFIRE_HWMAP_H__
 /*
  * Copyright (C) 2007, The EROS Group, LLC.
  *
@@ -56,4 +56,4 @@ void hwmap_disable_low_map();
 void do_pageFault(Process *base, uintptr_t addr, 
 		  bool wantWrite, bool wantExec, bool wantCap);
 
-#endif /* __COLDFIRE_HW_MAP_H__ */
+#endif /* __COLDFIRE_HWMAP_H__ */

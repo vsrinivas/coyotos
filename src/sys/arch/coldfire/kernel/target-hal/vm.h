@@ -4,6 +4,13 @@
 #include <stdbool.h>
 #include <hal/kerntypes.h>
 
+/* We need to be able to use the hardware-dependent memory-mapped I/O
+ * support, but I do not want to publish that header file into the
+ * target-hal/ directory lest someone think that it is part of the
+ * HAL.
+ */
+#include "../hwreg_io.h"
+
 /** @brief Coldfire PTE data structure.
  *
  * The MMU on this machine is soft-loaded, so we can use pretty much
@@ -128,16 +135,19 @@ static inline bool vm_valid_uva(struct Process *p, uva_t uva)
 }
 
 
-void
+static inline void
 local_tlb_flush()
 {
-  GNU_INLINE_ASM("mov pflush #0,#4");
+  /* There is no easy way to flush the TLB without flushing shared
+   * entries, which is a nuisance. */
+  hwreg_write(COLDFIRE_MMUOR, 0x1u << 7);
 }
 
-void
+static inline void
 local_tlb_flushva(kva_t va)
 {
-  GNU_INLINE_ASM("mov pflush #0,#4");
+  // For now:
+  local_tlb_flush();
 }
 
 #endif /* COLDFIRE_HAL_VM_H */

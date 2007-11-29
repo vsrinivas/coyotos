@@ -76,6 +76,10 @@ struct ElementInfo {
   { }
 };
 
+// NOTE NOTE NOTE 
+//
+// If you add a tag here of the form "doxgen:X", where the
+// corresponding HTML tag is not simply X, 
 static const struct ElementInfo elems[] = {
   ElementInfo("<<blank_line>>", "|doxygen:brief|doxygen:impl_p|"),
   ElementInfo("b"),
@@ -103,6 +107,59 @@ static const struct ElementInfo elems[] = {
   ElementInfo("tt"),
   ElementInfo("ul"),
 };
+
+DomNode::HtmlElementInfo
+DomNode::htmlElementInfo() const
+{
+  HtmlElementInfo hei;
+
+  hei.name = name;		// until proven otherwise
+
+  // Most doxygen tags simply collapse to their HTML counterpart:
+  if (name.substr(0,8) == "doxygen:")
+    hei.name = name.substr(8);
+
+  // But doxygen-specific block tags need special handling:
+  if (name == "doxygen:brief") {
+    hei.wrap="div";
+    hei.wclass="doxygen_brief";
+    hei.name = "p";
+  }
+  else if (name == "doxygen:bug") {
+    hei.wrap = "ul";
+    hei.wclass = "doxygen_bug";
+    hei.prefix="Bug: ";
+    hei.name = "p";
+  }
+  else if (name == "doxygen:c") {
+    hei.name = "tt";
+  }
+  else if (name == "doxygen:impl_p") {
+    hei.name = "p";
+  }
+  else if (name == "doxygen:note") {
+    hei.wrap = "ul";
+    hei.wclass = "doxygen_note";
+    hei.prefix="Note: ";
+    hei.name = "p";
+  }
+
+  // And capdoc-specific tags also need special handling.
+  //
+  // Strictly speaking we need more information here, because we need
+  // a way to resolve the full name of the symbol so that we can cross
+  // link it. To get that right we probably need to pre-process the
+  // DOM tree to resolve all of the references, and that is way beyond
+  // what I have time for tonight.
+  else if (name.substr(0, 7) == "capdoc:") {
+    hei.wrap = "span";
+    hei.wclass = name;
+    hei.name = "tt";
+    hei.wclass[6] = '_';	// convert : to _
+  }
+
+  return hei;
+}
 
 static int
 elstrcmp(const void *vElem, const void *vCand)

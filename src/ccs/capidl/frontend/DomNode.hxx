@@ -37,6 +37,13 @@ struct DomNode {
     ntWhiteSpace
   } nodeType;
 
+  struct HtmlElementInfo {
+    std::string wrap;
+    std::string wclass;
+    std::string prefix;
+    std::string name;
+  };
+
   sherpa::CVector<DomNode *> attrs;
   sherpa::CVector<DomNode *> children;
 
@@ -49,7 +56,12 @@ struct DomNode {
   virtual ~DomNode();
 
   void dump(std::ostream&, int indent) const;
+
+  // Following is implemented in DocComment.cxx, so that it will stay
+  // in sync with the ElementInfo vector there.
+  HtmlElementInfo htmlElementInfo() const;
   void emitHtml(std::ostream& out) const;
+  void emitXML(std::ostream& out) const;
 
   inline void addChild(DomNode *child)
   {

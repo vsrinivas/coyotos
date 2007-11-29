@@ -25,7 +25,7 @@ endif
 # The following variables depend on things set in the makefile:
 GCCFLAGS=$(CFLAGS) $(OPTIM) $(GCC_OPTIM) $(INC) $(DEF)
 GPLUSFLAGS=-fdefault-inline $(CXXFLAGS) $(OPTIM) $(GPLUS_OPTIM) $(INC) $(DEF)
-ASMFLAGS=$(CFLAGS) $(INC) $(DEF)
+ASMFLAGS=$(CFLAGS) $(INC) $(DEF) $(ASM_OPTIONS)
 
 #DEP_SEDHACK=sed 's,^[^:]*:[:]*,'$@' '$(BUILDDIR)/'&,g'
 #DEP_SEDHACK=sed 's,^[^:]*:[:]*,'$(BUILDDIR)/'&,g'

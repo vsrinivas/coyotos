@@ -58,6 +58,7 @@
 
 #if !defined(__ASSEMBLER__) && !defined(__KERNEL__)
 
+#if 0
 static inline bool invoke_capability(InvParameterBlock_t *ipb)
 {
   register InvParameterBlock_t *pb asm("cx") = ipb;
@@ -108,6 +109,9 @@ static inline bool invoke_capability(InvParameterBlock_t *ipb)
 
   return true;
 }
+#else
+extern bool invoke_capability(InvParameterBlock_t *ipb);
+#endif
 
 static inline void cap_copy(caploc_t dest, caploc_t source)
 {

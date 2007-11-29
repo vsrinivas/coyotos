@@ -141,7 +141,17 @@ DomNode::emitHtml(std::ostream& out) const
     }
   case DomNode::ntElem:
     {
-      out << "<" << name;
+      /* Make a temporary copy: */
+      HtmlElementInfo hei = htmlElementInfo();
+
+      if (! hei.wrap.empty() ) {
+	out << "<" << hei.wrap;
+	if (! hei.wclass.empty() )
+	  out << " class=\"" << hei.wclass << "\"";
+	out << ">";
+      }
+
+      out << "<" << hei.name;
 
       for (size_t i = 0; i < attrs.size(); i++)
 	attrs[i]->emitHtml(out);
@@ -152,9 +162,90 @@ DomNode::emitHtml(std::ostream& out) const
 
       out << ">";
 
+      out << hei.prefix;
+
       for (size_t i = 0; i < children.size(); i++)
 	if (children[i]->nodeType != DomNode::ntAttr)
 	  children[i]->emitHtml(out);
+
+      out << "</" << hei.name << ">";
+
+      if (! hei.wrap.empty() )
+	out << "</" << hei.wrap << ">";
+
+      break;
+    }
+  case DomNode::ntAttr: {
+    {
+      const AttrDomNode *an = 
+	dynamic_cast<const AttrDomNode *> (this);
+      assert(an);
+
+      out << " " << name << "=" << an->value;
+
+      break;
+    }
+  }
+  case DomNode::ntText:
+    {
+      const TextDomNode *tn = 
+	dynamic_cast<const TextDomNode *> (this);
+      assert(tn);
+
+      out << tn->text;
+
+      break;
+    }
+  case DomNode::ntWhiteSpace:
+    {
+      const WhiteSpaceDomNode *wsn = 
+	dynamic_cast<const WhiteSpaceDomNode *> (this);
+      assert(wsn);
+
+      out << wsn->text;
+
+      break;
+    }
+  }
+
+}
+
+void
+DomNode::emitXML(std::ostream& out) const
+{
+  switch(nodeType) {
+  case DomNode::ntNone:
+    {
+      fprintf(stderr, "Internal error in DOM tree construction\n");
+      exit(1);
+    }
+  case DomNode::ntRoot:
+    {
+      for (size_t i = 0; i < attrs.size(); i++)
+	attrs[i]->emitXML(out);
+
+      for (size_t i = 0; i < children.size(); i++)
+	children[i]->emitXML(out);
+
+      /* Just process all of the children sequentially */
+      break;
+    }
+  case DomNode::ntElem:
+    {
+      out << "<" << name;
+
+      for (size_t i = 0; i < attrs.size(); i++)
+	attrs[i]->emitXML(out);
+
+      for (size_t i = 0; i < children.size(); i++)
+	if (children[i]->nodeType == DomNode::ntAttr)
+	  children[i]->emitXML(out);
+
+      out << ">";
+
+      for (size_t i = 0; i < children.size(); i++)
+	if (children[i]->nodeType != DomNode::ntAttr)
+	  children[i]->emitXML(out);
 
       out << "</" << name << ">";
 

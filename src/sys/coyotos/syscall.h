@@ -196,7 +196,7 @@ typedef struct {
 #include <stdbool.h>
 #include <assert.h>
 
-static inline bool invoke_capability(InvParameterBlock_t *);
+extern bool invoke_capability(InvParameterBlock_t *);
 static inline void cap_copy(caploc_t dest, caploc_t source);
 static inline void yield(void);
 
