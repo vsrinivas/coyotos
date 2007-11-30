@@ -177,25 +177,25 @@ mapping_get(MemHeader *hdr,
   return nMap;
 }
 
-#if 0
 void
-hwmap_enable_low_map()
+memhdr_destroy_products(MemHeader *hdr)
 {
-  if (UsingPAE)
-    KernPDPT.entry[0] = KernPDPT.entry[3];
-  else
-    KernPageDir[0] = KernPageDir[768];
-}
+  SpinHoldInfo shi = spinlock_grab(&mappingListLock);
 
-void
-hwmap_disable_low_map()
-{
-  if (UsingPAE)
-    PTE_CLEAR(KernPDPT.entry[0]);
-  else
-    PTE_CLEAR(KernPageDir[0]);
+  Mapping *map;
+
+  while ((map = hdr->products) != NULL) {
+    /* Make this page table undiscoverable. */
+    mapping_make_unreachable(map);
+
+    rm_whack_mapping(map);
+
+    agelist_remove(&MappingAgeList, map);
+    agelist_addBack(&MappingAgeList, map);
+  }
+
+  spinlock_release(shi);
 }
-#endif
 
 void
 depend_entry_invalidate(const DependEntry *entry, int slot)
@@ -218,3 +218,24 @@ rm_whack_process(Process *proc)
     vm_switch_curcpu_to_map(&KernMapping);
   mutex_release(hi);
 }
+
+#if 0
+void
+hwmap_enable_low_map()
+{
+  if (UsingPAE)
+    KernPDPT.entry[0] = KernPDPT.entry[3];
+  else
+    KernPageDir[0] = KernPageDir[768];
+}
+
+void
+hwmap_disable_low_map()
+{
+  if (UsingPAE)
+    PTE_CLEAR(KernPDPT.entry[0]);
+  else
+    PTE_CLEAR(KernPageDir[0]);
+}
+#endif
+

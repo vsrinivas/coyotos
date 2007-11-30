@@ -252,13 +252,9 @@ void proc_clear_arch_issues(Process *p);
  */
 void proc_migrate_to_current_cpu();
 
-/** @brief Initialize process registers to a reasonable state.
+/** @brief Initialize process registers to a reasonable (secure) state.
  */
 void proc_arch_initregs(uva_t pc);
-
-/** @brief Set process address space to cpu-private mapping.
- */
-void proc_load_cpu_private_map();
 
 /** @brief Called from HAL when current process makes a system call.
  */

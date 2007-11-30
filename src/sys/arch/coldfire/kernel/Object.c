@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2007, The EROS Group, LLC.
+ * Copyright (C) 2007, The EROS Group, LLC
  *
  * This file is part of the Coyotos Operating System.
  *
@@ -18,13 +18,20 @@
  * Foundation, 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  */
 
-void
-console_putc(char c)
+/** @file
+ * @brief Object support routines
+ */
+
+#include <hal/machine.h>
+
+void 
+object_begin_refcheck(struct ObjectHeader *obj)
 {
-  /* No console on this machine. */
+  return;   // invalidate cache, or clear ref bits
 }
 
-void
-console_shrink()
+bool
+object_was_referenced(struct ObjectHeader *obj)
 {
+  return (false);  // or check "ref" bits, if any are set, return "true"
 }

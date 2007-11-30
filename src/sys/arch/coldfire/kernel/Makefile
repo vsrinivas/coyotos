@@ -42,6 +42,9 @@ OBJECTS=\
 	$(BUILDDIR)/interrupt.o \
 	$(BUILDDIR)/cpu.o \
 	$(BUILDDIR)/vm.o \
+	$(BUILDDIR)/Object.o \
+	$(BUILDDIR)/dispatch.o \
+	$(BUILDDIR)/kern_main.o \
 	$(BUILDDIR)/kern_string.o \
 	$(BUILDDIR)/kern_pstring.o \
 	$(BUILDDIR)/kern_printf.o \
@@ -62,6 +65,7 @@ OBJECTS=\
 	$(BUILDDIR)/kern_Invoke.o \
 	$(BUILDDIR)/kern_shellsort.o \
 	$(BUILDDIR)/kern_Interval.o \
+	$(BUILDDIR)/kern_IRQ.o \
 	$(BUILDDIR)/kern_malloc.o \
 	$(patsubst %.c,$(BUILDDIR)/%.o,$(notdir $(wildcard ../../../caps/cap*.c)))
 
@@ -70,9 +74,6 @@ OBJECTS=\
 #	$(BUILDDIR)/PageFault.o \
 #	$(BUILDDIR)/HardClock.o \
 #	$(BUILDDIR)/init.o \
-#	$(BUILDDIR)/vm.o \
-#	$(BUILDDIR)/dispatch.o \
-#	$(BUILDDIR)/Object.o \
 #
 
 

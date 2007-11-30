@@ -32,3 +32,9 @@ cpu_getMyID(void)
 {
   return 1;
 }
+
+void
+cpu_start_all_aps()
+{
+  /* Not an SMP machine */
+}

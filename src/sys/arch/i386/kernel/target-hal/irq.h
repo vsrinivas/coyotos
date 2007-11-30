@@ -20,8 +20,6 @@
  * Foundation, 59 Temple Place - Suite 330 Boston, MA 02111-1307, USA.
  */
 
-#include <stdbool.h>
-
 /** @brief Number of distinct interrupt lines.
  *
  * In APIC-based designs, the maximum hypothetical number of available
@@ -51,6 +49,9 @@
 #include "../IA32/EFLAGS.h"
 
 #ifndef __ASSEMBLER__
+
+#include <stdbool.h>
+#include <stdint.h>
 
 /**@brief Type used for IRQ indices.
  *

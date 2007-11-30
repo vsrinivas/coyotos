@@ -25,29 +25,16 @@
 #include <kerninc/printf.h>
 #include <kerninc/Process.h>
 #include <kerninc/Mapping.h>
-#include "IA32/EFLAGS.h"
-#include "Selector.h"
 
 void proc_arch_initregs(uva_t pc)
 {
-  uint32_t hwFlags;
-  __asm__ __volatile__("pushfl;popl %0" 
-		       : "=g" (hwFlags) 
-		       : /* no inputs */);
-
   Process *p = MY_CPU(current);
 
-  p->state.regs.fix.EIP = pc;
-  p->state.regs.fix.CS  = sel_AppCode;
-  p->state.regs.fix.DS  = sel_AppData;
-  p->state.regs.fix.SS  = sel_AppData;
-  p->state.regs.fix.ES  = sel_AppData;
-  p->state.regs.fix.FS  = sel_AppTLS;
-  p->state.regs.fix.FS  = sel_AppTLS;
+  p->state.regs.fix.pc = pc;
 
-  /* Interrupts should be enabled. IOPL should be zero. CPUID on if
-     hardware supports it. */
-  p->state.regs.fix.EFLAGS = EFLAGS_IF | (hwFlags & EFLAGS_ID);
+  /* On Coldfire the privileged state does not reside in the CCR, so
+   * we don't need to do anything special to initialize that.
+   */
 }
 
 void 

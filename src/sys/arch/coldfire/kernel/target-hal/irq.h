@@ -20,8 +20,6 @@
  * Foundation, 59 Temple Place - Suite 330 Boston, MA 02111-1307, USA.
  */
 
-#include <stdbool.h>
-
 /** @brief Number of distinct interrupt lines.
  *
  * Freescale reserves vectors 0-63. These cover CPU exceptions,
@@ -64,6 +62,9 @@
 #define TARGET_HAL_NUM_VECTOR      256
 
 #ifndef __ASSEMBLER__
+
+#include <stdbool.h>
+#include <stdint.h>
 
 /**@brief Type used for IRQ indices.
  *

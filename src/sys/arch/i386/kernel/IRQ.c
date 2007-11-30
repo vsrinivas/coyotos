@@ -700,54 +700,6 @@ irq_Bind(irq_t irq, uint32_t mode, uint32_t level, VecFn fn)
   vector_release(vhi);
 }
 
-void
-irq_EnableVector(irq_t irq)
-{
-  VectorInfo *vector = irq_MapInterrupt(irq);
-
-  assert(vector);
-
-  VectorHoldInfo vhi = vector_grab(vector);
-
-  vector->disableCount--;
-  if (vector->disableCount == 0 && vector->pending)
-    sq_WakeAll(&vector->stallQ, false);
-
-  vector_release(vhi);
-}
-
-void
-irq_DisableVector(irq_t irq)
-{
-  VectorInfo *vector = irq_MapInterrupt(irq);
-
-  assert(vector);
-
-  VectorHoldInfo vhi = vector_grab(vector);
-
-  vector->disableCount++;
-
-  vector_release(vhi);
-}
-
-bool
-irq_isEnabled(irq_t irq)
-{
-  bool result = false;
-
-  VectorInfo *vector = irq_MapInterrupt(irq);
-  assert(vector);
-
-  VectorHoldInfo vhi = vector_grab(vector);
-
-  if (vector->disableCount == 0)
-    result = true;
-
-  vector_release(vhi);
-
-  return result;
-}
-
 extern void asm_proc_resume(Process *p) NORETURN;
 
 	/* This is called with interrupts already disabled. */
