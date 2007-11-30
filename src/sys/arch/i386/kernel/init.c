@@ -380,7 +380,7 @@ process_modules(void)
   }
 
   if (nPreload == 0)
-    fatal("No object preload modules!");
+    fatal("No object preload modules!\n");
 }
 
 /**
@@ -562,22 +562,9 @@ arch_init(void)
     heap_init(heap_base, heap_base, HEAP_LIMIT_VA);
   }
 
-#if 0
-  /** @bug This is a placeholder until we allocate the per-CPU
-      stacks. */
-
-  /* The directory window will require page tables containing 16,384
-     total slots: */
-  totPage -= (16384 / (IA32_UsingPAE ? NPAE_PER_PAGE : NPTE_PER_PAGE));
-
-  /* We will use 10% of page frames for page tables. This number is
-   * fairly arbitrary. */
-  totPage -= (totPage/10);
-#endif
-
   {
     size_t nPage = totPage - RESERVED_PAGE_TABLES(totPage);
-    nPage -= (cpu_ncpu-1) * 2;	/* per-CPU private tables */
+    nPage -= (cpu_ncpu-1) * KSTACK_NPAGES; /* per-CPU stacks */
 
     cache_estimate_sizes(PAGES_PER_PROCESS, nPage);
   }
