@@ -98,6 +98,9 @@ interface SpaceBank extends Cap {
   /// requirements, the operation fails with a cap.RequestError
   /// exception with no action taken.
   ///
+  /// If the @p count is not in the range 0 &lt; count &lt; 4,
+  /// cap.RequestError is raised.
+  ///
   /// Raises NoAccess if the capability has the noFree restriction.
   void free(unsigned long count, Cap c1, Cap c2, Cap c3);
   

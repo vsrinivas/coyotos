@@ -136,18 +136,30 @@ process_request(InvParameterBlock_t *pb)
     if (restr & coyotos_SpaceBank_restrictions_noFree)
       goto no_access;
 
-    // Must have 0 data, 3 argument caps
-    if (data != 0 || edata != 0 || caps != 3)
+    // Must have 1 data, 3 argument caps
+    if (data != 1 || edata != 0 || caps != 3)
       goto bad_request;
     
-    Object *obj1 = object_identify(CR_ARG0);
-    Object *obj2 = object_identify(CR_ARG1);
-    Object *obj3 = object_identify(CR_ARG2);
-    
-    if ((obj1 != 0 && obj1->bank != bank) ||
-	(obj2 != 0 && obj2->bank != bank) ||
-	(obj3 != 0 && obj3->bank != bank))
+    uintptr_t count = pb->pw[2];
+
+    Object *obj1 = NULL;
+    Object *obj2 = NULL;
+    Object *obj3 = NULL;
+
+    switch(count) {
+    case 3:
+      obj3 = object_identify(CR_ARG2);
+      if (!obj3 || obj3->bank != bank) goto bad_request;
+    case 2:
+      obj2 = object_identify(CR_ARG1);
+      if (!obj2 || obj2->bank != bank) goto bad_request;
+    case 1:
+      obj1 = object_identify(CR_ARG0);
+      if (!obj1 || obj1->bank != bank) goto bad_request;
+      break;
+    default:
       goto bad_request;
+    }
     
     if (obj1 != 0) object_rescindAndFree(obj1);
     if (obj2 != 0) object_rescindAndFree(obj2);
