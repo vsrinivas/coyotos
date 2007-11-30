@@ -35,11 +35,13 @@
 #include <kerninc/printf.h>
 #include <kerninc/PhysMem.h>
 #include <kerninc/string.h>
+#include <kerninc/pstring.h>
 #include <kerninc/ccs.h>
 #include <kerninc/malloc.h>
 #include <kerninc/util.h>
 #include <kerninc/Cache.h>
 #include <kerninc/CPU.h>
+#include <kerninc/CommandLine.h>
 #include <kerninc/util.h>
 
 #include "IA32/CR.h"
@@ -97,181 +99,8 @@ mmap_to_use(uint32_t multibootType)
   }
 }
 
-/** @brief Return the argv[0] element of a command line. */
-static const char *
-cmdline_argv0(const char *cmdline)
-{
-  while (isspace(*cmdline))
-    cmdline++;
-
-  if (*cmdline)
-    return cmdline;
-
-  fatal("Command line %s had no argv[0]\n", cmdline);
-}
-
-static char
-cmdline_addnull(const char *item)
-{
-  while (*item && !isspace(*item))
-    item++;
-
-  char c = *item;
-  *((char *) item) = 0;
-
-  return c;
-}
-
-static void
-cmdline_fixnull(const char *item, char c)
-{
-  while (*item)
-    item++;
-  *((char *) item) = c;
-}
-
-/** @brief Given a command line, find the named option if present, or
- * return NULL.
- */
-static const char *
-cmdline_find_option(const char *cmdline, const char *optname)
-{
-  size_t len = strlen(optname);
-
-  while (isspace(*cmdline))
-    cmdline++;
-
-  /* Skip argv[0], which is kernel or module name. */
-  while (*cmdline && !isspace(*cmdline))
-    cmdline++;
-
-
-  /* Hunt for named option */
-  while (*cmdline) {
-    if (isspace(*cmdline)) {
-      cmdline++;
-      continue;
-    }
-
-    const char *opt = cmdline;
-    while (*cmdline && *cmdline != '=' && !isspace(*cmdline))
-      cmdline++;
-
-    if ( ((cmdline - opt) == len) && (memcmp(opt, optname, len) == 0) )
-      return opt;
-
-    /* Not the desired option. Skip to next candidate: */
-    while (*cmdline && !isspace(*cmdline))
-      cmdline++;
-  }
-
-  return NULL;
-}
-
-/** @brief Return pointer to option value string, if present, else
-    return @p default. */
-static const char *
-cmdline_option_arg(const char *option)
-{
-  while (*option && *option != '=')
-    option++;
-
-  if (*option != '=')
-    return NULL;
-  option++;
-
-  return option;
-}
-
-/** @brief return true if option exists, has a value, and value
- *  matches candidate, else false. */
-static bool
-cmdline_option_isstring(const char *cmdline, const char *optname, 
-			const char *value)
-{
-  const char *option = cmdline_find_option(cmdline, optname);
-  if (!option)
-    return false;
-
-  option = cmdline_option_arg(option);
-  if (!option)
-    return false;
-
-  size_t len = strlen(value);
-  const char *optend = option;
-
-  while (*optend && !isspace(*optend))
-    optend++;
-
-  if ( ((optend - option) == len) &&
-       memcmp(option, value, len) == 0 )
-    return true;
-
-  return false;
-}
-
-/** @brief return non-zero if option exists and has an integral value,
- *  else 0. */
-static unsigned long
-cmdline_option_uvalue(const char *cmdline, const char *optname)
-{
-  const char *option = cmdline_find_option(cmdline, optname);
-  if (!option)
-    return 0;
-
-  option = cmdline_option_arg(option);
-  if (!option)
-    return 0;
-
-  return strtoul(option, 0, 0);
-}
-
-/** @brief When "dbgwait" is set on the command line, we set this variable to
- * 1.  We then spin, waiting for the debugger to clear it.
- */
-volatile uint32_t debugger_wait = 0;
-
-static void
-process_dbgwait(void)
-{
-  printf("waiting for debugger to clear debugger_wait\n");
-  debugger_wait = 1;
-  while (debugger_wait == 1)
-    GNU_INLINE_ASM ("nop");
-  printf("dbgwait complete");
-}
-
-/** @brief Process any command line options.
- *
- * Pick off any command line options that we care about and then
- * release the hold on the memory that the command line occupies.
- */
-static void
-process_command_line()
-{
-  // We have already validated that this was a multiboot boot above.
-  struct MultibootInfo *mbi = PTOKV(multibootInfo, struct MultibootInfo *);
-
-  if ((mbi->flags & MBI_CMDLINE) == 0)
-    return;
-
-  char *cmdline = PTOKV(mbi->cmdline, char *);
-
-  Cache.c_Process.count = cmdline_option_uvalue(cmdline, "nproc");
-  Cache.c_GPT.count = cmdline_option_uvalue(cmdline, "ngpt");
-  Cache.c_Endpoint.count = cmdline_option_uvalue(cmdline, "nendpt");
-  //   Cache.page.count = cmdline_option_uvalue(cmdline, "npage");
-  Cache.dep.count = cmdline_option_uvalue(cmdline, "depend");
-
-  if (cmdline_find_option(cmdline, "dbgwait") != 0)
-    process_dbgwait();
-
-  if (cmdline_find_option(cmdline, "noioapic") != 0)
-    use_ioapic = false;
-
-  if (cmdline_find_option(cmdline, "ioapic") != 0)
-    use_ioapic = true;
-}
+#define MAX_MODULES 4
+struct MultibootModuleInfo ModInfo[4];
 
 /** @brief Initialize physical memory.
  *
@@ -411,6 +240,38 @@ config_physical_memory(void)
   // printf("config_physical_memory()\n");
 }
 
+static bool 
+module_option_isstring(const char *cmdline, const char *opt, const char *val)
+{
+  size_t len = strlen(opt);
+  size_t vlen = strlen(val);
+
+  if (cmdline == NULL)
+    return false;
+
+  for( ;*cmdline; cmdline++) {
+    if (*cmdline != *opt)
+      continue;
+
+    if (memcmp(cmdline, opt, len) != 0)
+      continue;
+
+    if (cmdline[len] != '=')
+      continue;
+
+    cmdline += (len + 1);
+    break;
+  }
+
+  if (*cmdline == 0)
+    return false;
+
+  if (memcmp(cmdline, val, vlen) != 0)
+    return false;
+
+  return (cmdline[vlen] == 0 || cmdline[vlen] == ' ');
+}
+
 /** @brief Protect multiboot-allocated memory areas from allocation.
  *
  * Record the physical memory locations of modules and command
@@ -418,9 +279,21 @@ config_physical_memory(void)
  * memory allocator as we build the heap later.
  */
 static void
-protect_multiboot_regions(void)
+process_multiboot_info(void)
 {
   struct MultibootInfo *mbi = PTOKV(multibootInfo, struct MultibootInfo *);
+
+  /* Copy in the multiboot command line */
+  if (mbi->flags & MBI_CMDLINE) {
+    /* The multiboot command line is null terminated, but we do not know
+     * its length. We aren't prepared to accept more than
+     * COMMAND_LINE_LIMIT bytes anyway, so the simple thing to do is
+     * just copy COMMAND_LINE_LIMIT bytes starting at mbi-cmdline, and
+     * then put a NUL on the end in case the command line supplied by
+     * the boot loader was longer. */
+    memcpy_ptov(CommandLine, mbi->cmdline, COMMAND_LINE_LIMIT);
+    CommandLine[COMMAND_LINE_LIMIT - 1] = 0;
+  }
 
   if (mbi->flags & MBI_MODS) {
     size_t nmods = mbi->mods_count;
@@ -428,28 +301,24 @@ protect_multiboot_regions(void)
     const struct MultibootModuleInfo *mmi = 
       PTOKV(mbi->mods_addr, const struct MultibootModuleInfo *);
   
-    while (nmods) {
+    if (nmods > MAX_MODULES)
+      fatal("Too many modules\n");
+
+    for (size_t i = 0; i < nmods; i++, mmi++) {
       const char *cmdline = PTOKV(mmi->string, const char *);
-      pmem_AllocRegion(mmi->mod_start, mmi->mod_end, 
-		       pmc_RAM, pmu_ISLIMG, "module");
-      size_t nPages = ((align_up(mmi->mod_end, COYOTOS_PAGE_SIZE) - 
-			align_down(mmi->mod_start, COYOTOS_PAGE_SIZE))
-		       / COYOTOS_PAGE_SIZE);
-      printf("Module: [0x%08x,0x%08x] %s (%d pages)\n", mmi->mod_start, 
-	     mmi->mod_end, cmdline, nPages);
-      nmods--;
-      mmi++;
+
+      if (module_option_isstring(cmdline, "type", "load")) {
+	ModInfo[i] = *mmi;
+
+	pmem_AllocRegion(mmi->mod_start, mmi->mod_end, 
+			 pmc_RAM, pmu_ISLIMG, "module");
+	size_t nPages = ((align_up(mmi->mod_end, COYOTOS_PAGE_SIZE) - 
+			  align_down(mmi->mod_start, COYOTOS_PAGE_SIZE))
+			 / COYOTOS_PAGE_SIZE);
+	printf("Module: [0x%08x,0x%08x] %s (%d pages)\n", mmi->mod_start, 
+	       mmi->mod_end, cmdline, nPages);
+      }
     }
-  }
-
-  if (mbi->flags & MBI_CMDLINE) {
-    char *cmdline = PTOKV(mbi->cmdline, char *);
-
-    /* Preserve the command line for later use: */
-    size_t cmdline_alloc = strlen(cmdline) + 1; /* include NUL */
-
-    pmem_AllocRegion(mbi->cmdline, mbi->cmdline + cmdline_alloc, 
-		     pmc_RAM, pmu_KERNEL, "command line");
   }
 }
 
@@ -480,13 +349,10 @@ load_module(struct MultibootModuleInfo *mmi)
   printf("Loading: [0x%08x,0x%08x] %s\n", mmi->mod_start, 
 	 mmi->mod_end, cmdline);
 
-  const char *imgName = cmdline_argv0(cmdline);
-  char old = cmdline_addnull(imgName);
+  const char *imgName = cmdline_argv0();
 
   cache_preload_image(imgName, mmi->mod_start,
 		      mmi->mod_end - mmi->mod_start);
-
-  cmdline_fixnull(imgName, old);
 }
 
 /** @brief Transfer module content into the object heap.
@@ -502,32 +368,15 @@ load_module(struct MultibootModuleInfo *mmi)
 static void
 process_modules(void)
 {
-  struct MultibootInfo *mbi = PTOKV(multibootInfo, struct MultibootInfo *);
-
   size_t nPreload = 0;
 
-  size_t nmods = mbi->mods_count;
-
-  struct MultibootModuleInfo *mmi = 
-    PTOKV(mbi->mods_addr, struct MultibootModuleInfo *);
-  
-  printf("Processing %d module%s\n", mbi->mods_count, 
-	 ((mbi->mods_count > 1) ? "s": ""));
-
-  for (size_t i = 0; i < nmods; i++) {
-    struct MultibootModuleInfo *thisModule = &mmi[i];
-
-    const char *cmdline = PTOKV(thisModule->string, const char *);
-    const char *option = cmdline_find_option(cmdline, "type");
-    if (!option)
+  for (size_t i = 0; i < MAX_MODULES; i++) {
+    if (ModInfo[i].mod_start == 0)
       continue;
 
-    if (cmdline_option_isstring(cmdline, "type", "load")) {
-      nPreload++;
-      load_module(thisModule);
-    }
-
-    release_module(thisModule);
+    nPreload++;
+    load_module(&ModInfo[i]);
+    release_module(&ModInfo[i]);
   }
 
   if (nPreload == 0)
@@ -684,9 +533,14 @@ arch_init(void)
   /* Make sure that we don't overwrite the loaded modules during cache
    * initialization.
    */
-  protect_multiboot_regions();
+  process_multiboot_info();
 
-  process_command_line();
+  cmdline_process_options();
+
+  if (cmdline_has_option("noioapic"))
+    use_ioapic = false;
+  else if (cmdline_has_option("ioapic"))
+    use_ioapic = true;
 
   /* Find all of our CPUs. Also checks the ACPI tables, which we
      should probably do separately. Probing the ACPI tables may have
