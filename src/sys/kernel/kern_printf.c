@@ -426,9 +426,11 @@ printf_guts(register const char *fmt, va_list ap)
 	  printf_putc(*bufp);
 	} while (bufp != buf);
       }
-      if (sptr)
-	while(*sptr)
+      if (sptr) {
+	size_t len = prec ? prec : strlen(sptr);
+	while(*sptr && (len-- != 0))
 	  printf_putc(*sptr++);
+      }
       
       /* If we are left adjusting, pad things out to end of field */
       if (ladjust) {
