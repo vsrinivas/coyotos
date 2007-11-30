@@ -24,14 +24,14 @@
 #include <idl/coyotos/IoStream.h>
 
 bool
-IDL_ENV_coyotos_IoStream_write(caploc_t _invCap,
+IDL_ENV_coyotos_IoStream_write(IDL_Environment *_env,
+			       caploc_t _invCap,
 			       coyotos_IoStream_chString s,
-			       uint32_t *len,
-			       IDL_Environment *_env)
+			       uint32_t *len)
 {
   bool result;
 
-  if (IDL_ENV_coyotos_IoStream_doWrite(_invCap, s, len, _env))
+  if (IDL_ENV_coyotos_IoStream_doWrite(_env, _invCap, s, len))
     return true;
 
   if (_env->errCode != RC_coyotos_IoStream_RequestWouldBlock)
@@ -40,10 +40,10 @@ IDL_ENV_coyotos_IoStream_write(caploc_t _invCap,
   /* We were asked to block. */
   caploc_t tmpCap = captemp_alloc();
     
-  result = IDL_ENV_coyotos_IoStream_getWriteChannel(_invCap, tmpCap, _env);
+  result = IDL_ENV_coyotos_IoStream_getWriteChannel(_env, _invCap, tmpCap);
   if (!result) goto release;
 
-  result = IDL_ENV_coyotos_IoStream_doWrite(tmpCap, s, len, _env);
+  result = IDL_ENV_coyotos_IoStream_doWrite(_env, tmpCap, s, len);
 
  release:
   captemp_release(tmpCap);

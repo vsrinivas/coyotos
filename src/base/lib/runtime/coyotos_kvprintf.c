@@ -395,7 +395,7 @@ IDL_ENV_kvprintf(IDL_Environment *_env, caploc_t cap, const char* fmt,
 
   printf_guts(printf_putc_logbuf, &ls, fmt, listp);
 
-  bool result = IDL_ENV_coyotos_KernLog_log(cap, ls, _env);
+  bool result = IDL_ENV_coyotos_KernLog_log(_env, cap, ls);
 
   return result;
 }

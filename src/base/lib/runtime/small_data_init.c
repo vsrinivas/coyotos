@@ -64,42 +64,47 @@ __small_data_init(uintptr_t data, uintptr_t end)
   };
 
   for (cur = first_slot; cur < last_slot; cur++) {
-    if (!IDL_ENV_coyotos_AddressSpace_getSlot(CR_OLDADDR, cur, CR_OLDPAGE,
-					      &local_env) ||
-	!IDL_ENV_coyotos_SpaceBank_alloc(CR_SPACEBANK,
+    if (!IDL_ENV_coyotos_AddressSpace_getSlot(&local_env, 
+					      CR_OLDADDR, cur, CR_OLDPAGE) ||
+	!IDL_ENV_coyotos_SpaceBank_alloc(&local_env,
+					 CR_SPACEBANK,
 					 coyotos_Range_obType_otPage,
 					 coyotos_Range_obType_otInvalid,
 					 coyotos_Range_obType_otInvalid,
 					 CR_NEWPAGE,
 					 CR_NULL,
-					 CR_NULL, &local_env) ||
-	!IDL_ENV_coyotos_AddressSpace_copyFrom(CR_NEWPAGE, 
+					 CR_NULL) ||
+	!IDL_ENV_coyotos_AddressSpace_copyFrom(&local_env,
+					       CR_NEWPAGE, 
 					       CR_OLDPAGE, 
-					       CR_NEWPAGE, &local_env) ||
-	!IDL_ENV_coyotos_AddressSpace_setSlot(CR_NEWADDR, 
+					       CR_NEWPAGE) ||
+	!IDL_ENV_coyotos_AddressSpace_setSlot(&local_env,
+					      CR_NEWADDR, 
 					      cur,
-					      CR_NEWPAGE, &local_env))
+					      CR_NEWPAGE))
       goto fail;
   }
 
   /* install a CapPage in slot 0 for the capability stack */
-  if (!IDL_ENV_coyotos_SpaceBank_alloc(CR_SPACEBANK,
+  if (!IDL_ENV_coyotos_SpaceBank_alloc(&local_env,
+				       CR_SPACEBANK,
 				       coyotos_Range_obType_otCapPage,
 				       coyotos_Range_obType_otInvalid,
 				       coyotos_Range_obType_otInvalid,
 				       CR_NEWPAGE,
 				       CR_NULL,
-				       CR_NULL, &local_env) ||
-      !IDL_ENV_coyotos_AddressSpace_setSlot(CR_NEWADDR, 
+				       CR_NULL) ||
+      !IDL_ENV_coyotos_AddressSpace_setSlot(&local_env,
+					    CR_NEWADDR, 
 					    0, 
-					    CR_NEWPAGE, &local_env))
+					    CR_NEWPAGE))
     goto fail;
 
   return;
 
  fail:
-  IDL_ENV_coyotos_SpaceBank_destroyBankAndReturn(CR_SPACEBANK, CR_RETURN,
-						 local_env.errCode,
-						 &local_env);
+  IDL_ENV_coyotos_SpaceBank_destroyBankAndReturn(&local_env,
+						 CR_SPACEBANK, CR_RETURN,
+						 local_env.errCode);
   return;
 }

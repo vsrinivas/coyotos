@@ -1545,7 +1545,7 @@ emit_client_stub(GCPtr<Symbol> s, INOstream& out)
     out << "static inline bool\n";
 
   out << "IDL_ENV_" << s->QualifiedName('_')
-      << "(caploc_t _invCap";
+      << "(IDL_Environment *_env, caploc_t _invCap";
 
   for(size_t i = 0; i < s->children.size(); i++) {
     GCPtr<Symbol> child = s->children[i];
@@ -1580,7 +1580,7 @@ emit_client_stub(GCPtr<Symbol> s, INOstream& out)
     out << "_retVal";
   }
 
-  out << ", IDL_Environment *_env)\n";
+  out << ")\n";
 
   for(size_t i = 0; i < s->raises.size(); i++) {
     out.more();
@@ -1686,7 +1686,7 @@ emit_client_stub(GCPtr<Symbol> s, INOstream& out)
     out << "{\n";
     out.more();
     out << "return IDL_ENV_" << s->QualifiedName('_') 
-	<< "(_invCap";
+	<< "(__IDL_Env, _invCap";
     for(size_t i = 0; i < s->children.size(); i++) {
       GCPtr<Symbol> child = s->children[i];
 
@@ -1696,7 +1696,7 @@ emit_client_stub(GCPtr<Symbol> s, INOstream& out)
     if (!s->type->IsVoidType())
       out << ", " << "_retVal";
 
-    out << ", __IDL_Env);\n";
+    out << ");\n";
 
     out.less();
     out << "}\n";
