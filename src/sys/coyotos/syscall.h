@@ -136,7 +136,7 @@
 #define IPW0_EX        0x0200000
 
 /* Input control bits that are preserved on completion of receive phase */
-#define IPW0_PRESERVE (IPW0_LRC_MASK|IPW0_AS|IPW0_AC|IPW0_CO|IPW0_EX)
+#define IPW0_PRESERVE (IPW0_LRC_MASK|IPW0_AS|IPW0_AC|IPW0_CO)
 
 #define IPW_ICW          0
 #define IPW_DW0          0
