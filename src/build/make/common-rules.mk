@@ -127,7 +127,7 @@ clean:
 		if [ -d "$$i" ]; then\
 			$(MAKE) -C $$i $(MAKERULES) clean; \
 			if [ $$? -ne 0 ]; then\
-				echo "*** RECURSIVE CEAN STOPS ***";\
+				echo "*** RECURSIVE CLEAN STOPS ***";\
 				exit 1;\
 			fi; \
 		fi; \
