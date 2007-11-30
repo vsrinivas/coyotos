@@ -37,6 +37,7 @@
   } while (0)
 
 #define KPA_IS_PAGE_ADDRESS(pa) ((pa & ((kpa_t)0x1fff)) == 0)
+#define KVA_IS_PAGE_ADDRESS(va) ((va & ((kva_t)0x1fff)) == 0)
 
 void local_tlb_flush();
 void local_tlb_flushva(kva_t va);

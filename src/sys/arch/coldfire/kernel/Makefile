@@ -42,6 +42,7 @@ OBJECTS=\
 	$(BUILDDIR)/interrupt.o \
 	$(BUILDDIR)/cpu.o \
 	$(BUILDDIR)/vm.o \
+	$(BUILDDIR)/IRQ.o \
 	$(BUILDDIR)/Object.o \
 	$(BUILDDIR)/dispatch.o \
 	$(BUILDDIR)/kern_main.o \
@@ -70,7 +71,6 @@ OBJECTS=\
 	$(patsubst %.c,$(BUILDDIR)/%.o,$(notdir $(wildcard ../../../caps/cap*.c)))
 
 #	$(BUILDDIR)/interrupt.o \
-#	$(BUILDDIR)/IRQ.o \
 #	$(BUILDDIR)/PageFault.o \
 #	$(BUILDDIR)/HardClock.o \
 #	$(BUILDDIR)/init.o \
