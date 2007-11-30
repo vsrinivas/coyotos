@@ -666,9 +666,9 @@ arch_init(void)
   }
 #endif
 
-  printf("UsingPAE: %s\n", UsingPAE ? "yes" : "no");
+  printf("IA32_UsingPAE: %s\n", IA32_UsingPAE ? "yes" : "no");
 
-  pmem_init(0, UsingPAE ? PAE_PADDR_BOUND : PTE_PADDR_BOUND);
+  pmem_init(0, IA32_UsingPAE ? PAE_PADDR_BOUND : PTE_PADDR_BOUND);
 
   /* Need to get the physical memory map before we do anything else. */
   config_physical_memory();
@@ -703,7 +703,7 @@ arch_init(void)
      * table. Moving all of the heap mappings above this means that we
      * won't take cross-CPU faults to propagate page table entries
      * when the heap grows. */
-    kva_t align = UsingPAE ? 2048*1024 : 4096*1024;
+    kva_t align = IA32_UsingPAE ? 2048*1024 : 4096*1024;
     kva_t heap_base = align_up((kva_t)&_end, align);
     heap_init(heap_base, heap_base, HEAP_LIMIT_VA);
   }
@@ -714,7 +714,7 @@ arch_init(void)
 
   /* The directory window will require page tables containing 16,384
      total slots: */
-  totPage -= (16384 / (UsingPAE ? NPAE_PER_PAGE : NPTE_PER_PAGE));
+  totPage -= (16384 / (IA32_UsingPAE ? NPAE_PER_PAGE : NPTE_PER_PAGE));
 
   /* We will use 10% of page frames for page tables. This number is
    * fairly arbitrary. */

@@ -51,8 +51,9 @@ Mapping KernMapping;
 /** @brief True if we are using PAE mode. Set in boot.S as we do
  * initial CPU feature probe.
  */
-bool UsingPAE = false;
-bool NXSupported = false;
+bool IA32_UsingPAE = false;
+bool IA32_NXSupported = false;
+bool IA32_HavePSE = false;
 
 /* Following are placeholder implementations */
 void
@@ -64,7 +65,7 @@ global_tlb_flush()
 void
 hwmap_enable_low_map()
 {
-  if (UsingPAE)
+  if (IA32_UsingPAE)
     KernPDPT.entry[0] = KernPDPT.entry[3];
   else
     KernPageDir[0] = KernPageDir[768];
@@ -73,7 +74,7 @@ hwmap_enable_low_map()
 void
 hwmap_disable_low_map()
 {
-  if (UsingPAE)
+  if (IA32_UsingPAE)
     PTE_CLEAR(KernPDPT.entry[0]);
   else
     PTE_CLEAR(KernPageDir[0]);
@@ -110,7 +111,7 @@ reserve_pgtbls(void)
 static void
 reserve_pdpts(void)
 {
-  if (!UsingPAE)
+  if (!IA32_UsingPAE)
     return;
 
   assert(Cache.c_Process.count);
@@ -148,7 +149,7 @@ pagetable_init(void)
   reserve_pgtbls();
   reserve_pdpts();
 
-  if (UsingPAE) {
+  if (IA32_UsingPAE) {
     KernMapping.pa = KVTOP(&KernPDPT);
     KernMapping.level = 2;
   }
@@ -191,7 +192,7 @@ pgtable_alloc(size_t level)
 
   AgeList *ageList = (level == 2) ? &pdptAgeList : &ptAgeList;
 
-  assert(level < 2 || UsingPAE);
+  assert(level < 2 || IA32_UsingPAE);
 
   Mapping *pt;
   for(;;) {
@@ -213,13 +214,13 @@ pgtable_alloc(size_t level)
   if (level == 2) {
     memcpy_vtop(pt->pa, &KernPDPT, sizeof(KernPDPT));
     pt->userSlots = PDPT_SIZE - 1;
-  } else if (level == 1 && !UsingPAE) {
+  } else if (level == 1 && !IA32_UsingPAE) {
     /* Re-initialize PDPT to safe state */
     memcpy_vtop(pt->pa, &KernPageDir, COYOTOS_PAGE_SIZE);
     pt->userSlots = PTE_PGDIR_NDX(KVA);
   } else {
     memset_p(pt->pa, 0, COYOTOS_PAGE_SIZE);
-    pt->userSlots = UsingPAE ? NPAE_PER_PAGE : NPTE_PER_PAGE;
+    pt->userSlots = IA32_UsingPAE ? NPAE_PER_PAGE : NPTE_PER_PAGE;
   }
 
   /* Newly allocated, so move to front. */
@@ -233,7 +234,7 @@ Mapping *
 pgtbl_get(MemHeader *hdr, size_t level, 
 	  coyaddr_t guard, coyaddr_t mask, size_t restr)
 {
-  assert(level <= 1 + UsingPAE);
+  assert(level <= 1 + IA32_UsingPAE);
 
   SpinHoldInfo shi = spinlock_grab(&mappingListLock);
 
@@ -316,7 +317,7 @@ depend_entry_invalidate(const DependEntry *entry, int slot)
   Mapping *map = entry->map;
   size_t mask = entry->slotMask;
 
-  if (UsingPAE) {
+  if (IA32_UsingPAE) {
     uintptr_t offset = (map->pa & COYOTOS_PAGE_ADDR_MASK);
     char *map_base = TRANSMAP_MAP(map->pa - offset, char *);
     IA32_PAE *pte = (IA32_PAE *)(map_base + offset);
@@ -383,7 +384,7 @@ depend_entry_invalidate(const DependEntry *entry, int slot)
 void
 rm_whack_pte(struct Mapping *map,  size_t slot)
 {
-  if (UsingPAE) {
+  if (IA32_UsingPAE) {
     size_t offset = (map->pa & COYOTOS_PAGE_ADDR_MASK);
 
     char *base = TRANSMAP_MAP(map->pa - offset, char *);
@@ -490,7 +491,7 @@ hwmap_dump_pae(uint32_t slot, IA32_PAE *pte, int indent)
 	 pte->bits.SW0 ? "SW0 " : "sw0 ",
 	 pte->bits.SW1 ? "SW1 " : "sw1 ",
 	 pte->bits.SW2 ? "SW2 " : "sw2 ",
-	 pte->bits.NX ? "NX " : (NXSupported ? "nx " : ""));
+	 pte->bits.NX ? "NX " : (IA32_NXSupported ? "nx " : ""));
 }
 
 void
@@ -498,7 +499,7 @@ hwmap_dump_table(kpa_t kpa, int level, int indent)
 {
   hwmap_print_indent(indent);
   printf("PageTable: kpa 0x%08llx, level %d\n", kpa, level);
-  if (UsingPAE) {
+  if (IA32_UsingPAE) {
     if (level == 2) {
       uintptr_t offset = kpa & COYOTOS_PAGE_ADDR_MASK;
       

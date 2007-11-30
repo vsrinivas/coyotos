@@ -75,8 +75,8 @@ transmap_init()
    * has been done.
    */
 
-  uint32_t transmap_pages = UsingPAE ? TRANSMAP_PAGES : (TRANSMAP_PAGES/2);
-  kva_t pgtbl_span = UsingPAE ? (2*1024*1024) : (4*1024*1024);
+  uint32_t transmap_pages = IA32_UsingPAE ? TRANSMAP_PAGES : (TRANSMAP_PAGES/2);
+  kva_t pgtbl_span = IA32_UsingPAE ? (2*1024*1024) : (4*1024*1024);
 
   memset(TransientMap, 0, COYOTOS_PAGE_SIZE * transmap_pages);
 
@@ -85,7 +85,7 @@ transmap_init()
     const kva_t va = TRANSMAP_WINDOW_KVA + i * pgtbl_span;
     const uint32_t pa = (((uint32_t)&TransientMap) - KVA) + offset;
 
-    if (UsingPAE) {
+    if (IA32_UsingPAE) {
       uint32_t undx = PAE_PGDIR_NDX(va);
       IA32_PAE *upper = ((IA32_PAE*) &KernPageDir) + undx;
 
@@ -143,7 +143,7 @@ transmap_map(kpa_t pa)
   uint32_t slot = ndx - 1;
   uint32_t entry = TRANSMAP_PERCPU_ENTRY(slot);
 
-  if (UsingPAE) {
+  if (IA32_UsingPAE) {
     IA32_PAE *theMap = (IA32_PAE *) &TransientMap;
     IA32_PAE *theEntry = &theMap[entry];
 
@@ -184,7 +184,7 @@ transmap_unmap(kva_t va)
   assert ((MY_CPU(TransMetaMap) & (1u << slot)) == 0);
   assert ((MY_CPU(TransReleased) & (1u << slot)) == 0);
 
-  if (UsingPAE) {
+  if (IA32_UsingPAE) {
     IA32_PAE *theMap = (IA32_PAE *) &TransientMap;
     IA32_PAE *theEntry = &theMap[entry];
     theEntry->value = 0;

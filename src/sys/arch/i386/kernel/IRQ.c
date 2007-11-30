@@ -256,7 +256,7 @@ vh_PageFault(VectorInfo *vec, Process *inProc, fixregs_t *saveArea)
     GNU_INLINE_ASM("sti");
   }
 
-  bool wantExec = NXSupported && (e & PAGEFAULT_ERROR_ID);
+  bool wantExec = IA32_NXSupported && (e & PAGEFAULT_ERROR_ID);
   bool wantWrite = (e & PAGEFAULT_ERROR_RW);
 
   DEBUG_PAGEFAULT

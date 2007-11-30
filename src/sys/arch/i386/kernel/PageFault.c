@@ -373,7 +373,7 @@ do_pageFault(Process *base, uintptr_t addr_arg,
   bool first;
 
   size_t restr_mask = 
-    CAP_RESTR_RO | CAP_RESTR_WK | (NXSupported ? CAP_RESTR_NX : 0);
+    CAP_RESTR_RO | CAP_RESTR_WK | (IA32_NXSupported ? CAP_RESTR_NX : 0);
   size_t leaf_restr_mask = 
     CAP_RESTR_CD | CAP_RESTR_WT | restr_mask;
 
@@ -412,7 +412,7 @@ do_pageFault(Process *base, uintptr_t addr_arg,
   restr |= (mwe->restr & restr_mask);
   minl2 = min(minl2, mwe->l2g);
 
-  const PageTableLevel *curPT = UsingPAE? paePtbl : normPtbl;
+  const PageTableLevel *curPT = IA32_UsingPAE? paePtbl : normPtbl;
 
   /* The top-level pointer has no restrictions, so they must all be
      pushed into the mapping table. */

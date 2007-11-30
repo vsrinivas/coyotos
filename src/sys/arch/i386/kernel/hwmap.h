@@ -39,8 +39,9 @@
 #include <kerninc/CPU.h>
 #include <kerninc/Mapping.h>
 
-extern bool UsingPAE;
-extern bool NXSupported;
+extern bool IA32_UsingPAE;
+extern bool IA32_NXSupported;
+extern bool IA32_HavePSE;
 
 #define NPTE_PER_PAGE (COYOTOS_PAGE_SIZE/sizeof(IA32_PTE))
 #define PTE_PFRAME_BOUND (((kpa_t) 1) << 20)

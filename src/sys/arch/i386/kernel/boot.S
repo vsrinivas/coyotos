@@ -241,6 +241,7 @@ general_entry:
 	movl	%edx,%eax
 	andl	$CPUID_EDX_PSE,%eax
 	jz	1f
+	movb	$1,EXT(IA32_HavePSE)
 	orl	$CR4_PSE,%ebx
 
 1:	/* Enable debugging extensions if present */
@@ -411,7 +412,7 @@ drop_low_map:
 	jz	drop_low_legacy_map
 	
 	/* Record the fact that we are using PAE for later use:	 */
-	movb	$1,EXT(UsingPAE)
+	movb	$1,EXT(IA32_UsingPAE)
 	
 	/* Whack the low-memory mapping: */
 	movl	$EXT(KernPDPT),%esi

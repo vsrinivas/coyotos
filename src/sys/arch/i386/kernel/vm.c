@@ -44,7 +44,7 @@ kmap_EnsureCanMap(kva_t va, const char *descrip)
 
   DEBUG_VM printf("kmap: Ensuring va=0x%08x\n", va);
 
-  if (UsingPAE) {
+  if (IA32_UsingPAE) {
     uint32_t undx = PAE_PGDIR_NDX(va);
 
     DEBUG_VM
@@ -164,7 +164,7 @@ kmap_map(kva_t va, kpa_t pa, uint32_t perms)
   DEBUG_VM
     printf("kmap: Mapping va=0x%08x to pa=0x%016x\n", va, pa);
 
-  if (UsingPAE) {
+  if (IA32_UsingPAE) {
     uint32_t undx = PAE_PGDIR_NDX(va);
     uint32_t lndx = PAE_PGTBL_NDX(va);
 

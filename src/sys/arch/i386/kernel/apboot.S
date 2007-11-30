@@ -163,7 +163,7 @@ ap_boot32:
 	 * Note that the rest of this code is position independent, so we no longer
 	 * need to retain our relocated base address in %eax.
 	 */
-	movl	$EXT(UsingPAE)-KVA, %eax
+	movl	$EXT(IA32_UsingPAE)-KVA, %eax
 	cmpl	$0,%eax
 	je	ap_use_legacy_map
 
