@@ -35,7 +35,14 @@ TARGET("elf32-m68k")
 
 SECTIONS
 {
-  . = KVA + 0x100000;  /* Kernel start at 1MB */
+  . = KVA;  /* Kernel start at offset 0 */
+
+  /* Leave a hole at the front for the exception vector. If we don't
+     end up running with SDRAM at pa=0xC0000000, this will need to
+     move to SRAM0 */
+  ExceptionVector = .;
+
+  . = . + 1024;
 
   /* TEXT REGION (text + rodata) */
   _text = .;

@@ -17,24 +17,33 @@
  * along with this program; if not, write to the Free Software
  * Foundation, 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  */
-	
-	/** @file
-	 * @brief Interrupt management code.
-	 */
-#include <coyotos/coldfire/asm.h>
-#include <coyotos/coldfire/pagesize.h>
-#include <target-hal/config.h>
 
-	.text
-ENTRY(sched_low_level_yield)
-	movel	#cpu0_kstack_hi,%sp
-	jsr	EXT(sched_dispatch_something)
+/** @file
+ * @brief Startup initialization for Coldfire.
+ */
 
-ENTRY(IdleThisProcessor)
-1:	halt
-	jmp 1b
+#include <hal/kerntypes.h>
+#include <hal/console.h>
+#include <kerninc/CPU.h>
 
+void
+arch_init()
+{
+  /* Initialize the console output first, so that we can get
+   * diagnostics while the rest is running.
+   */
+  console_init();
 
-ENTRY(proc_resume)
-1:	halt
-	jmp 1b
+  /* Initialize the CPU structures, since we need to call things that
+   * want to grab mutexes.
+   */
+  for (size_t i = 0; i < MAX_NCPU; i++)
+    cpu_construct(i);
+
+}
+
+void
+arch_cache_init()
+{
+  //  process_modules();
+}

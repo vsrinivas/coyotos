@@ -28,3 +28,8 @@ void
 console_shrink()
 {
 }
+
+void
+console_init()
+{
+}

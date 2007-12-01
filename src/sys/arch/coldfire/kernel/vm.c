@@ -66,7 +66,7 @@ cmp_kmap(const void *vp1, const void *vp2)
   return 0;
 }
 
-MSoftMap *
+SoftMap *
 kmap_search(kva_t va)
 {
   for (size_t i = 0; i < nMap; i++)

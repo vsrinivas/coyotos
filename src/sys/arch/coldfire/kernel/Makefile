@@ -34,6 +34,7 @@ OPTIM+= -std=gnu99 -ffreestanding -g
 LINKOPTS= -g
 OBJECTS=\
 	$(BUILDDIR)/boot.o \
+	$(BUILDDIR)/init.o \
 	$(BUILDDIR)/cap_Process.o \
 	$(BUILDDIR)/transmap.o \
 	$(BUILDDIR)/hwmap.o \
@@ -73,7 +74,6 @@ OBJECTS=\
 #	$(BUILDDIR)/interrupt.o \
 #	$(BUILDDIR)/PageFault.o \
 #	$(BUILDDIR)/HardClock.o \
-#	$(BUILDDIR)/init.o \
 #
 
 
