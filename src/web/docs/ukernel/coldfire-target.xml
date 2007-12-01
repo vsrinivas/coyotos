@@ -391,82 +391,139 @@ mov  %sr,$disable
     </p>
   </sect1>
   <sect1>
-    <title>Memory Map</title>
+    <title>Platform Memory Map</title>
     <p>
-      In the <em>virtual</em> map, the Coyotos implementation will
-      reserve the [0x0,0xBFFFFFFF] range for user-mode addresses. The
-      range [0xC0000000,0xFFFFFFFF] is reserved for kernel use.
-      Unfortunately, the distinction between virtual and physical
-      addresses on this processor is not entirely clean.
-    </p>
-    <p>
-      The Coldfire is a single-chip controller, and it implements chip
-      select for memory devices on the processor. The CPU implements
-      an on-board SDRAM controller. It also implements a "flexbus"
-      that can be used for ROMs and other devices. It is possible, but
-      not advisable, to contrive for the chip select addresses of
-      devices to overlap. Don't do this! If the memory chip designs
-      aren't right, a short can be induced on the data bus as one chip
-      drives D1 high and the next drives it low. I have not
-      investigated whether the processor may implement a priority
-      scheme in the chip select logic to preclude this problem.
-    </p>
-    <p>
-      The MMU on the Coldfire was a bolt-on, and the resulting bussing
-      structure is peculiar. In particular, there are two on-board
-      SRAM devices (controlled by RAMBAR[0:1]), two on-board ROM
-      devices (controlled by ROMBAR[0:1]) and two access control
-      registers ACR[0:3] that define address regions. Each of these
-      registers describes an arbitrary region of the address space
-      that is some power of two in size. Any address matched by these
-      registers is passed to the post-translate bus without
-      modification. There is a translation priority scheme, and the
-      TLB sits <em>lower than</em> any of these in that scheme.
-    </p>
-    <p>
-      There is also an MBAR register that specifies the register base
-      address of the "System Integration Unit". While no translation
-      priority is specified for MBAR, the discussion of the ACR
-      registers indicates that one of these should be used to make the
-      SIU registers non-cacheable.
-    </p>
-    <p>
-      The net effect of this is that regions defined by RAMBAR,
-      ROMBAR, or ACR are "in front of" the mapping structure. In the
-      context of our implementation this means that all such addresses
-      must be <em>above</em> 0xC0000000.
-    </p>
-    <p>
-      The two small SRAM devices controlled by RAMBAR[0:1] are on a
-      local bus.  The MC5485 manual is explicit that a hit in
-      RAMBAR[0:1] causes chip select to be asserted to these small
-      SRAMs. It is not clear whether these devices can also be
-      addressed via the MMU. There is a diagram of address pipeline
-      flow in the MMU chapter which suggests that the post-TLB
-      addresses and the post-RAMBAR addresses both end up on the XL
-      bus. It is not clear if SRAM chip select is then done from the
-      XL bus or if it is done from the RAMBAR address matching
-      logic. I suspect the latter, in which cases the devices
-      controlled by RAMBAR[0:1], ROMBAR[0:1], and ACR[0:3] cannot be
-      mapped via the MMU. This is particularly unfortunate for
-      ACR[0:3], because it means that device registers cannot be
-      mapped for application access, and we will need to implement a
-      "load/store I/O register" sysem call.
+      This section addresses the configuration of the device memory
+      map for the target.
     </p>
     <sect2>
-      <title>TLB Interactions</title>
+      <title>Memory Organization</title>
       <p>
-	If the MMU subsystem is enabled, references requiring
-	translation may generate TLB miss exceptions. These push an
-	exception frame to the stack and proceed through the exception
-	table (which must be 1Mbyte aligned - ick). In order for the
-	software TLB handler to be able to function minimally, the
-	kernel stack address, exception vector region, miss handler
-	code regions, and any data structures used by the soft-load
-	fast path must either be pinned in the TLB or must be stored
-	in non-mapped memory. It is not clear from the documentation
-	whether the interrupt vector fetch is performed as an
-	I-reference or a D-reference. We will need to experiment.
+	<leadin>Virtual Addresses</leadin> In the <em>virtual</em> map,
+	the Coyotos implementation will reserve the [0x0,0xBFFFFFFF]
+	range for user-mode addresses. The range [0xC0000000,0xFFFFFFFF]
+	is reserved for kernel use. This is also the Linux
+	convention. Unfortunately, the distinction between virtual and
+	physical addresses on this processor is not entirely clean.
+      </p>
+      <p>
+	<leadin>Physical Map</leadin> The Coldfire is an integrated
+	single-chip controller, and it implements chip select for memory
+	devices on the processor. Internally, post-translation addresses
+	are delivered to the XL bus. The XL bus in turn has an SDRAM
+	controller, a "flexbus" controller, two small (4k) SRAM devices,
+	and various other items. External RAM memories are connected to
+	the SDRAM controller. External ROM/FLASH memories are connected
+	to the flexbus. The processor implements chip select pins that
+	can be more or less directly wired to these outboard
+	devices. For each device, including those implemented
+	internally, there is a base address register and an address mask
+	register that determine when the corresponding chip select goes
+	active. This means that the locations of devices can be revised
+	in software.
+      </p>
+      <p>
+	It is possible, but not advisable, to
+	contrive for the chip select addresses of devices to
+	overlap. Don't do this! If the memory chip designs aren't right,
+	a short can be induced on the data bus as one chip drives D1
+	high and the next drives it low. I have not investigated whether
+	the processor may implement a priority scheme in the chip select
+	logic to preclude this problem.
+      </p>
+      <p>
+	<leadin>MMU Placement</leadin> The MMU on the Coldfire was a
+	bolt-on, and the resulting bussing structure is peculiar. In
+	particular, there are two on-board SRAM devices (controlled by
+	RAMBAR[0:1]), two on-board ROM devices (controlled by
+	ROMBAR[0:1]) and two access control registers ACR[0:3] that
+	define address regions. Each of these registers describes an
+	arbitrary region of the address space that is some power of two
+	in size. Any address matched by these registers is passed to the
+	post-translate bus without modification. There is a translation
+	priority scheme, and the TLB sits <em>lower than</em> any of
+	these in that scheme.
+      </p>
+      <p>
+	There is also an MBAR register that specifies the register base
+	address of the "System Integration Unit". While no translation
+	priority is specified for MBAR, the discussion of the ACR
+	registers indicates that one of these should be used to make the
+	SIU registers non-cacheable.
+      </p>
+      <p>
+	The net effect of this is that regions defined by RAMBAR,
+	ROMBAR, or ACR are "in front of" the mapping structure. In the
+	context of our implementation this means that all such addresses
+	must be <em>above</em> 0xC0000000.
+      </p>
+      <p>
+	<leadin>SRAM Considerations</leadin> The two small SRAM devices
+	controlled by RAMBAR[0:1] are on a local bus.  The MC5485 manual
+	is explicit that a hit in RAMBAR[0:1] causes chip select to be
+	asserted to these small SRAMs. It is not clear whether these
+	devices can also be addressed via the MMU. There is a diagram of
+	address pipeline flow in the MMU chapter which suggests that the
+	post-TLB addresses and the post-RAMBAR addresses both end up on
+	the XL bus. It is not clear if SRAM chip select is then done
+	from the XL bus or if it is done from the RAMBAR address
+	matching logic. I suspect the latter, in which cases the devices
+	controlled by RAMBAR[0:1], ROMBAR[0:1], and ACR[0:3] cannot be
+	mapped via the MMU. This is particularly unfortunate for
+	ACR[0:3], because it means that device registers cannot be
+	mapped for application access, and we will need to implement a
+	"load/store I/O register" sysem call.
+      </p>
+    </sect2>
+    <sect2>
+      <title>Power-on Conditions</title>
+      <p>
+	At power-on, the external device attached to FlexBus chip
+	select zero (CS0) is the only device enabled. It is configured
+	at a base address of zero with an address mask of zero. It
+	therefore covers the range [0,0xFFFFFFFF]. The bus width and
+	latency of the corresponding device is determined by
+	pin-strap. For the ASD board, the boot flash latency is 70ns
+	and the code flash latency is 85ns.
+      </p>
+      <p>
+	All other device are initially disabled. It is the
+	responsibility of the bootstrap software to establish base
+	addresses for all other memory devices and appropriately
+	enable their supporting chip select logic.
+      </p>
+      <p>
+	The documentation of the reset exception indicates that
+	initial supervisor PC and SP are loaded from addresses 0 and 4
+	respectively. The documentation of the exception vector
+	reserves positions for these. This seems to imply that the
+	exception vector used by the bootstrap code wants to be the
+	first thing in the boot flash. After reset, there is no
+	obvious relationship between the exception vector and the
+	PC/SP, but the exception vector is required to appear at a 1M
+	boundary in memory.
+      </p>
+    </sect2>
+    <sect2>
+      <title>Hardware Constraints on Memory Map</title>
+      <p>
+	When the TLB is disabled, there is no particularly unusual
+	complexity inconfiguring this processor. 
+      </p>
+      <p>
+	<leadin>TLB Interactions</leadin> When the processor is
+	running with translation enabled, matters are more
+	complicated.  A TLB miss is handled as an exception. The
+	processor handles exceptions, including TLB exceptions, by
+	pushing an exception frame to the supervisor stack and
+	proceeding through the exception table (which must be 1Mbyte
+	aligned). This means that the kernel stack, exception vector
+	region, miss handler code, and any data structures used by the
+	soft-load fast path must either be pinned in the TLB or must
+	be stored in non-mapped memory. It is not clear from the
+	documentation whether the interrupt vector fetch is performed
+	as an I-reference or a D-reference. We will need to
+	experiment.
       </p>
       <p>
 	One approach would be to place the kernel stack in RAMBAR0,
@@ -485,29 +542,154 @@ mov  %sr,$disable
       </p>
     </sect2>
     <sect2>
-      <title>Power-on Conditions</title>
+      <title>Software Constraints on Memory Map</title>
       <p>
-	The initial memory configuration is determined by
-	pin-strap. This gives the memory access width and clock delay
-	to be used for flexbus device zero (the boot ROM, which sits
-	on flexbus CS0). The initial base address for this ROM is
-	zero. All other device are initially disabled. It is the
-	responsibility of the bootstrap software to establish base
-	addresses for all other memory devices and appropriately
-	enable their supporting chip select logic.
+	Because they must not appear within the user portion of the
+	address space, the MBAR and RAMBAR[0:1] registers must be
+	configured at addresses above 0xC0000000. While the system
+	integration unit (base address controlled by MBAR) is not
+	prioritized relative to the TLB, the manual indicates that one
+	of the ACR registers should be programmed to preclude caching
+	to those addresses. It is not clear if that statement in the
+	manual is a legacy statement predating the introduction of the
+	MMU.
       </p>
       <p>
-	The documentation of the reset exception indicates that
-	initial supervisor PC and SP are loaded from addresses 0 and 4
-	respectively. The documentation of the exception vector
-	reserves positions for these. This seems to imply that the
-	exception vector used by the bootstrap code wants to be the
-	first thing in the boot flash. After reset, there is no
-	obvious relationship between the exception vector and the
-	PC/SP, but the exception vector is required to appear at a 1M
-	boundary in memory.
+	Coyotos kernel memory starts at 0xC000000. It is
+	hypothetically possible to configure the SDRAM base address at
+	0xC0000000 and then program the ACR[0] (data) and ACR[2]
+	(code) to treat the range starting at 0xC0000000 as a
+	pass-through supervisor-only range. Doing so ought to have the
+	effect of significantly reducing kernel TLB overhead --
+	especially so if the kernel heap directly follows kernel data.
+      </p>
+      <p>
+	Note that doing this does not preclude pointing portions of
+	the user range into the SDRAM via the TLB. What it
+	<em>does</em> do is allow us to offload any power of two
+	kernel mapping that can be described by a
+	<tt>va=pa+<em>const</em></tt> relationship. Since we
+	<em>ought</em> to be able to cover most of kernel data and
+	heap this way, this seems likely to significantly reduce
+	kernel TLB pressures.
       </p>
     </sect2>
+  </sect1>
+  <sect1>
+    <title>Boot Flash and Program</title>
+    <p>
+      Our current board design calls for two flash devices. Provided
+      the flash can be programmed pagewise, a single flash device
+      might suffice in future variants. Note that the boot flash uses
+      SRAM0 and SRAM1 as working storage. It cannot use the lower
+      parts of SDRAM because it will be overwriting them.
+    </p>
+    <p>
+      Responsibilities of the bootstrap program are:
+    </p>
+    <ol>
+      <li>
+	<p>
+	  Quiesce the hardware, as needed.
+	</p>
+      </li>
+      <li>
+	<p>
+	  Configure the SDRAM, code flash, a hole for boot flash, the
+	  CPLD device, and LCD device in sequence starting at
+	  0xC0000000. Use ACR registers to set up a large region that
+	  spans the SDRAM. We <em>may</em> re-set the boot flash base
+	  address early, or it may be more convenient to let the
+	  kernel do it later when we are no longer running from it.
+	</p>
+      </li>
+      <li>
+	<p>
+	  Initialize the CPLD device, notably including the out-board
+	  logic that disables CS0 if the boot image fails signature
+	  check.
+	</p>
+      </li>
+      <li>
+	<p>
+	  Configure SRAM0 for working data storage.
+	</p>
+      </li>
+      <li>
+	<p>
+	  Perform a cryptographic signature check on the kernel
+	  image. Separately perform a cryptographic signature check on
+	  the initial system image. If either check fails, make note
+	  of this for later use.
+	</p>
+      </li>
+      <li>
+	<p>
+	  Copy the code flash kernel image to SDRAM. Note that at this
+	  point we can no longer use lower SDRAM for working storage.
+	</p>
+      </li>
+      <li>
+	<p>
+	  Configure SRAM1 for data references. Copy trampoline code to
+	  SRAM1. Trampoline code may later alter the CPLD state
+	  depending on the preceding cryptographic check result.
+	</p>
+      </li>
+      <li>
+	<p>
+	  Re-configure SRAM1 for instruction references. Disable
+	  interrupts and branch to trampoline.
+	</p>
+      </li>
+      <li>
+	<p>
+	  Conditionally disable chip select for boot flash using
+	  CPLD and branch to Coyotos kernel start address.
+	</p>
+      </li>
+    </ol>
+    <p>
+      <leadin>Issue</leadin> The boot flash will refuse to boot an
+      unsigned kernel. If the code flash becomes corrupted, should
+      we fall back to PXE boot for re-install?
+    </p>
+    <p>
+      <leadin>Issue</leadin> When ASD's signature key becomes stale it
+      will necessary to do an update dance on the boot flash. There is
+      an interim state where two signature validation keys must be
+      present and either is okay. What happens if a customer does not
+      stay up to date?
+    </p>
+    <p>
+      <leadin>Issue</leadin> The upgrade agent on the code flash
+      should probably refuse to install any upgrade that the boot
+      flash will not pass.
+    </p>
+    <p>
+      <leadin>Issue</leadin> We probably need a two-key protocol,
+      where the second key is used <em>only</em> to sign key updates.
+    </p>
+  </sect1>
+  <sect1>
+    <title>Code Flash and Kernel</title>
+    <p>
+      The kernel will begin executing having already been loaded into
+      SDRAM. At control transfer interrupts will be disabled. The
+      first few instructions of the kernel will make any required
+      changes to the device memory address configuration, notably
+      including setting up appropriate mappings for kernel use of
+      SRAM0 and SRAM1.
+    </p>
+    <p>
+      In fact, it is probably a good idea for the kernel to assume
+      that any configuration provided by the boot flash is completely
+      broken. The main reason for this is that the environment
+      bequeathed by the boot flash will not match the environment
+      bequeathed by the prototype board, and it would be good to have
+      a kernel than can be run for testing after directly loading it
+      to memory.
+    </p>
   </sect1>
   <bibliography>
     <bibentry label="shapiro2006coyotos">
