@@ -28,7 +28,6 @@
 #include <coyotos/syscall.h>
 
 #ifndef __ASSEMBLER__
-typedef uintptr_t cap_t;
 typedef uint64_t errcode_t;
 
 #define CAPIDL_U8(x)  x##u
