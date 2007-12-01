@@ -25,7 +25,7 @@ COYOTOS_SRC=../../..
 CLEANLIST += *.xmli
 CLEANLIST += *.idlxml
 
-OSDOC_XML_SRC=spec bootstrap kmap target-coldfire irq-and-smp
+OSDOC_XML_SRC=spec bootstrap kmap coldfire-target irq-and-smp
 OSDOC_SBOX_SRC=$(wildcard *.sbox)
 OSDOC_FIG_SRC=$(wildcard *.fig)
 

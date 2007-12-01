@@ -17,9 +17,9 @@
 	<orgname>The EROS Group, LLC</orgname>
       </affiliation>
     </authorgroup>
-    <pubdate>March 15, 2006</pubdate>
+    <pubdate>Dec 1, 2007</pubdate>
     <copyright>
-      <year>2006</year> 
+      <year>2007</year> 
       <holder>Jonathan S. Shapiro</holder>
       <copyterms>
 	Verbatim copies of this document may be duplicated or
@@ -134,48 +134,30 @@
       The ColdFire architecture supports a range of page sizes. The
       Coyotos kernel architecture is designed in terms of a single
       least page size that forms the atomic unit of address space
-      construction. On the ColdFire, the feasible page size choices
-      are 1K, 4K, or 8K. For this implementation, we have chosen 4K
-      pages:
+      construction. On the ColdFire, the hardware-supported page size
+      choices are 1K, 4K, or 8K.
     </p>
-    <ul>
-      <li>
-	<p>
-	  Our intuition is that the 1K page size is not motivated for
-	  this processor.
-	</p>
-	<p>
-	  Current devices built around this family have reasonably
-	  large memories. The use of a 1K page size increases TLB
-	  pressure and cache line antialiasing challenges, and seems
-	  unlikely to result in a significant improvement in memory
-	  utilization in practice.
-	</p>
-      </li>
-      <li>
-	<p>
-	  This choice matches the IA-32 choice, and therefore
-	  minimizes systemic development risk.
-	</p>
-      </li>
-      <li>
-	<p>
-	  The 8K option seems likely to lead to underutilization of
-	  memory. Several processors that have previously selected an
-	  8K page size have later been driven to subpage permission
-	  masks, either for reasons of compatibility or efficiency.
-	</p>
-      </li>
-    </ul>
     <p>
-      The primary concern arising from the 4K page size choice is
-      cache coherency issues in the virtually indexed cache. This
-      appears to be manageable through page coloring (discussed below).
+      Our original plan was to push hard for a 4K page size in order
+      to minimize deviation from the i386 implementation and to
+      improve page utilization. The problem with this choice is that
+      (1) the cache set size is 8K, (2) the cache is virtually indexed
+      by the least 13 bits of the issued address, and therefore (3) if
+      the page size chosen is smaller than the set size cache
+      inconsistency results. The original plan called for a coloring
+      strategy. Discussion of the coloring issues is retained in this
+      document for the sake of later review, but that discussion does
+      not apply to the current implementation.
+    </p>
+    <p>
+      Because of the cache consistency issues, an 8K page size was
+      adopted for this implementation. Linux has also adopted an 8K
+      page size for this architecture.
     </p>
     <p>
       Notwithstanding the general page size decision, it may be
-      advantageous to use 8K or even 1M mappings to describe the
-      kernel region in order to reduce kernel TLB overhead.
+      advantageous to use 1M mappings to describe the kernel region in
+      order to reduce kernel TLB overhead.
     </p>
   </sect1>
   <sect1>
@@ -208,45 +190,63 @@
       within the fast path.
     </p>
     <p>
-      <leadin>Interim Translation Strategy</leadin> Given the decision
-      to use a 4K page size, it may actually make sense to adopt the
-      IA-32 mapping logic unmodified, simulating the IA-32 page table
-      search in the software miss handler. It's a pretty deficient way
-      to handle translation on this architecture, but it would let us
-      do a faster initial bringup. My main concern isn't so much the
-      translation mechanism itself as the need to rethink the
-      dependency tracking mechanism appropriate to a soft TLB.
+      <leadin>Initial Translation Strategy</leadin> As an initial
+      implementation strategy, we are going to try to operate with no
+      software-managed second-layer TLB. We will instead implement a
+      TLB software miss handler that knows how to reload kernel
+      virtual addresses through an internally maintained table, and
+      which handles user-mode address faults by traversing the GPT
+      structures. No DependTable is required; the TLB is
+      simply flushed whenever a GPT store is performed, which wipes
+      out all mappings. Similarly, no RevMap is required.
     </p>
     <p>
-      <leadin>Production Translation Strategy</leadin> The most
-      obvious strategy for this type of architecture is to implement a
-      second-level TLB in software backed by a more conventional
-      translation architecture.  The soft TLB can be stored in KRAM
-      for high-performance access. A comparable approach was
-      successful in the R4000 (maybe it was R3000?) era kernels at
-      Silicon Graphics. More recent processors have used soft-loaded
-      TLBs with some degree of instruction set support as well. This
-      strategy has the advantage that it can be mapped pretty easily
-      to the existing dependency management logic.
+      This strategy will get us running, but it obviously won't be
+      suitable in production.  Note that this design puts enormous
+      pressure on the TLB. Our target has 128M of memory, the kernel
+      heap is approximagely 1/120th of this, and assuming that 1M
+      mappings can be used for the kernel heap they may well occupy 13
+      of the 32 available TLB entries.
     </p>
     <p>
-      That said, my sense is that this isn't the best approach to
-      use. Instead, I think we should consider caching partial PATT
-      traversals. In particular, we can build a cache of translations
-      from translation roots up to but not including the leafmost
-      PATT. At page fault time, we can consult this cache to quickly
-      find the leaf PATT and then search that PATT to find the desired
-      target of the mapping. That mapping can be directly loaded into
-      the TLB from software subject to coloring constraints.
+      <leadin>Improved Approach</leadin> for production use, the
+      current plan is to back the hardware TLB by a
+      second-layer TLB implemented in software. This lowers GPT walk
+      pressure directly, which in turn lowers kernel-induced TLB
+      pressure. The challenge will be to index the second-level TLB so
+      that it can be searched using either a virtual or a physical
+      address. A multi-set approach may work here.
+    </p>
+    <p>
+      In order to support this, the RevMap must be re-introduced, and
+      a DependTable is once again necessary. DependTable pressure in
+      this design will be high, because we cannot exploit run-length
+      encoding in the depend structure. One way to reduce this is to
+      simulate bottom-level page tables, but it is not clear that this
+      would reduce dynamic DependTable pressure significantly.
+    </p>
+    <p>
+      Another alternative is to come up with a way to cache partial
+      GPT traversals.  We might build a cache of translations from
+      translation roots up to but not including the leafmost GPT. At
+      page fault time, we can consult this cache to quickly find the
+      leaf GPT and then search that GPT to find the desired target of
+      the mapping.
     </p>
     <p>
       The idea of a traversal cache may be less pressing in Coyotos
       than in EROS, and the first thing to do is certainly to
-      implement a fast soft traversal directly.
+      implement a fast soft traversal of GPTs directly.
     </p>
   </sect1>
   <sect1>
-    <title>Caching Issues</title>
+    <title>Cache Consistency Issues</title>
+    <note>
+      <p>
+	This section is now obsolete. It is retained for historical
+	reference.
+      </p>
+    </note>
     <p>
       The V4e family cache is virtually indexed and physically
       tagged. On the MCF5485 the set size is 8K. Given a 4K page size,
@@ -350,69 +350,164 @@
       One misfortune is that the <smallcaps>trap</smallcaps>
       instruction does <em>not</em> disable interrupts. This may
       preclude a fast register save design within the kernel as was
-      done in the IA-32 implementation. The shortest path to disable
-      appears to be something like:
+      done in the IA-32 implementation. The intention is that software
+      should do this by immediately executing something like:
     </p>
     <programlisting>
 mov  %sr,$disable
 ... proceed with save ...</programlisting>
     <p indent="no">
-      The problem here is that the fast save strategy requires that the
-      kernel-mode stack on trap points directly into the per-process
-      save area. This save area is fairly small, which presents two
-      difficulties:
-    </p>
-    <ul>
-      <li>
-	<p>
-	  Prior to the disabling of interrupts, we may take a hardware
-	  interrupt, which places an exception frame on the stack and
-	  tries to run the handler. To handle this, it will be
-	  necessary for these handlers to recognize having interrupted
-	  kernel mode in the assembly stub and avoid using more than a
-	  few words of the active kernel stack.
-	</p>
-      </li>
-      <li>
-	<p>
-	  For real entertainment, we might also take a TLB miss from
-	  either the initial path or the interrupt handler.  This
-	  might lead to <em>another</em> exception frame and an
-	  attempt to run the reload handler while using the save area
-	  as a stack as well. It <em>may</em> be possible to constrain
-	  the register use of the TLB miss handler in this case as
-	  well, but we need to look into this pretty carefully.
-	</p>
-      </li>
-    </ul>
-    <p>
-      My intuition is that it is worth it, and that we can pull it
-      off, but we need to go counting stack words to make sure that
-      this can all be pulled off. We will certainly need to pin the
-      kernel stack mapping and the mapping for the fault handler code
-      itself into the D-TLB and I-TLB.
+      Interrupts are suppressed until this first instruction is run,
+      so nested interrupts can be controlled.
     </p>
     <p>
-      In the interim, the simplest thing is to run off of the
-      <em>real</em> kernel stack from the beginning, save a scratch
-      register there temporarily, load the save area pointer into this
-      register, and then use it as a base register to save the balance
-      of the user-mode register set. The trampoline register can then
-      be reloaded and saved to its proper location.
+      Earlier versions of this document expressed concern that
+      interrupts in the register save path would preclude the
+      fast-save design. They do not, but another consideration does:
+      the TLB miss fault.
+    </p>
+    <p>
+      Because this is a soft-translated architecture, a TLB miss fault
+      generates an exception. The exception frame is pushed to the
+      stack. If no kernel stack is available to receive this exception
+      state, the processor becomes very unhappy. Unfortunately for us,
+      it is not practical to pin the mappings for the Process
+      vector. This means that we cannot save directly to the Process
+      structure, and we will therefore be unable to use an IA32-style
+      fast save strategy.
+    </p>
+    <p>
+      The good news is that the hardware has separate user and kernel
+      stack pointers, so we can probably get away with testing the
+      origin of the fault (user vs. kernel) and in the user case save
+      only one or two registers, load the current process pointer,
+      save the remainder to the process state and then migrate the
+      registers and the trap information.
     </p>
     <p>
       On this architecture, the only privileged state in the integer
       save area is the <smallcaps>sr</smallcaps> register state, which
-      needs to be handled specially during reload in any case. The
-      kernel interface no longer includes any operations that copy
-      data to or from user space during kernel invocations <em>other
-      than</em> IPC, which is an assembly path. Taken together, these
-      facts may make it possible to entirely eliminate the savearea
-      structure and reference all user-mode arguments directly from
-      the UPCB structure on this architecture. For cache locality and
-      security reasons I am reluctant to eliminate the savearea
-      structure.
+      needs to be handled specially during reload in any case.
     </p>
+  </sect1>
+  <sect1>
+    <title>Memory Map</title>
+    <p>
+      In the <em>virtual</em> map, the Coyotos implementation will
+      reserve the [0x0,0xBFFFFFFF] range for user-mode addresses. The
+      range [0xC0000000,0xFFFFFFFF] is reserved for kernel use.
+      Unfortunately, the distinction between virtual and physical
+      addresses on this processor is not entirely clean.
+    </p>
+    <p>
+      The Coldfire is a single-chip controller, and it implements chip
+      select for memory devices on the processor. The CPU implements
+      an on-board SDRAM controller. It also implements a "flexbus"
+      that can be used for ROMs and other devices. It is possible, but
+      not advisable, to contrive for the chip select addresses of
+      devices to overlap. Don't do this! If the memory chip designs
+      aren't right, a short can be induced on the data bus as one chip
+      drives D1 high and the next drives it low. I have not
+      investigated whether the processor may implement a priority
+      scheme in the chip select logic to preclude this problem.
+    </p>
+    <p>
+      The MMU on the Coldfire was a bolt-on, and the resulting bussing
+      structure is peculiar. In particular, there are two on-board
+      SRAM devices (controlled by RAMBAR[0:1]), two on-board ROM
+      devices (controlled by ROMBAR[0:1]) and two access control
+      registers ACR[0:3] that define address regions. Each of these
+      registers describes an arbitrary region of the address space
+      that is some power of two in size. Any address matched by these
+      registers is passed to the post-translate bus without
+      modification. There is a translation priority scheme, and the
+      TLB sits <em>lower than</em> any of these in that scheme.
+    </p>
+    <p>
+      There is also an MBAR register that specifies the register base
+      address of the "System Integration Unit". While no translation
+      priority is specified for MBAR, the discussion of the ACR
+      registers indicates that one of these should be used to make the
+      SIU registers non-cacheable.
+    </p>
+    <p>
+      The net effect of this is that regions defined by RAMBAR,
+      ROMBAR, or ACR are "in front of" the mapping structure. In the
+      context of our implementation this means that all such addresses
+      must be <em>above</em> 0xC0000000.
+    </p>
+    <p>
+      The two small SRAM devices controlled by RAMBAR[0:1] are on a
+      local bus.  The MC5485 manual is explicit that a hit in
+      RAMBAR[0:1] causes chip select to be asserted to these small
+      SRAMs. It is not clear whether these devices can also be
+      addressed via the MMU. There is a diagram of address pipeline
+      flow in the MMU chapter which suggests that the post-TLB
+      addresses and the post-RAMBAR addresses both end up on the XL
+      bus. It is not clear if SRAM chip select is then done from the
+      XL bus or if it is done from the RAMBAR address matching
+      logic. I suspect the latter, in which cases the devices
+      controlled by RAMBAR[0:1], ROMBAR[0:1], and ACR[0:3] cannot be
+      mapped via the MMU. This is particularly unfortunate for
+      ACR[0:3], because it means that device registers cannot be
+      mapped for application access, and we will need to implement a
+      "load/store I/O register" sysem call.
+    </p>
+    <sect2>
+      <title>TLB Interactions</title>
+      <p>
+	If the MMU subsystem is enabled, references requiring
+	translation may generate TLB miss exceptions. These push an
+	exception frame to the stack and proceed through the exception
+	table (which must be 1Mbyte aligned - ick). In order for the
+	software TLB handler to be able to function minimally, the
+	kernel stack address, exception vector region, miss handler
+	code regions, and any data structures used by the soft-load
+	fast path must either be pinned in the TLB or must be stored
+	in non-mapped memory. It is not clear from the documentation
+	whether the interrupt vector fetch is performed as an
+	I-reference or a D-reference. We will need to experiment.
+      </p>
+      <p>
+	One approach would be to place the kernel stack in RAMBAR0,
+	put the kernel exception vector and the fast path TLB data
+	structures in RAMBAR1, and then pin an entry for the TLB miss
+	handler code in the I-TLB. Alternatively, if the exception
+	vector references are I-references the vector table can be
+	placed at the front of code space.
+      </p>
+      <p>
+	The TLB miss processing issue, and its associated potential
+	for double faults suggests that the bootstrap code should run
+	without the TLB enabled. There is no obvious reason to enable
+	the TLB for that code, and avoiding the need for any software
+	miss handler seems worthwhile.
+      </p>
+    </sect2>
+    <sect2>
+      <title>Power-on Conditions</title>
+      <p>
+	The initial memory configuration is determined by
+	pin-strap. This gives the memory access width and clock delay
+	to be used for flexbus device zero (the boot ROM, which sits
+	on flexbus CS0). The initial base address for this ROM is
+	zero. All other device are initially disabled. It is the
+	responsibility of the bootstrap software to establish base
+	addresses for all other memory devices and appropriately
+	enable their supporting chip select logic.
+      </p>
+      <p>
+	The documentation of the reset exception indicates that
+	initial supervisor PC and SP are loaded from addresses 0 and 4
+	respectively. The documentation of the exception vector
+	reserves positions for these. This seems to imply that the
+	exception vector used by the bootstrap code wants to be the
+	first thing in the boot flash. After reset, there is no
+	obvious relationship between the exception vector and the
+	PC/SP, but the exception vector is required to appear at a 1M
+	boundary in memory.
+      </p>
+    </sect2>
   </sect1>
   <bibliography>
     <bibentry label="shapiro2006coyotos">
