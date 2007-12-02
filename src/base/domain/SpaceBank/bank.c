@@ -537,8 +537,8 @@ setup_banks(CoyImgBank *banks, size_t count)
     Bank *parent = lookup_bank(parentOid);
 
     // they both must exist
-    assert3p(bank, !=, 0);
-    assert3p(parent, !=, 0);
+    assert3p(bank, !=, (void *) 0);
+    assert3p(parent, !=, (void *) 0);
 
     // link the bank into its parent chain
     if (bank == parent) {
