@@ -140,7 +140,7 @@ gcc_arch() {
 gcc_model() {
     case $1 in
 	coldfire)
-	    echo "-m5407";;
+	    echo "-mcfv4e";;
 	*)
 	    echo ;;
     esac
