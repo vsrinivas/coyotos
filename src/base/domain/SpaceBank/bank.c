@@ -129,6 +129,7 @@ object_getCap(Object *obj, caploc_t out)
 void
 object_rescindAndFree(Object *obj)
 {
+  assert(obj);
   assert(obj->bank);
   oid_t oid = object_getOid(obj);
   coyotos_Range_obType ty = object_getType(obj);
@@ -283,6 +284,7 @@ bank_destroy(Bank *bank, bool destroyObjects)
 
     // Rescind the bank's endpoint, to make it so no one can use it.
     Object *endpoint = bank_getEndpoint(bank);
+    assert(endpoint);
     object_rescindAndFree(endpoint);
 
     if (destroyObjects) {
