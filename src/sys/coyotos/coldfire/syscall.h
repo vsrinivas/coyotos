@@ -20,10 +20,6 @@
  * Foundation, 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  */
 
-static inline bool invoke_capability(InvParameterBlock_t *ipb)
-{
-  // #error "Implement me!"
-  return false;
-}
+extern bool invoke_capability(InvParameterBlock_t *ipb);
 
 #endif  /* __COLDFIRE_SYSCALL_H__ */

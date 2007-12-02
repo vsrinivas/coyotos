@@ -27,7 +27,7 @@ include $(COYOTOS_SRC)/build/make/makevars.mk
 CFLAGS+=-g -O2
 
 INC=-I. -I$(BUILDDIR) -I$(COYOTOS_ROOT)/usr/include
-SOURCES=$(wildcard *.c) $(wildcard *.S)
+#SOURCES=$(wildcard *.c) $(wildcard *.S)
 C_OBJECTS=$(patsubst %.c,$(BUILDDIR)/%.o,$(wildcard c_*.c))
 C_OBJECTS+=$(patsubst %.c,$(BUILDDIR)/%.o,$(notdir $(wildcard $(COYOTOS_ARCH)/c_*.c)))
 C_OBJECTS+=$(patsubst %.S,$(BUILDDIR)/%.o,$(notdir $(wildcard $(COYOTOS_ARCH)/c_*.S)))
@@ -38,6 +38,7 @@ LARGE_OBJECTS=$(patsubst %.c,$(BUILDDIR)/%.o,$(wildcard large_*.c))
 LARGE_OBJECTS+=$(patsubst %.c,$(BUILDDIR)/%.o,$(notdir $(wildcard $(COYOTOS_ARCH)/large_*.c)))
 LARGE_OBJECTS+=$(patsubst %.S,$(BUILDDIR)/%.o,$(notdir $(wildcard $(COYOTOS_ARCH)/large_*.S)))
 COYOTOS_OBJECTS=$(patsubst %.c,$(BUILDDIR)/%.o,$(wildcard coyotos_*.c))
+COYOTOS_OBJECTS+=$(patsubst %.c,$(BUILDDIR)/%.o,$(notdir $(wildcard $(COYOTOS_ARCH)/coyotos_*.c)))
 COYOTOS_OBJECTS+=$(patsubst %.S,$(BUILDDIR)/%.o,$(wildcard coyotos_*.S))
 OBJECTS=$(C_OBJECTS)
 
