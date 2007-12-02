@@ -285,13 +285,16 @@ bank_destroy(Bank *bank, bool destroyObjects)
     // Rescind the bank's endpoint, to make it so no one can use it.
     Object *endpoint = bank_getEndpoint(bank);
     assert(endpoint);
+    assert(endpoint->bank);
     object_rescindAndFree(endpoint);
 
     if (destroyObjects) {
       // Rescind and free all objects in the bank
       Object *obj;
-      while ((obj = bank->oList) != 0)
+      while ((obj = bank->oList) != 0) {
+	assert (obj->bank);
 	object_rescindAndFree(obj);
+      }
 
     } else {
       // move the objects in the bank into the parent
